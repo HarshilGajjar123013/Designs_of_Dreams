@@ -180,7 +180,7 @@ export default function GalleryManager() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#C5A059]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF6A00]"></div>
         </div>
       </AdminLayout>
     );
@@ -204,7 +204,7 @@ export default function GalleryManager() {
             <button
               onClick={handlePublishGallery}
               disabled={saving}
-              className="px-4 sm:px-5 py-2.5 sm:py-3 bg-[#1A1A1A] text-white rounded-[16px] text-[10px] sm:text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+              className="px-4 sm:px-5 py-2.5 sm:py-3 bg-[#1A1A1A] text-white rounded-[16px] text-[10px] sm:text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider disabled:opacity-50 cursor-pointer"
             >
               <Save size={14} />
               {saving ? 'Publishing...' : 'Publish Gallery'}
@@ -222,7 +222,7 @@ export default function GalleryManager() {
                 className={`px-3 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-semibold transition-all cursor-pointer uppercase tracking-wider whitespace-nowrap shrink-0 ${
                   activeFilter === tag.id
                     ? 'bg-[#1A1A1A] text-white shadow-sm'
-                    : 'bg-white text-[#6E6E6E] border border-gray-200 hover:border-[#C5A059] hover:text-[#C5A059]'
+                    : 'bg-white text-[#6E6E6E] border border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00]'
                 }`}
               >
                 {tag.label}
@@ -232,7 +232,7 @@ export default function GalleryManager() {
           <button
             type="button"
             onClick={handleAddNewItemClick}
-            className="px-4 sm:px-5 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-[10px] sm:text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer font-poppins shrink-0 w-full sm:w-auto justify-center sm:justify-start"
+            className="px-4 sm:px-5 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-[10px] sm:text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer font-poppins shrink-0 w-full sm:w-auto justify-center sm:justify-start"
           >
             <Plus size={14} /> Add Gallery Item
           </button>
@@ -240,9 +240,9 @@ export default function GalleryManager() {
 
         {/* Add/Edit Gallery Item Form */}
         {isEditingItem && (
-          <div className="glass-card rounded-[20px] sm:rounded-[28px] p-4 sm:p-6 shadow-luxury border border-[rgba(197,160,89,0.25)] bg-[#FAF9F6] space-y-4 sm:space-y-5 font-poppins">
+          <div className="glass-card rounded-[20px] sm:rounded-[28px] p-4 sm:p-6 shadow-luxury border border-[rgba(255, 106, 0,0.25)] bg-[#FAF9F6] space-y-4 sm:space-y-5 font-poppins">
             <h4 className="font-marcellus text-lg font-semibold text-gray-800 uppercase tracking-wide flex items-center gap-2">
-              <Sparkles size={16} className="text-[#C5A059]" />
+              <Sparkles size={16} className="text-[#FF6A00]" />
               {editingIndex !== null ? "Edit Gallery Exhibition Card" : "New Gallery Exhibition Card"}
             </h4>
 
@@ -254,7 +254,7 @@ export default function GalleryManager() {
                   value={galleryTitle}
                   onChange={(e) => setGalleryTitle(e.target.value)}
                   placeholder="e.g. Master Silk Weaver"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                 />
               </div>
               <div>
@@ -264,7 +264,7 @@ export default function GalleryManager() {
                   value={galleryCategory}
                   onChange={(e) => setGalleryCategory(e.target.value)}
                   placeholder="e.g. Artisanal Handloom"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                 />
               </div>
             </div>
@@ -275,7 +275,7 @@ export default function GalleryManager() {
                 <select
                   value={galleryFilterTag}
                   onChange={(e) => setGalleryFilterTag(e.target.value as any)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#C5A059] text-gray-700 bg-white font-poppins"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] text-gray-700 bg-white font-poppins"
                 >
                   <option value="weaving">Weaving Studio</option>
                   <option value="embroidery">Intricate Embroidery</option>
@@ -292,12 +292,12 @@ export default function GalleryManager() {
                     value={galleryImage}
                     onChange={(e) => setGalleryImage(e.target.value)}
                     placeholder="Paste URL or upload image file"
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                   />
                   <button
                     type="button"
                     onClick={() => galleryFileInputRef.current?.click()}
-                    className="px-4 bg-gray-150 hover:bg-[#C5A059] hover:text-white rounded-xl text-xs transition-all border border-gray-200 cursor-pointer flex items-center justify-center text-gray-700"
+                    className="px-4 bg-gray-150 hover:bg-[#FF6A00] hover:text-white rounded-xl text-xs transition-all border border-gray-200 cursor-pointer flex items-center justify-center text-gray-700"
                     title="Upload Image"
                   >
                     <Upload size={14} />
@@ -321,7 +321,7 @@ export default function GalleryManager() {
                 value={galleryDesc}
                 onChange={(e) => setGalleryDesc(e.target.value)}
                 placeholder="Narrate the craftsmanship story behind this stage..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
               />
             </div>
 
@@ -347,7 +347,7 @@ export default function GalleryManager() {
               <button
                 type="button"
                 onClick={handleSaveGalleryItem}
-                className="px-5 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#C5A059] cursor-pointer transition-all"
+                className="px-5 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#FF6A00] cursor-pointer transition-all"
               >
                 {editingIndex !== null ? 'Update Card' : 'Add Card'}
               </button>
@@ -371,7 +371,7 @@ export default function GalleryManager() {
             {filteredGallery.map((item, idx) => (
               <div
                 key={item.id || idx}
-                className="relative group border border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm flex flex-col justify-between hover:border-[#C5A059] transition-all hover:shadow-md"
+                className="relative group border border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm flex flex-col justify-between hover:border-[#FF6A00] transition-all hover:shadow-md"
               >
                 <div className="relative h-36 bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -383,7 +383,7 @@ export default function GalleryManager() {
                     <button
                       type="button"
                       onClick={() => setPreviewItem(item)}
-                      className="p-2 bg-white text-gray-700 rounded-full shadow hover:bg-[#C5A059] hover:text-white cursor-pointer transition-all"
+                      className="p-2 bg-white text-gray-700 rounded-full shadow hover:bg-[#FF6A00] hover:text-white cursor-pointer transition-all"
                       title="Preview"
                     >
                       <Eye size={11} />
@@ -391,7 +391,7 @@ export default function GalleryManager() {
                     <button
                       type="button"
                       onClick={() => handleEditGalleryItem(idx)}
-                      className="p-2 bg-white text-gray-700 rounded-full shadow hover:bg-[#C5A059] hover:text-white cursor-pointer transition-all"
+                      className="p-2 bg-white text-gray-700 rounded-full shadow hover:bg-[#FF6A00] hover:text-white cursor-pointer transition-all"
                       title="Edit Card"
                     >
                       <Edit2 size={11} />
@@ -412,7 +412,7 @@ export default function GalleryManager() {
                   </span>
                 </div>
                 <div className="p-4 space-y-1.5">
-                  <span className="text-[8px] uppercase tracking-widest text-[#C5A059] font-bold block">{item.category}</span>
+                  <span className="text-[8px] uppercase tracking-widest text-[#FF6A00] font-bold block">{item.category}</span>
                   <h5 className="font-semibold text-gray-800 text-sm truncate" title={item.title}>{item.title}</h5>
                   <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed">{item.desc}</p>
                 </div>
@@ -442,13 +442,13 @@ export default function GalleryManager() {
                 </div>
               </div>
               <div className="p-5 sm:p-8 space-y-3">
-                <span className="text-[10px] uppercase tracking-widest text-[#C5A059] font-bold">{previewItem.category}</span>
+                <span className="text-[10px] uppercase tracking-widest text-[#FF6A00] font-bold">{previewItem.category}</span>
                 <h3 className="font-marcellus text-2xl font-light text-[#1A1A1A]">{previewItem.title}</h3>
                 <p className="text-sm text-[#6E6E6E] leading-relaxed font-poppins">{previewItem.desc}</p>
                 <div className="pt-4">
                   <button
                     onClick={() => setPreviewItem(null)}
-                    className="px-6 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#C5A059] cursor-pointer transition-all uppercase tracking-wider"
+                    className="px-6 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#FF6A00] cursor-pointer transition-all uppercase tracking-wider"
                   >
                     Close Preview
                   </button>

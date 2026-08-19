@@ -71,7 +71,7 @@ export default function KPICard({
       case 'orange': return 'text-[#FF6A00]';
       case 'green': return 'text-[#0FA958]';
       case 'red': return 'text-[#D83A3A]';
-      default: return 'text-[#C5A059]';
+      default: return 'text-[#FF6A00]';
     }
   };
 
@@ -81,7 +81,7 @@ export default function KPICard({
       case 'orange': return '#FF6A00';
       case 'green': return '#0FA958';
       case 'red': return '#D83A3A';
-      default: return '#C5A059';
+      default: return '#FF6A00';
     }
   };
 
@@ -90,7 +90,7 @@ export default function KPICard({
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="glass-card rounded-[16px] sm:rounded-[24px] p-3 sm:p-6 shadow-luxury flex flex-col justify-between h-[140px] sm:h-[180px] hover:bg-white hover:border-[rgba(197,160,89,0.2)] transition-all duration-300 relative overflow-hidden"
+      className="glass-card rounded-[16px] sm:rounded-[24px] p-3 sm:p-6 shadow-luxury flex flex-col justify-between h-[140px] sm:h-[180px] hover:bg-white hover:border-[rgba(255, 106, 0,0.2)] transition-all duration-300 relative overflow-hidden"
     >
       <div className="flex justify-between items-start">
         <div>

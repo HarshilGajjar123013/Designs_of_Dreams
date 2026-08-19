@@ -118,7 +118,7 @@ export default function CollectionManagement() {
           </div>
           <button 
             onClick={loadData}
-            className="p-2 border border-gray-200 rounded-xl hover:border-[#C5A059] transition-all cursor-pointer bg-white text-gray-500"
+            className="p-2 border border-gray-200 rounded-xl hover:border-[#FF6A00] transition-all cursor-pointer bg-white text-gray-500"
           >
             <RefreshCw size={16} />
           </button>
@@ -133,7 +133,7 @@ export default function CollectionManagement() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 size={36} className="animate-spin text-[#C5A059]" />
+            <Loader2 size={36} className="animate-spin text-[#FF6A00]" />
             <span className="text-xs text-gray-400 uppercase tracking-widest font-inter">Loading Collections...</span>
           </div>
         ) : (
@@ -153,11 +153,11 @@ export default function CollectionManagement() {
                     return (
                       <div 
                         key={coll.id} 
-                        className="glass-card rounded-[24px] p-6 shadow-luxury flex flex-col justify-between h-[220px] bg-white border border-[rgba(0,0,0,0.03)] hover:border-[#C5A059] transition-all relative group"
+                        className="glass-card rounded-[24px] p-6 shadow-luxury flex flex-col justify-between h-[220px] bg-white border border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00] transition-all relative group"
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <span className="w-10 h-10 rounded-full bg-[rgba(197,160,89,0.08)] flex items-center justify-center text-[#C5A059] mb-4">
+                            <span className="w-10 h-10 rounded-full bg-[rgba(255, 106, 0,0.08)] flex items-center justify-center text-[#FF6A00] mb-4">
                               <Gem size={18} />
                             </span>
                             <h3 className="font-marcellus text-lg text-gray-950 font-light">{coll.name}</h3>
@@ -194,7 +194,7 @@ export default function CollectionManagement() {
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-6 h-fit bg-white">
               <div className="border-b border-gray-100 pb-4">
                 <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider font-light flex items-center gap-1.5">
-                  <Plus size={16} className="text-[#C5A059]" /> Create Collection
+                  <Plus size={16} className="text-[#FF6A00]" /> Create Collection
                 </h3>
               </div>
 
@@ -207,7 +207,7 @@ export default function CollectionManagement() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Bridal 2026"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
 
@@ -218,7 +218,7 @@ export default function CollectionManagement() {
                     value={season}
                     onChange={(e) => setSeason(e.target.value)}
                     placeholder="e.g. Autumn/Winter 2026"
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
 
@@ -229,14 +229,14 @@ export default function CollectionManagement() {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Provide details about the theme, fabrics, or designer notes..."
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full bg-[#1A1A1A] hover:bg-[#C5A059] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full bg-[#1A1A1A] hover:bg-[#FF6A00] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {saving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
                   Append Collection

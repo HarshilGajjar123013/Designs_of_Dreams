@@ -105,7 +105,7 @@ export default function CustomerManagement() {
             placeholder="Search patrons by Name, Email, or Phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#C5A059] shadow-sm"
+            className="flex-1 px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00] shadow-sm"
           />
         </div>
 
@@ -128,7 +128,7 @@ export default function CustomerManagement() {
                   <tr key={c.id}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#C5A059] text-white flex items-center justify-center font-bold text-xs overflow-hidden">
+                        <div className="w-9 h-9 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-bold text-xs overflow-hidden">
                           {c.avatar && (c.avatar.startsWith('http') || c.avatar.startsWith('data:image')) ? (
                             <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
                           ) : (
@@ -150,7 +150,7 @@ export default function CustomerManagement() {
                     <td>
                       <button
                         onClick={() => setSelectedCust(c)}
-                        className="p-1.5 bg-white border border-gray-200 hover:border-[#C5A059] rounded-lg text-gray-600 hover:text-[#C5A059] transition-all flex items-center gap-1.5 text-[10px]"
+                        className="p-1.5 bg-white border border-gray-200 hover:border-[#FF6A00] rounded-lg text-gray-600 hover:text-[#FF6A00] transition-all flex items-center gap-1.5 text-[10px]"
                       >
                         <Eye size={12} /> Inspect Profile
                       </button>
@@ -184,7 +184,7 @@ export default function CustomerManagement() {
                 {/* Header */}
                 <div className="h-20 border-b border-gray-100 flex items-center justify-between px-8 bg-gray-50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#C5A059] text-white flex items-center justify-center font-bold text-sm overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-bold text-sm overflow-hidden">
                       {selectedCust.avatar && (selectedCust.avatar.startsWith('http') || selectedCust.avatar.startsWith('data:image')) ? (
                         <img src={selectedCust.avatar} alt={selectedCust.name} className="w-full h-full object-cover" />
                       ) : (
@@ -208,15 +208,15 @@ export default function CustomerManagement() {
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-6">
                   {/* Preferences / Custom Fitting Notes */}
-                  <div className="border border-[rgba(197,160,89,0.2)] bg-[#FAF9F6] p-5 rounded-[20px] space-y-3">
+                  <div className="border border-[rgba(255, 106, 0,0.2)] bg-[#FAF9F6] p-5 rounded-[20px] space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider flex items-center gap-1.5">
+                      <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-wider flex items-center gap-1.5">
                         <Notebook size={12} /> Custom Preferences & Fitting Notes
                       </span>
                       {!isEditingNotes ? (
                         <button
                           onClick={() => setIsEditingNotes(true)}
-                          className="text-[10px] text-[#C5A059] hover:underline font-semibold"
+                          className="text-[10px] text-[#FF6A00] hover:underline font-semibold"
                         >
                           Edit Notes
                         </button>
@@ -246,7 +246,7 @@ export default function CustomerManagement() {
                         rows={3}
                         value={notesText}
                         onChange={(e) => setNotesText(e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059] bg-white"
+                        className="w-full p-3 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00] bg-white"
                       />
                     ) : (
                       <p className="text-xs text-gray-700 leading-relaxed font-poppins italic">
@@ -296,7 +296,7 @@ export default function CustomerManagement() {
 
                     {/* Cart */}
                     <div className="space-y-2">
-                      <h4 className="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider flex items-center gap-1">
+                      <h4 className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-wider flex items-center gap-1">
                         <ShoppingCart size={10} /> Active Cart ({selectedCust.cart.length})
                       </h4>
                       {selectedCust.cart.length === 0 ? (
@@ -356,7 +356,7 @@ export default function CustomerManagement() {
                             </div>
                             <div className="text-right">
                               <p className="font-bold text-gray-900 font-inter">₹{order.grandTotal.toLocaleString()}</p>
-                              <span className="text-[8px] uppercase tracking-wider font-semibold text-[#C5A059]">
+                              <span className="text-[8px] uppercase tracking-wider font-semibold text-[#FF6A00]">
                                 {order.status}
                               </span>
                             </div>

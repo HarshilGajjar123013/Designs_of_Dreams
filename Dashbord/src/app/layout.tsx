@@ -38,7 +38,7 @@ export default function RootLayout({
       className={`${marcellus.variable} ${poppins.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#FAF9F6] text-[#1A1A1A]">
+      <body className="min-h-full flex flex-col bg-[#FAF9F6] text-[#1A1A1A]" suppressHydrationWarning>
         {children}
       </body>
     </html>

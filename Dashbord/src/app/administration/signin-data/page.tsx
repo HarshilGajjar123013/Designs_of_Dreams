@@ -39,7 +39,7 @@ export default function SignInDataPanel() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#C5A059]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF6A00]"></div>
         </div>
       </AdminLayout>
     );
@@ -88,7 +88,7 @@ export default function SignInDataPanel() {
           </div>
 
           <div className="glass-card rounded-2xl p-6 shadow-luxury flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[rgba(197,160,89,0.08)] flex items-center justify-center text-[#C5A059] flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-[rgba(255, 106, 0,0.08)] flex items-center justify-center text-[#FF6A00] flex-shrink-0">
               <KeyRound size={20} />
             </div>
             <div>
@@ -107,7 +107,7 @@ export default function SignInDataPanel() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by actor name, action, or IP address..."
-              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059] placeholder-gray-400"
+              className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00] placeholder-gray-400"
             />
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>

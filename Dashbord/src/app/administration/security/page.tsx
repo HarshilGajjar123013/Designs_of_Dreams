@@ -31,7 +31,7 @@ export default function SecurityPanel() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#C5A059]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF6A00]"></div>
         </div>
       </AdminLayout>
     );
@@ -62,7 +62,7 @@ export default function SecurityPanel() {
           </div>
 
           <div className="glass-card rounded-2xl p-6 shadow-luxury flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[rgba(197,160,89,0.08)] flex items-center justify-center text-[#C5A059] flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-[rgba(255, 106, 0,0.08)] flex items-center justify-center text-[#FF6A00] flex-shrink-0">
               <Activity size={20} />
             </div>
             <div>
@@ -93,7 +93,7 @@ export default function SecurityPanel() {
               </h3>
               <p className="text-[10px] text-[#6E6E6E] uppercase tracking-wider font-inter">Permanent record of system interactions</p>
             </div>
-            <Terminal size={18} className="text-[#C5A059]" />
+            <Terminal size={18} className="text-[#FF6A00]" />
           </div>
 
           <div className="overflow-x-auto">

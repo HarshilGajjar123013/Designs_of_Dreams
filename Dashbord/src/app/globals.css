@@ -3,7 +3,7 @@
 @theme {
   --color-bg-primary: #FAF9F6;
   --color-text-primary: #1A1A1A;
-  --color-luxury-gold: #C5A059;
+  --color-luxury-gold: #FF6A00;
   --color-brand-orange: #FF6A00;
   --color-text-secondary: #6E6E6E;
   --color-border-lux: rgba(0, 0, 0, 0.06);
@@ -20,7 +20,7 @@
   --radius-lux-lg: 28px;
 
   --shadow-luxury: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
-  --shadow-luxury-hover: 0 20px 40px -15px rgba(197, 160, 89, 0.08), 0 1px 10px rgba(0, 0, 0, 0.03);
+  --shadow-luxury-hover: 0 20px 40px -15px rgba(255, 106, 0, 0.08), 0 1px 10px rgba(0, 0, 0, 0.03);
 
   --animate-fade-in: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -70,7 +70,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .luxury-gradient-gold {
-  background: linear-gradient(135deg, #DFBA73 0%, #C5A059 100%);
+  background: linear-gradient(135deg, #DFBA73 0%, #FF6A00 100%);
 }
 
 .luxury-gradient-light {
@@ -86,11 +86,11 @@ h1, h2, h3, h4, h5, h6 {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(197, 160, 89, 0.2);
+  background: rgba(255, 106, 0, 0.2);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(197, 160, 89, 0.45);
+  background: rgba(255, 106, 0, 0.45);
 }
 
 /* Luxury Table Styling */
@@ -141,4 +141,12 @@ h1, h2, h3, h4, h5, h6 {
   border-right: 1px solid rgba(0, 0, 0, 0.03);
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
+}
+
+/* Print Isolation Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
 }

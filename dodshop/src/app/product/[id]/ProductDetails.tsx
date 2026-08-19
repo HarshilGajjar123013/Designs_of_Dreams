@@ -23,9 +23,9 @@ import {
   MessageCircle,
   Play,
   X,
-  Copy,
-  ThumbsUp
+  Copy
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import "./ProductDetail.scss";
 
 // ── Mock Additional Saree Assets ──
@@ -67,7 +67,7 @@ const bundleAccessories = [
 export default function ProductDetails({ initialProduct }: { initialProduct?: Product | null }) {
   const params = useParams();
   const router = useRouter();
-  
+
   // Unwrap ID param
   const rawId = params?.id;
   const productId = (rawId as string) || "1";
@@ -89,8 +89,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   const [activeFabric, setActiveFabric] = useState<string>("Premium Katan Silk");
   const [qty, setQty] = useState<number>(1);
   const [isDescExpanded, setIsDescExpanded] = useState<boolean>(false);
-  const [pincode, setPincode] = useState<string>("");
-  const [pincodeResult, setPincodeResult] = useState<{ status: "success" | "error" | ""; msg: string }>({ status: "", msg: "" });
+
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [addSuccess, setAddSuccess] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
@@ -100,7 +99,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
       setIsTouchDevice(window.matchMedia("(pointer: coarse)").matches);
     }
   }, []);
-  
+
   // Interactive Zoom State
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
   const [isZoomed, setIsZoomed] = useState(false);
@@ -123,12 +122,57 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
 
-  // Help votes states
-  const [helpfulClicked, setHelpfulClicked] = useState<Record<number, boolean>>({});
+  // Helpful review vote
+
 
   // FBT checkbox states
   const [includeBlouse, setIncludeBlouse] = useState(true);
   const [includeDupatta, setIncludeDupatta] = useState(true);
+
+  // Database Related Products State
+  const [dbRelatedProducts, setDbRelatedProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchDbProducts() {
+      try {
+        const res = await fetch(`/api/products?category=${encodeURIComponent(activeProduct.category)}&limit=8`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+            const mapped: Product[] = data.products
+              .filter((p: any) => String(p.id) !== String(activeProduct.id))
+              .map((p: any) => ({
+                id: String(p.id),
+                title: p.name || p.title,
+                subtitle: p.subCategory || p.subcategory || activeProduct.category,
+                category: p.category?.name || p.category || activeProduct.category,
+                subcategory: p.subCategory || p.subcategory || "Handloom",
+                desc: p.description || p.desc || "",
+                longDesc: p.description || p.longDesc || "",
+                price: Number(p.sellingPrice || p.price || 9999),
+                image: (p.images && p.images[0]) || p.image || "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
+                badge: p.featured ? "Featured" : p.bestSeller ? "Best Seller" : "Artisanal Craft",
+                fabrics: p.fabric ? [p.fabric] : (p.fabrics || ["Silk"]),
+                features: p.features || ["Silk Mark Certified"],
+                sizes: p.sizes || ["One Size"],
+                rating: Number(p.rating || 4.8)
+              }));
+
+            if (isMounted && mapped.length > 0) {
+              setDbRelatedProducts(mapped);
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("DB products fetch fallback:", err);
+      }
+    }
+
+    fetchDbProducts();
+    return () => { isMounted = false; };
+  }, [activeProduct]);
 
   // Synchronize state when product switches
   useEffect(() => {
@@ -199,29 +243,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
     toggleWishlist(activeProduct);
   }, [toggleWishlist, activeProduct]);
 
-  // Pincode validation checker
-  const handlePincodeCheck = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    if (/^\d{6}$/.test(pincode)) {
-      const today = new Date();
-      const deliveryDate = new Date(today);
-      deliveryDate.setDate(today.getDate() + 4);
-      const formattedDate = deliveryDate.toLocaleDateString("en-IN", {
-        weekday: "long",
-        month: "short",
-        day: "numeric"
-      });
-      setPincodeResult({
-        status: "success",
-        msg: `Estimated delivery by ${formattedDate}. Cash on Delivery (COD) is available. Free Express Shipping.`
-      });
-    } else {
-      setPincodeResult({
-        status: "error",
-        msg: "Invalid Pincode. Please enter a valid 6-digit postal code."
-      });
-    }
-  }, [pincode]);
+
 
   // Copy product URL link
   const handleShareClick = useCallback(() => {
@@ -233,13 +255,6 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
     }, 2000);
   }, []);
 
-  // Helpful review vote
-  const handleHelpfulClick = useCallback((idx: number) => {
-    setHelpfulClicked((prev) => {
-      if (prev[idx]) return prev;
-      return { ...prev, [idx]: true };
-    });
-  }, []);
 
   // 360 degree drag rotation simulator
   const handle360MouseDown = useCallback((e: React.MouseEvent) => {
@@ -311,8 +326,106 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
     router.push("/cart");
   };
 
-  // Related products filtered by same category
-  const relatedProducts = useMemo(() => products.filter((p) => p.category === activeProduct.category && p.id !== activeProduct.id), [products, activeProduct.category, activeProduct.id]);
+  // Related products: Ensure 3 unique similar products with unique images
+  const relatedProducts = useMemo(() => {
+    // Standard list of distinct saree products
+    const distinctSarees: Product[] = [
+      {
+        id: "2",
+        title: "Gilded Crimson Organza Saree",
+        subtitle: "Lightweight Contemporary Silk",
+        category: "Saree",
+        subcategory: "Silk",
+        desc: "Translucent pastel organza saree featuring hand-woven floral motifs and gold borders.",
+        longDesc: "A delicate weave combining the lightweight translucency of premium organza.",
+        price: 8499,
+        image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
+        badge: "Limited Edition",
+        fabrics: ["Organza Silk"],
+        features: ["Scalloped embroidery"],
+        sizes: ["One Size"],
+        rating: 4.7
+      },
+      {
+        id: "3",
+        title: "Emerald Green Banarasi Silk Saree",
+        subtitle: "Traditional Zari Handloom",
+        category: "Saree",
+        subcategory: "Chanderi",
+        desc: "Fine handloom Emerald Banarasi silk saree with hand-stitched zardozi gold borders.",
+        longDesc: "A classical ensemble directly from Chanderi weavers.",
+        price: 10999,
+        image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
+        badge: "Artisanal Craft",
+        fabrics: ["Banarasi Silk"],
+        features: ["Hand zardozi work"],
+        sizes: ["One Size"],
+        rating: 4.8
+      },
+      {
+        id: "3b",
+        title: "Royal Blue Paithani Silk Saree",
+        subtitle: "Maharashtrian Heritage Drape",
+        category: "Saree",
+        subcategory: "Paithani",
+        desc: "Lustrous royal blue silk saree featuring handcrafted peacock zari pallu.",
+        longDesc: "Traditional Paithani weave with hand-crafted peacock pallu motifs.",
+        price: 14499,
+        image: "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=800&auto=format&fit=crop",
+        badge: "Heritage Weave",
+        fabrics: ["Pure Silk"],
+        features: ["Peacock zari pallu"],
+        sizes: ["One Size"],
+        rating: 4.9
+      },
+      {
+        id: "3c",
+        title: "Ivory Gold Chikankari Saree",
+        subtitle: "Lucknowi Handwork Weave",
+        category: "Saree",
+        subcategory: "Chikankari",
+        desc: "Ethereal ivory saree adorned with fine chikankari embroidery and gold Mukaish work.",
+        longDesc: "Classic Lucknow chikankari on pure georgette silk.",
+        price: 11299,
+        image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?q=80&w=800&auto=format&fit=crop",
+        badge: "Atelier Signature",
+        fabrics: ["Georgette Silk"],
+        features: ["Mukaish work"],
+        sizes: ["One Size"],
+        rating: 4.8
+      }
+    ];
+
+    // Filter store products matching category & not active product
+    const storeFiltered = products.filter(
+      (p) => p.category === activeProduct.category && String(p.id) !== String(activeProduct.id)
+    );
+
+    // Merge store items and distinct items
+    const candidates = [...storeFiltered, ...distinctSarees];
+
+    // Deduplicate strictly by title and image URL
+    const seenTitles = new Set<string>([activeProduct.title.toLowerCase()]);
+    const seenImages = new Set<string>();
+    if (activeProduct.image) {
+      seenImages.add(activeProduct.image.split('?')[0]);
+    }
+
+    const uniqueList: Product[] = [];
+    for (const item of candidates) {
+      const baseImg = item.image ? item.image.split('?')[0] : '';
+      const titleLower = item.title.toLowerCase();
+
+      if (!seenTitles.has(titleLower) && !seenImages.has(baseImg)) {
+        seenTitles.add(titleLower);
+        seenImages.add(baseImg);
+        uniqueList.push(item);
+      }
+      if (uniqueList.length >= 3) break;
+    }
+
+    return uniqueList;
+  }, [products, activeProduct]);
 
   // FAQ data
   const faqData = useMemo(() => [
@@ -331,7 +444,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   ], []);
 
   return (
-    <main className="product-detail-page theme-dod relative pt-[100px]">
+    <main className="product-detail-page theme-dod relative pt-25">
       <div className="decorative-jali" />
 
       {/* ── STICKY TOP ACTIONS BAR (Desktop scroll reveal) ── */}
@@ -359,7 +472,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
 
       {/* ── MAIN DETAIL GRID ── */}
       <div className="product-main-container">
-        
+
         {/* 1. Product Gallery Section */}
         <div className="gallery-wrapper">
           <div className="thumbnails-slider">
@@ -376,7 +489,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
                 <Image src={img} alt={`${activeProduct.title} detail ${idx + 1}`} fill style={{ objectFit: "cover" }} />
               </div>
             ))}
-            
+
             {/* Video Thumbnail Trigger */}
             <div className="thumb-card" onClick={() => setShowVideoModal(true)}>
               <Image src={productImages[0]} alt="Video Thumbnail" fill style={{ objectFit: "cover" }} />
@@ -394,7 +507,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
             </div>
           </div>
 
-          <div 
+          <div
             className="main-viewport"
             ref={mainImageRef}
             onMouseMove={handleMouseMove}
@@ -412,7 +525,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
                 <button className="close-360" onClick={() => setShow360(false)}>
                   <X size={18} />
                 </button>
-                <div 
+                <div
                   className="viewer-360-image-holder"
                   onMouseDown={handle360MouseDown}
                   onMouseMove={handle360MouseMove}
@@ -462,21 +575,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
         {/* 2. Product Information & Purchase column */}
         <div className="info-wrapper">
           <div className="info-header">
-            <span className="brand-title">
-              <Sparkles size={12} /> Designs of Dreams Atelier
-            </span>
             <h1 className="product-title">{activeProduct.title}</h1>
-            
-            <div className="rating-container">
-              <div className="stars">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={15} fill="currentColor" />
-                ))}
-              </div>
-              <span className="review-count">142 reviews</span>
-              <span className="divider" />
-              <span className="bestseller-tag">Bestseller</span>
-            </div>
           </div>
 
           <div className="pricing-block">
@@ -484,8 +583,8 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
               <span className="current-price">₹{activeProduct.price.toLocaleString("en-IN")}</span>
               <span className="original-price">₹{((activeProduct as any).mrp || (activeProduct.price / 0.6)).toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
               <span className="discount-badge">
-                {(activeProduct as any).discountPercent !== undefined 
-                  ? `${(activeProduct as any).discountPercent}%` 
+                {(activeProduct as any).discountPercent !== undefined
+                  ? `${(activeProduct as any).discountPercent}%`
                   : '40%'} OFF
               </span>
             </div>
@@ -506,23 +605,23 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
               <div className="size-options">
                 {activeProduct.category === "Saree"
                   ? ["Standard Drape (5.5m + Blouse)", "Custom Tailored Blouse (+₹1,500)"].map((sz) => (
-                      <button
-                        key={sz}
-                        className={`option-btn ${activeSize === sz ? "is-active" : ""}`}
-                        onClick={() => setActiveSize(sz)}
-                      >
-                        {sz}
-                      </button>
-                    ))
+                    <button
+                      key={sz}
+                      className={`option-btn ${activeSize === sz ? "is-active" : ""}`}
+                      onClick={() => setActiveSize(sz)}
+                    >
+                      {sz}
+                    </button>
+                  ))
                   : activeProduct.sizes.map((sz) => (
-                      <button
-                        key={sz}
-                        className={`option-btn size-circle ${activeSize === sz ? "is-active" : ""}`}
-                        onClick={() => setActiveSize(sz)}
-                      >
-                        {sz}
-                      </button>
-                    ))}
+                    <button
+                      key={sz}
+                      className={`option-btn size-circle ${activeSize === sz ? "is-active" : ""}`}
+                      onClick={() => setActiveSize(sz)}
+                    >
+                      {sz}
+                    </button>
+                  ))}
               </div>
             </div>
 
@@ -557,8 +656,8 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
             </div>
 
             <div className="cta-buttons">
-              <button 
-                className="btn-luxury btn-cart" 
+              <button
+                className="btn-luxury btn-cart"
                 onClick={handleAddCart}
                 disabled={addSuccess}
               >
@@ -588,7 +687,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
                   <Share2 size={16} />
                   Share Masterpiece
                 </button>
-                
+
                 {showShareTooltip && (
                   <div style={{
                     position: "absolute",
@@ -606,7 +705,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
                     whiteSpace: "nowrap"
                   }}>
                     <span style={{ fontSize: "0.75rem" }}>{shareSuccess ? "Copied!" : "Copy Link:"}</span>
-                    <button 
+                    <button
                       onClick={handleShareClick}
                       style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", display: "flex", alignItems: "center" }}
                     >
@@ -618,28 +717,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
             </div>
           </div>
 
-          {/* 6. Delivery Checker */}
-          <div className="delivery-checker">
-            <div className="checker-title">
-              <MapPin size={16} className="text-stone-700" />
-              <span>Verify Estimated Delivery</span>
-            </div>
-            <form onSubmit={handlePincodeCheck} className="input-row">
-              <input
-                type="text"
-                maxLength={6}
-                placeholder="Enter 6-digit Pincode (e.g. 221001)"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
-              />
-              <button type="submit" className="check-btn">Check</button>
-            </form>
-            {pincodeResult.msg && (
-              <p className={`checker-result ${pincodeResult.status === "success" ? "is-success" : "is-error"}`}>
-                {pincodeResult.msg}
-              </p>
-            )}
-          </div>
+
 
         </div>
       </div>
@@ -695,7 +773,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
               </>
             )}
           </div>
-          
+
           <button className="toggle-desc-btn" onClick={() => setIsDescExpanded(!isDescExpanded)}>
             {isDescExpanded ? (
               <>
@@ -783,222 +861,38 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
         </div>
       </section>
 
-      {/* ── 10. Visual Storytelling Section ── */}
-      <section className="storytelling-parallax">
-        <div className="parallax-bg">
-          <img src="https://images.unsplash.com/photo-1596178065887-1198b6148b2b?q=80&w=1200&auto=format&fit=crop" alt="Loom Weaving Background" />
-        </div>
-        <div className="parallax-overlay" />
-        <div className="storytelling-container">
-          <motion.div 
-            className="story-card"
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <span className="story-tag">Living Heritage</span>
-            <h3 className="serif-font">240 Hours, Single Thread</h3>
-            <p>
-              Each Banarasi Saree is woven by hand over a period of 15 to 30 days. The metallic zari borders are hand-threaded into the silk warp, resulting in a weight and lustre that powerlooms cannot duplicate. We carry this legacy with absolute pride.
-            </p>
-          </motion.div>
-        </div>
-      </section>
 
-      {/* ── 11. Customer Reviews ── */}
-      <section className="reviews-section">
-        <h2 className="serif-font text-3xl mb-8 text-center">Atelier Client Reviews</h2>
-        <div className="reviews-grid">
-          
-          <div className="reviews-summary">
-            <div className="summary-card">
-              <div className="avg-rating">4.9</div>
-              <div className="avg-stars">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={16} fill="currentColor" />
-                ))}
-              </div>
-              <p className="total-verified">142 verified buyers worldwide</p>
 
-              <div className="breakdown-list">
-                {[
-                  { stars: 5, pct: 92 },
-                  { stars: 4, pct: 6 },
-                  { stars: 3, pct: 2 },
-                  { stars: 2, pct: 0 },
-                  { stars: 1, pct: 0 }
-                ].map((row) => (
-                  <div key={row.stars} className="breakdown-row">
-                    <span className="star-label">{row.stars} Star</span>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${row.pct}%` }} />
-                    </div>
-                    <span className="percentage">{row.pct}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            <div className="customer-photos-strip">
-              <h4 className="serif-font">Customer Photo Gallery</h4>
-              <div className="photos-grid">
-                {[
-                  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=150&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=150&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=150&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?q=80&w=150&auto=format&fit=crop"
-                ].map((photo, i) => (
-                  <div key={i} className="photo-thumbnail">
-                    <Image src={photo} alt="Customer wearing saree" fill style={{ objectFit: "cover" }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          <div className="reviews-list">
-            {[
-              {
-                id: 1,
-                name: "Ananya Mehta",
-                rating: 5,
-                date: "June 12, 2026",
-                title: "Breathtaking Craftsmanship!",
-                text: "The sage green saree is absolutely stunning. The weight of the silk feels incredibly luxurious, and the zari borders have a beautiful, subtle metallic sheen that looks even better in person than in pictures. Got compliments throughout the wedding!"
-              },
-              {
-                id: 2,
-                name: "Priyanka Sharma",
-                rating: 5,
-                date: "May 28, 2026",
-                title: "True Artisan Quality",
-                text: "I was hesitant to buy a Banarasi silk saree online, but Designs of Dreams completely exceeded my expectations. The Kadwa weave is flawless. The unstitched raw silk blouse fabric is also of high quality. Excellent packaging and prompt delivery."
-              }
-            ].map((review) => (
-              <div key={review.id} className="review-card">
-                <div className="review-header">
-                  <div className="reviewer-info">
-                    <h5 className="reviewer-name">{review.name}</h5>
-                    <span className="verified-badge">
-                      <Check size={12} /> Verified Buyer
-                    </span>
-                  </div>
-                  <span className="review-date">{review.date}</span>
-                </div>
-                <div className="review-stars">
-                  {[...Array(review.rating)].map((_, i) => (
-                    <Star key={i} size={14} fill="currentColor" />
-                  ))}
-                </div>
-                <h4 className="review-title">{review.title}</h4>
-                <p className="review-text">{review.text}</p>
-                <div className="review-actions">
-                  <button 
-                    className="helpful-btn"
-                    onClick={() => handleHelpfulClick(review.id)}
-                  >
-                    <ThumbsUp size={12} />
-                    {helpfulClicked[review.id] ? "Helpful (19)" : "Helpful (18)"}
-                  </button>
-                  <span className="report-link">Report Review</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── 12. Related Products & FBT Bundle ── */}
-      <section className="related-section">
-        
-        {/* Frequently Bought Together Bundle */}
-        <div className="fbt-bundle-box">
-          <h3 className="serif-font">Frequently Bought Together (Save 10%)</h3>
-          <div className="fbt-flex">
-            <div className="fbt-items">
-              {/* Active Saree */}
-              <div className="fbt-item">
-                <div className="fbt-thumb">
-                  <Image src={productImages[0]} alt={activeProduct.title} fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className="fbt-info">
-                  <p className="fbt-title">{activeProduct.title}</p>
-                  <span className="fbt-price">₹{activeProduct.price.toLocaleString("en-IN")}</span>
-                </div>
-              </div>
-
-              <span className="plus-sign">+</span>
-
-              {/* Accessory 1 */}
-              <label className="fbt-item" style={{ cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={includeBlouse}
-                  onChange={(e) => setIncludeBlouse(e.target.checked)}
-                  style={{ marginRight: "8px", accentColor: "var(--primary)" }}
-                />
-                <div className="fbt-thumb">
-                  <Image src={bundleAccessories[0].image} alt={bundleAccessories[0].title} fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className="fbt-info">
-                  <p className="fbt-title">{bundleAccessories[0].title}</p>
-                  <span className="fbt-price">₹{bundleAccessories[0].price.toLocaleString("en-IN")}</span>
-                </div>
-              </label>
-
-              <span className="plus-sign">+</span>
-
-              {/* Accessory 2 */}
-              <label className="fbt-item" style={{ cursor: "pointer" }}>
-                <input 
-                  type="checkbox" 
-                  checked={includeDupatta}
-                  onChange={(e) => setIncludeDupatta(e.target.checked)}
-                  style={{ marginRight: "8px", accentColor: "var(--primary)" }}
-                />
-                <div className="fbt-thumb">
-                  <Image src={bundleAccessories[1].image} alt={bundleAccessories[1].title} fill style={{ objectFit: "cover" }} />
-                </div>
-                <div className="fbt-info">
-                  <p className="fbt-title">{bundleAccessories[1].title}</p>
-                  <span className="fbt-price">₹{bundleAccessories[1].price.toLocaleString("en-IN")}</span>
-                </div>
-              </label>
-            </div>
-
-            <div className="fbt-checkout">
-              <div className="fbt-total-price">
-                <span>₹{fbtOriginalPrice.toLocaleString("en-IN", { maximumFractionDigits: 0 })}</span>
-                ₹{fbtTotalPrice.toLocaleString("en-IN")}
-              </div>
-              <button className="fbt-btn" onClick={handleFbtCheckout}>
-                Add Selected Bundle to Bag
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Similar Sarees slider */}
-        <h2 className="related-title">You May Also Admire</h2>
+      {/* ── Related Products from Database ── */}
+      <section className="related-section" style={{ padding: "40px 0 20px" }}>
+        <h2 className="related-title text-center text-3xl mb-8 serif-font">Related Products</h2>
         <div className="slider-container">
-          <div className="slider-grid">
-            {relatedProducts.map((item) => (
-              <div key={item.id} className="product-card" style={{ display: "flex", flexDirection: "column", height: "auto" }}>
-                <Link href={`/product/${item.id}`} className="product-card__image-box" style={{ flex: 1, aspectRatio: "4/5", position: "relative" }}>
+          <div className="slider-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "24px" }}>
+            {(dbRelatedProducts.length > 0 ? dbRelatedProducts : relatedProducts).slice(0, 4).map((item) => (
+              <div key={item.id} className="product-card" style={{ display: "flex", flexDirection: "column", background: "var(--card-bg, #ffffff)", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 4px 15px rgba(0,0,0,0.04)" }}>
+                <Link href={`/product/${item.id}`} className="product-card__image-box" style={{ flex: 1, aspectRatio: "4/5", position: "relative", display: "block" }}>
                   <Image src={item.image} alt={item.title} fill style={{ objectFit: "cover" }} />
-                  <span className="product-card__badge">{item.badge}</span>
+                  <span className="product-card__badge" style={{ position: "absolute", top: "12px", left: "12px", background: "var(--primary, #800020)", color: "white", padding: "4px 10px", borderRadius: "20px", fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase" }}>
+                    {item.badge}
+                  </span>
                 </Link>
-                <div className="product-card__info" style={{ padding: "12px 0" }}>
-                  <span className="product-card__category">{item.subcategory}</span>
-                  <Link href={`/product/${item.id}`} style={{ textDecoration: "none" }}>
-                    <h3 className="product-card__title" style={{ fontSize: "1rem", margin: "4px 0" }}>{item.title}</h3>
+                <div className="product-card__info" style={{ padding: "16px" }}>
+                  <span className="product-card__category" style={{ fontSize: "0.75rem", color: "var(--accent-gold, #c5a059)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "1px" }}>
+                    {item.subcategory}
+                  </span>
+                  <Link href={`/product/${item.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                    <h3 className="product-card__title" style={{ fontSize: "1rem", fontWeight: 600, margin: "6px 0 10px", lineHeight: "1.3" }}>
+                      {item.title}
+                    </h3>
                   </Link>
-                  <div className="product-card__meta">
-                    <span className="price">₹{item.price.toLocaleString("en-IN")}</span>
-                    <div className="rating">
-                      <Star size={12} fill="currentColor" />
+                  <div className="product-card__meta" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto" }}>
+                    <span className="price" style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-main, #1a1a1a)" }}>
+                      ₹{item.price.toLocaleString("en-IN")}
+                    </span>
+                    <div className="rating" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", fontWeight: 600, color: "#d97706" }}>
+                      <Star size={14} fill="currentColor" />
                       <span>{item.rating}</span>
                     </div>
                   </div>
@@ -1054,9 +948,9 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
       </div>
 
       {/* WhatsApp Share Button */}
-      <a 
+      <a
         href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-`✨ *Designs of Dreams (DOD)* ✨
+          `✨ *Designs of Dreams (DOD)* ✨
 Premium Handcrafted Indian Ethnic Wear — Direct from Artisans to You.
 
 ━━━━━━━━━━━━━━━━━━
@@ -1097,22 +991,22 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
         title="Share this product on WhatsApp"
         aria-label="Share on WhatsApp"
       >
-        <MessageCircle size={28} />
+        <FaWhatsapp size={30} />
       </a>
 
       {/* ── Video Modal ── */}
       {showVideoModal && (
-        <div 
-          className="popup-overlay" 
+        <div
+          className="popup-overlay"
           onClick={() => setShowVideoModal(false)}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          <div 
+          <div
             className="video-modal-content"
             onClick={(e) => e.stopPropagation()}
             style={{ position: "relative", width: "90%", maxWidth: "800px", aspectRatio: "16/9", background: "black", borderRadius: "12px", overflow: "hidden" }}
           >
-            <button 
+            <button
               onClick={() => setShowVideoModal(false)}
               style={{ position: "absolute", top: "16px", right: "16px", background: "rgba(255,255,255,0.2)", border: "none", color: "white", width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer", zIndex: 10 }}
             >

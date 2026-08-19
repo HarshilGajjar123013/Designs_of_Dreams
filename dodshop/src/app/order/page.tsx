@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   Package, 
   MapPin, 
   Trash2, 
@@ -17,8 +17,10 @@ import {
   ShieldAlert,
   LogIn,
   Truck,
-  ArrowLeft
+  ArrowLeft,
+  Eye
 } from "lucide-react";
+import InvoiceGenerator from "@/components/common/InvoiceGenerator/InvoiceGenerator";
 import "./Order.scss";
 
 type TabType = "list" | "details" | "track" | "cancel" | "returns";
@@ -32,10 +34,17 @@ export default function OrderPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  const [orderFilter, setOrderFilter] = useState<"all" | "present" | "previous">("all");
+  
   // Form input states
   const [cancelReason, setCancelReason] = useState("");
   const [returnOrderId, setReturnOrderId] = useState("");
   const [returnReason, setReturnReason] = useState("");
+
+  const isPresentOrder = (status: string) => {
+    const s = (status || "").toLowerCase();
+    return s === "pending" || s === "processing" || s === "dispatched" || s === "shipped" || s === "out_for_delivery" || s === "woven" || s === "unpaid" || s === "packed";
+  };
 
   // Zustand Store
   const user = useStore((state) => state.user);
@@ -227,8 +236,38 @@ export default function OrderPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Order History</h3>
-                      <div className="orders-list">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-dashed border-zinc-200 pb-4">
+                        <div>
+                          <h3 style={{ border: "none", padding: 0, margin: 0 }}>My Atelier Orders</h3>
+                          <p style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)", margin: "4px 0 0 0" }}>
+                            Track active shipments and view your complete past purchase history.
+                          </p>
+                        </div>
+
+                        {/* Filter Tabs */}
+                        <div className="flex items-center gap-2 bg-zinc-100 p-1 rounded-full text-xs font-semibold">
+                          <button
+                            onClick={() => setOrderFilter("all")}
+                            className={`px-3 py-1.5 rounded-full transition-all ${orderFilter === "all" ? "bg-[#FF6A00] text-white shadow-sm" : "text-zinc-600 hover:text-zinc-900"}`}
+                          >
+                            All ({orders.length})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter("present")}
+                            className={`px-3 py-1.5 rounded-full transition-all ${orderFilter === "present" ? "bg-[#FF6A00] text-white shadow-sm" : "text-zinc-600 hover:text-zinc-900"}`}
+                          >
+                            Present ({orders.filter(o => isPresentOrder(o.status)).length})
+                          </button>
+                          <button
+                            onClick={() => setOrderFilter("previous")}
+                            className={`px-3 py-1.5 rounded-full transition-all ${orderFilter === "previous" ? "bg-[#FF6A00] text-white shadow-sm" : "text-zinc-600 hover:text-zinc-900"}`}
+                          >
+                            Previous ({orders.filter(o => !isPresentOrder(o.status)).length})
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="orders-list space-y-8">
                         {orders.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-16 text-center">
                             <Package className="text-[#C5A059] opacity-40 mb-4" size={48} />
@@ -239,61 +278,179 @@ export default function OrderPage() {
                             </Link>
                           </div>
                         ) : (
-                          orders.map((ord) => (
-                            <div key={ord.id} className="order-item-block">
-                              <div className="item-header">
-                                <div>
-                                  <span className="order-id">{ord.id}</span>
-                                  <div className="order-date">Placed: {ord.date}</div>
+                          <>
+                            {/* PRESENT / ACTIVE ORDERS SECTION */}
+                            {(orderFilter === "all" || orderFilter === "present") && orders.filter(o => isPresentOrder(o.status)).length > 0 && (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-xs font-bold text-[#FF6A00] uppercase tracking-wider">
+                                  <Truck size={16} />
+                                  <span>Present & Active Orders ({orders.filter(o => isPresentOrder(o.status)).length})</span>
                                 </div>
-                                <span className={`status-badge ${ord.status}`}>
-                                  {ord.status.toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="item-products">
-                                {ord.items.map((item: any, idx: number) => (
-                                  <div key={idx} className="product-row">
-                                    <div className="product-img-wrapper">
-                                      <img src={item.image} alt={item.title} />
+
+                                {orders.filter(o => isPresentOrder(o.status)).map((ord) => (
+                                  <div key={ord.id} className="order-item-block border-l-4 border-l-[#FF6A00]">
+                                    <div className="item-header">
+                                      <div>
+                                        <span className="order-id">{ord.id}</span>
+                                        <div className="order-date">Placed: {ord.date}</div>
+                                      </div>
+                                      <span className={`status-badge ${ord.status}`}>
+                                        ⏳ {ord.status.toUpperCase()}
+                                      </span>
                                     </div>
-                                    <div className="product-details">
-                                      <h5>{item.title}</h5>
-                                      <span>Size: {item.size} | Qty: {item.quantity}</span>
+                                    <div className="item-products">
+                                      {ord.items.map((item: any, idx: number) => (
+                                        <div key={idx} className="product-row">
+                                          <div className="product-img-wrapper">
+                                            <img src={item.image} alt={item.title} />
+                                          </div>
+                                          <div className="product-details">
+                                            <h5>{item.title}</h5>
+                                            <span>Size: {item.size} | Qty: {item.quantity}</span>
+                                          </div>
+                                          <div className="product-price">₹{(item.price * item.quantity).toLocaleString("en-IN")}</div>
+                                        </div>
+                                      ))}
                                     </div>
-                                    <div className="product-price">₹{item.price.toLocaleString("en-IN")}</div>
+                                    <div className="item-footer">
+                                      <span className="total-label">Grand Total</span>
+                                      <span className="total-amount">₹{ord.amount.toLocaleString("en-IN")}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2.5 mt-4 items-center">
+                                      <button 
+                                        className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#FF6A00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider"
+                                        onClick={() => {
+                                          setSelectedOrderId(ord.id);
+                                          handleTabChange("details");
+                                        }}
+                                      >
+                                        <Eye size={13} /> View Details
+                                      </button>
+                                      
+                                      <button 
+                                        className="px-4 py-2 border border-[#FF6A00] text-[#FF6A00] hover:bg-[#FF6A00] hover:text-white rounded-full text-xs font-bold transition-all flex items-center gap-1.5 uppercase tracking-wider"
+                                        onClick={() => {
+                                          setSelectedOrderId(ord.id);
+                                          handleTabChange("track");
+                                        }}
+                                      >
+                                        <Truck size={13} /> Track Order
+                                      </button>
+
+                                      <InvoiceGenerator
+                                        data={{
+                                          orderId: ord.id,
+                                          date: ord.date,
+                                          customerName: user?.name || "Valued Customer",
+                                          customerEmail: user?.email || "",
+                                          address: ord.address,
+                                          paymentMode: ord.paymentMode,
+                                          items: ord.items.map((item: any) => ({
+                                            title: item.title,
+                                            price: item.price,
+                                            quantity: item.quantity,
+                                            size: item.size,
+                                          })),
+                                          subtotal: ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0),
+                                          gst: Math.round(ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) * 0.05),
+                                          shipping: ord.amount > 1999 ? 0 : 150,
+                                          grandTotal: ord.amount,
+                                        }}
+                                        compact
+                                        buttonClassName="px-4 py-2 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider cursor-pointer border-0"
+                                      />
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                              <div className="item-footer">
-                                <span className="total-label">Grand Total</span>
-                                <span className="total-amount">₹{ord.amount.toLocaleString("en-IN")}</span>
+                            )}
+
+                            {/* PREVIOUS / PAST ORDERS SECTION */}
+                            {(orderFilter === "all" || orderFilter === "previous") && orders.filter(o => !isPresentOrder(o.status)).length > 0 && (
+                              <div className="space-y-4 pt-2">
+                                <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                                  <Package size={16} />
+                                  <span>Previous & Completed Orders ({orders.filter(o => !isPresentOrder(o.status)).length})</span>
+                                </div>
+
+                                {orders.filter(o => !isPresentOrder(o.status)).map((ord) => (
+                                  <div key={ord.id} className="order-item-block">
+                                    <div className="item-header">
+                                      <div>
+                                        <span className="order-id">{ord.id}</span>
+                                        <div className="order-date">Placed: {ord.date}</div>
+                                      </div>
+                                      <span className={`status-badge ${ord.status}`}>
+                                        ✓ {ord.status.toUpperCase()}
+                                      </span>
+                                    </div>
+                                    <div className="item-products">
+                                      {ord.items.map((item: any, idx: number) => (
+                                        <div key={idx} className="product-row">
+                                          <div className="product-img-wrapper">
+                                            <img src={item.image} alt={item.title} />
+                                          </div>
+                                          <div className="product-details">
+                                            <h5>{item.title}</h5>
+                                            <span>Size: {item.size} | Qty: {item.quantity}</span>
+                                          </div>
+                                          <div className="product-price">₹{(item.price * item.quantity).toLocaleString("en-IN")}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <div className="item-footer">
+                                      <span className="total-label">Grand Total</span>
+                                      <span className="total-amount">₹{ord.amount.toLocaleString("en-IN")}</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2.5 mt-4 items-center">
+                                      <button 
+                                        className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#FF6A00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider"
+                                        onClick={() => {
+                                          setSelectedOrderId(ord.id);
+                                          handleTabChange("details");
+                                        }}
+                                      >
+                                        <Eye size={13} /> View Details
+                                      </button>
+
+                                      <InvoiceGenerator
+                                        data={{
+                                          orderId: ord.id,
+                                          date: ord.date,
+                                          customerName: user?.name || "Valued Customer",
+                                          customerEmail: user?.email || "",
+                                          address: ord.address,
+                                          paymentMode: ord.paymentMode,
+                                          items: ord.items.map((item: any) => ({
+                                            title: item.title,
+                                            price: item.price,
+                                            quantity: item.quantity,
+                                            size: item.size,
+                                          })),
+                                          subtotal: ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0),
+                                          gst: Math.round(ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) * 0.05),
+                                          shipping: ord.amount > 1999 ? 0 : 150,
+                                          grandTotal: ord.amount,
+                                        }}
+                                        compact
+                                        buttonClassName="px-4 py-2 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider cursor-pointer border-0"
+                                      />
+
+                                      <button 
+                                        className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-full text-xs font-bold transition-all border-0 flex items-center gap-1.5 uppercase tracking-wider"
+                                        onClick={() => {
+                                          setReturnOrderId(ord.id);
+                                          handleTabChange("returns");
+                                        }}
+                                      >
+                                        <RotateCcw size={13} /> Return / Refund
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                              <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                                <button 
-                                  className="btn-profile-submit" 
-                                  style={{ padding: "8px 16px", fontSize: "0.75rem" }}
-                                  onClick={() => {
-                                    setSelectedOrderId(ord.id);
-                                    handleTabChange("details");
-                                  }}
-                                >
-                                  View Details
-                                </button>
-                                {ord.status === "processing" && (
-                                  <button 
-                                    className="btn-profile-submit" 
-                                    style={{ padding: "8px 16px", fontSize: "0.75rem", backgroundColor: "transparent", color: "#FF6A00", border: "1px solid #FF6A00" }}
-                                    onClick={() => {
-                                      setSelectedOrderId(ord.id);
-                                      handleTabChange("track");
-                                    }}
-                                  >
-                                    Track Order
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))
+                            )}
+                          </>
                         )}
                       </div>
                     </motion.div>
@@ -311,10 +468,10 @@ export default function OrderPage() {
                       <div className="flex justify-between items-center mb-6">
                         <h3>Order Specifications</h3>
                         <button 
-                          className="flex items-center gap-1 text-xs text-zinc-500 font-semibold uppercase hover:text-[#FF6A00]"
+                          className="flex items-center gap-1.5 text-xs text-zinc-500 font-semibold uppercase hover:text-[#FF6A00] transition-colors"
                           onClick={() => handleTabChange("list")}
                         >
-                          <ArrowLeft size={12} /> Back to List
+                          <ArrowLeft size={14} /> Back to Orders
                         </button>
                       </div>
 
@@ -345,19 +502,19 @@ export default function OrderPage() {
                             ))}
                           </div>
 
-                          <div style={{ margin: "24px 0", padding: "16px", backgroundColor: "#FAF9F6", borderRadius: "12px", border: "1px solid rgba(0,0,0,0.03)" }}>
-                            <div className="flex gap-2 items-start mb-3">
-                              <MapPin size={16} className="text-[#FF6A00] mt-0.5" />
+                          <div style={{ margin: "24px 0", padding: "18px 20px", backgroundColor: "#FAF9F6", borderRadius: "14px", border: "1px solid rgba(0,0,0,0.04)" }}>
+                            <div className="flex gap-2.5 items-start mb-3.5">
+                              <MapPin size={16} className="text-[#FF6A00] mt-0.5 flex-shrink-0" />
                               <div>
-                                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "rgba(0,0,0,0.5)", textTransform: "uppercase" }}>Delivery Address</span>
-                                <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "rgba(0,0,0,0.7)", fontWeight: 600 }}>{selectedOrder.address}</p>
+                                <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Delivery Address</span>
+                                <p className="text-sm font-medium text-zinc-800 m-0 leading-relaxed">{selectedOrder.address}</p>
                               </div>
                             </div>
-                            <div className="flex gap-2 items-start">
-                              <Package size={16} className="text-[#FF6A00] mt-0.5" />
+                            <div className="flex gap-2.5 items-start">
+                              <Package size={16} className="text-[#FF6A00] mt-0.5 flex-shrink-0" />
                               <div>
-                                <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "rgba(0,0,0,0.5)", textTransform: "uppercase" }}>Payment Mode</span>
-                                <p style={{ margin: "4px 0 0 0", fontSize: "0.85rem", color: "rgba(0,0,0,0.7)", fontWeight: 600 }}>{selectedOrder.paymentMode}</p>
+                                <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider block mb-1">Payment Mode</span>
+                                <p className="text-sm font-medium text-zinc-800 m-0">{selectedOrder.paymentMode}</p>
                               </div>
                             </div>
                           </div>
@@ -365,6 +522,31 @@ export default function OrderPage() {
                           <div className="item-footer" style={{ borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: "16px" }}>
                             <span className="total-label">Grand Total (Incl. GST)</span>
                             <span className="total-amount" style={{ fontSize: "1.3rem" }}>₹{selectedOrder.amount.toLocaleString("en-IN")}</span>
+                          </div>
+
+                          {/* Download Invoice Button */}
+                          <div style={{ marginTop: "24px" }}>
+                            <InvoiceGenerator
+                              data={{
+                                orderId: selectedOrder.id,
+                                date: selectedOrder.date,
+                                customerName: user?.name || "Valued Customer",
+                                customerEmail: user?.email || "",
+                                address: selectedOrder.address,
+                                paymentMode: selectedOrder.paymentMode,
+                                items: selectedOrder.items.map((item: any) => ({
+                                  title: item.title,
+                                  price: item.price,
+                                  quantity: item.quantity,
+                                  size: item.size,
+                                })),
+                                subtotal: selectedOrder.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0),
+                                gst: Math.round(selectedOrder.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) * 0.05),
+                                shipping: selectedOrder.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) > 1999 ? 0 : 150,
+                                grandTotal: selectedOrder.amount,
+                              }}
+                              buttonClassName="px-6 py-3 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold tracking-wider uppercase transition-all shadow-md hover:shadow-lg border-0 inline-flex items-center gap-2 cursor-pointer"
+                            />
                           </div>
                         </div>
                       ) : (
@@ -422,29 +604,37 @@ export default function OrderPage() {
                       transition={{ duration: 0.25 }}
                     >
                       <h3>Request Cancellation</h3>
-                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "20px" }}>Only pending orders that have not been dispatched can be cancelled.</p>
+                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Only pending orders that have not been dispatched can be cancelled.</p>
                       
                       {orders.length > 0 ? (
-                        <form onSubmit={handleCancelSubmit} className="order-cancel-form">
+                        <form onSubmit={handleCancelSubmit} className="order-cancel-form space-y-5">
                           <div className="profile-form-group">
-                            <label>Select Order ID</label>
-                            <input 
-                              type="text" 
-                              disabled 
-                              value={selectedOrderId} 
-                            />
+                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Select Order ID</label>
+                            <select 
+                              value={selectedOrderId}
+                              onChange={(e) => setSelectedOrderId(e.target.value)}
+                              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 bg-white font-semibold text-sm outline-none transition-all"
+                            >
+                              {orders.map(o => (
+                                <option key={o.id} value={o.id}>{o.id} — Placed {o.date} (₹{o.amount.toLocaleString('en-IN')})</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="profile-form-group">
-                            <label>Reason for Cancellation</label>
+                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Reason for Cancellation</label>
                             <textarea 
                               required 
                               placeholder="Please tell us why you wish to cancel this order..."
                               value={cancelReason}
                               onChange={(e) => setCancelReason(e.target.value)}
+                              className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
                             />
                           </div>
-                          <button type="submit" className="btn-profile-submit" style={{ backgroundColor: "#EF4444" }}>
-                            Submit Request
+                          <button 
+                            type="submit" 
+                            className="w-full py-3.5 px-8 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
+                          >
+                            Submit Cancellation Request
                           </button>
                         </form>
                       ) : (
@@ -463,30 +653,36 @@ export default function OrderPage() {
                       transition={{ duration: 0.25 }}
                     >
                       <h3>Return / Refund Request</h3>
-                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "20px" }}>Returns are accepted within 7 days of delivery. Motif tags must remain attached.</p>
+                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Returns are accepted within 7 days of delivery. Motif tags must remain attached.</p>
                       
                       {orders.length > 0 ? (
-                        <form onSubmit={handleReturnSubmit} className="order-cancel-form">
+                        <form onSubmit={handleReturnSubmit} className="order-cancel-form space-y-5">
                           <div className="profile-form-group">
-                            <label>Select Eligible Order</label>
-                            <input 
-                              type="text" 
-                              required
-                              placeholder="e.g. DOD-235198"
-                              value={returnOrderId} 
+                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Select Eligible Order</label>
+                            <select 
+                              value={returnOrderId}
                               onChange={(e) => setReturnOrderId(e.target.value)}
-                            />
+                              className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 bg-white font-semibold text-sm outline-none transition-all"
+                            >
+                              {orders.map(o => (
+                                <option key={o.id} value={o.id}>{o.id} — Placed {o.date} (₹{o.amount.toLocaleString('en-IN')})</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="profile-form-group">
-                            <label>Briefly Describe Reason for Return</label>
+                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Briefly Describe Reason for Return</label>
                             <textarea 
                               required 
                               placeholder="Please explain the issue (sizing, pattern discrepancy, defect)..."
                               value={returnReason}
                               onChange={(e) => setReturnReason(e.target.value)}
+                              className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
                             />
                           </div>
-                          <button type="submit" className="btn-profile-submit">
+                          <button 
+                            type="submit" 
+                            className="w-full py-3.5 px-8 bg-[#FF6A00] hover:bg-[#e05d00] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
+                          >
                             Submit Return Claim
                           </button>
                         </form>

@@ -7,9 +7,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { 
       fullName, 
+      email,
       phone, 
       address, 
       city, 
+      state = '',
       pincode, 
       paymentMethod, 
       cart, 
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
       line1: address,
       line2: '',
       city,
-      state: '', 
+      state, 
       postalCode: pincode,
       country: 'India',
       phone,

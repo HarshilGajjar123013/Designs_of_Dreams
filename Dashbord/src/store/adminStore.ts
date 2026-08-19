@@ -80,7 +80,7 @@ export interface Order {
   grandTotal: number;
   status: 'PENDING' | 'PROCESSING' | 'PACKED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'RETURNED' | 'REFUNDED';
   paymentStatus: 'PAID' | 'UNPAID' | 'REFUND_INITIATED' | 'REFUNDED';
-  paymentMethod: 'CREDIT_CARD' | 'UPI' | 'NET_BANKING' | 'BANK_TRANSFER';
+  paymentMethod: 'COD' | 'CREDIT_CARD' | 'UPI' | 'NET_BANKING' | 'BANK_TRANSFER';
   shippingAddress: {
     line1: string;
     line2?: string;

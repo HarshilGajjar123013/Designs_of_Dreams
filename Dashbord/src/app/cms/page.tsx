@@ -145,7 +145,7 @@ export default function CMSEditor() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#C5A059]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF6A00]"></div>
         </div>
       </AdminLayout>
     );
@@ -193,7 +193,7 @@ export default function CMSEditor() {
           </div>
           <button
             onClick={handleSaveCMS}
-            className="px-5 py-3 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider"
+            className="px-5 py-3 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider"
           >
             <Save size={14} /> Publish Changes
           </button>
@@ -206,7 +206,7 @@ export default function CMSEditor() {
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">
               <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                 <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                  <Megaphone size={18} className="text-[#C5A059]" /> Announcement Bar
+                  <Megaphone size={18} className="text-[#FF6A00]" /> Announcement Bar
                 </h3>
                 <label className="relative inline-flex items-center cursor-pointer select-none">
                   <input
@@ -215,7 +215,7 @@ export default function CMSEditor() {
                     onChange={(e) => setAnnouncementActive(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#C5A059]"></div>
+                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#FF6A00]"></div>
                   <span className="ml-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Active</span>
                 </label>
               </div>
@@ -228,7 +228,7 @@ export default function CMSEditor() {
                     value={announcementText}
                     onChange={(e) => setAnnouncementText(e.target.value)}
                     placeholder="e.g. Free shipping on all domestic orders."
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
                 <div>
@@ -238,7 +238,7 @@ export default function CMSEditor() {
                     value={announcementLink}
                     onChange={(e) => setAnnouncementLink(e.target.value)}
                     placeholder="/shop/new-arrivals"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function CMSEditor() {
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">
               <div className="border-b border-gray-100 pb-4">
                 <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                  <Image size={18} className="text-[#C5A059]" /> Hero Banner Section
+                  <Image size={18} className="text-[#FF6A00]" /> Hero Banner Section
                 </h3>
               </div>
 
@@ -259,7 +259,7 @@ export default function CMSEditor() {
                     type="text"
                     value={heroTitle}
                     onChange={(e) => setHeroTitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
                 <div>
@@ -268,7 +268,7 @@ export default function CMSEditor() {
                     type="text"
                     value={heroSubtitle}
                     onChange={(e) => setHeroSubtitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
                 <div>
@@ -277,7 +277,7 @@ export default function CMSEditor() {
                     type="text"
                     value={heroImage}
                     onChange={(e) => setHeroImage(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
               </div>
@@ -287,12 +287,12 @@ export default function CMSEditor() {
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-6">
               <div className="border-b border-gray-100 pb-4 flex justify-between items-center">
                 <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                  <Image size={18} className="text-[#C5A059]" /> Artisan Exhibition Gallery
+                  <Image size={18} className="text-[#FF6A00]" /> Artisan Exhibition Gallery
                 </h3>
                 <button
                   type="button"
                   onClick={handleAddNewItemClick}
-                  className="px-4 py-2 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer font-poppins"
+                  className="px-4 py-2 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer font-poppins"
                 >
                   <Plus size={12} /> Add Item
                 </button>
@@ -300,7 +300,7 @@ export default function CMSEditor() {
 
               {/* Add/Edit Gallery Item Form */}
               {isEditingItem && (
-                <div className="border border-[rgba(197,160,89,0.25)] rounded-2xl p-5 bg-[#FAF9F6] space-y-4 font-poppins">
+                <div className="border border-[rgba(255, 106, 0,0.25)] rounded-2xl p-5 bg-[#FAF9F6] space-y-4 font-poppins">
                   <h4 className="font-marcellus text-sm font-semibold text-gray-800 uppercase tracking-wide">
                     {editingIndex !== null ? "Edit Gallery Exhibition Card" : "New Gallery Exhibition Card"}
                   </h4>
@@ -313,7 +313,7 @@ export default function CMSEditor() {
                         value={galleryTitle}
                         onChange={(e) => setGalleryTitle(e.target.value)}
                         placeholder="e.g. Master Silk Weaver"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                       />
                     </div>
                     <div>
@@ -323,7 +323,7 @@ export default function CMSEditor() {
                         value={galleryCategory}
                         onChange={(e) => setGalleryCategory(e.target.value)}
                         placeholder="e.g. Artisanal Handloom"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                       />
                     </div>
                   </div>
@@ -334,7 +334,7 @@ export default function CMSEditor() {
                       <select
                         value={galleryFilterTag}
                         onChange={(e) => setGalleryFilterTag(e.target.value as any)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#C5A059] text-gray-700 bg-white font-poppins"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] text-gray-700 bg-white font-poppins"
                       >
                         <option value="weaving">Weaving Studio</option>
                         <option value="embroidery">Intricate Embroidery</option>
@@ -351,12 +351,12 @@ export default function CMSEditor() {
                           value={galleryImage}
                           onChange={(e) => setGalleryImage(e.target.value)}
                           placeholder="Paste URL or upload image file"
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                         />
                         <button
                           type="button"
                           onClick={() => galleryFileInputRef.current?.click()}
-                          className="px-3 bg-gray-150 hover:bg-[#C5A059] hover:text-white rounded-lg text-xs transition-all border border-gray-200 cursor-pointer flex items-center justify-center text-gray-700 hover:text-white"
+                          className="px-3 bg-gray-150 hover:bg-[#FF6A00] hover:text-white rounded-lg text-xs transition-all border border-gray-200 cursor-pointer flex items-center justify-center text-gray-700 hover:text-white"
                           title="Upload Image"
                         >
                           <Upload size={14} />
@@ -380,7 +380,7 @@ export default function CMSEditor() {
                       value={galleryDesc}
                       onChange={(e) => setGalleryDesc(e.target.value)}
                       placeholder="Narrate the craftsmanship story behind this stage..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#C5A059] bg-white"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
                     />
                   </div>
 
@@ -395,7 +395,7 @@ export default function CMSEditor() {
                     <button
                       type="button"
                       onClick={handleSaveGalleryItem}
-                      className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-xs font-semibold hover:bg-[#C5A059] cursor-pointer"
+                      className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-xs font-semibold hover:bg-[#FF6A00] cursor-pointer"
                     >
                       Save Card
                     </button>
@@ -406,7 +406,7 @@ export default function CMSEditor() {
               {/* Gallery Items Grid List */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-poppins">
                 {gallery.map((item, idx) => (
-                  <div key={item.id || idx} className="relative group border border-gray-150 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between hover:border-[#C5A059] transition-all">
+                  <div key={item.id || idx} className="relative group border border-gray-150 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between hover:border-[#FF6A00] transition-all">
                     <div className="relative h-28 bg-gray-50">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
@@ -414,7 +414,7 @@ export default function CMSEditor() {
                         <button
                           type="button"
                           onClick={() => handleEditGalleryItem(idx)}
-                          className="p-1.5 bg-white text-gray-700 rounded-full shadow hover:bg-[#C5A059] hover:text-white cursor-pointer"
+                          className="p-1.5 bg-white text-gray-700 rounded-full shadow hover:bg-[#FF6A00] hover:text-white cursor-pointer"
                           title="Edit Card"
                         >
                           <Edit2 size={10} />
@@ -433,7 +433,7 @@ export default function CMSEditor() {
                       </span>
                     </div>
                     <div className="p-3 space-y-1">
-                      <span className="text-[8px] uppercase tracking-widest text-[#C5A059] font-bold block">{item.category}</span>
+                      <span className="text-[8px] uppercase tracking-widest text-[#FF6A00] font-bold block">{item.category}</span>
                       <h5 className="font-semibold text-gray-800 text-xs truncate" title={item.title}>{item.title}</h5>
                       <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed">{item.desc}</p>
                     </div>
@@ -446,7 +446,7 @@ export default function CMSEditor() {
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">
               <div className="border-b border-gray-100 pb-4">
                 <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                  <Globe size={18} className="text-[#C5A059]" /> Search Engine Optimization (SEO)
+                  <Globe size={18} className="text-[#FF6A00]" /> Search Engine Optimization (SEO)
                 </h3>
               </div>
 
@@ -457,7 +457,7 @@ export default function CMSEditor() {
                     type="text"
                     value={seoTitle}
                     onChange={(e) => setSeoTitle(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
                 <div>
@@ -466,7 +466,7 @@ export default function CMSEditor() {
                     rows={3}
                     value={seoDescription}
                     onChange={(e) => setSeoDescription(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-[12px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
               </div>
@@ -479,7 +479,7 @@ export default function CMSEditor() {
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">
               <div className="border-b border-gray-100 pb-4">
                 <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                  <Sparkles size={16} className="text-[#C5A059] animate-pulse" /> Shop Front Live Preview
+                  <Sparkles size={16} className="text-[#FF6A00] animate-pulse" /> Shop Front Live Preview
                 </h3>
                 <p className="text-[9px] text-[#6E6E6E] uppercase mt-0.5 font-poppins">Mimicking customer landing view</p>
               </div>
@@ -488,7 +488,7 @@ export default function CMSEditor() {
               <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-md font-poppins bg-[#FAF9F6] relative">
                 {/* Faux announcement */}
                 {announcementActive && (
-                  <div className="bg-[#C5A059] text-white text-[9px] py-1 text-center font-semibold tracking-wider px-2">
+                  <div className="bg-[#FF6A00] text-white text-[9px] py-1 text-center font-semibold tracking-wider px-2">
                     {announcementText || 'Atelier Booking Alert active'}
                   </div>
                 )}
@@ -514,7 +514,7 @@ export default function CMSEditor() {
                   <div className="relative z-10 text-white space-y-1 max-w-xs">
                     <h4 className="font-marcellus text-sm font-light uppercase tracking-widest truncate">{heroTitle || 'Collection Title'}</h4>
                     <p className="text-[8px] text-gray-200 font-light leading-relaxed line-clamp-2">{heroSubtitle || 'Subtitle description'}</p>
-                    <button type="button" className="bg-white text-gray-900 px-3 py-1 rounded text-[7px] font-bold uppercase tracking-wider hover:bg-[#C5A059] hover:text-white transition-all mt-2">
+                    <button type="button" className="bg-white text-gray-900 px-3 py-1 rounded text-[7px] font-bold uppercase tracking-wider hover:bg-[#FF6A00] hover:text-white transition-all mt-2">
                       Explore Atelier
                     </button>
                   </div>

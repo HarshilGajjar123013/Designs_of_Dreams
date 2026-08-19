@@ -41,7 +41,7 @@ export default function SignUpDataPanel() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#C5A059]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF6A00]"></div>
         </div>
       </AdminLayout>
     );
@@ -62,7 +62,7 @@ export default function SignUpDataPanel() {
             onClick={() => setActiveTab('customers')}
             className={`pb-4 px-2 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
               activeTab === 'customers'
-                ? 'border-[#C5A059] text-[#C5A059]'
+                ? 'border-[#FF6A00] text-[#FF6A00]'
                 : 'border-transparent text-[#6E6E6E] hover:text-[#1A1A1A]'
             }`}
           >
@@ -72,7 +72,7 @@ export default function SignUpDataPanel() {
             onClick={() => setActiveTab('admins')}
             className={`pb-4 px-2 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
               activeTab === 'admins'
-                ? 'border-[#C5A059] text-[#C5A059]'
+                ? 'border-[#FF6A00] text-[#FF6A00]'
                 : 'border-transparent text-[#6E6E6E] hover:text-[#1A1A1A]'
             }`}
           >
@@ -174,7 +174,7 @@ export default function SignUpDataPanel() {
                     <tr key={adm.id} className="hover:bg-gray-50/50 transition-all">
                       <td>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-[#C5A059] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-inner border border-gray-100">
+                          <div className="w-10 h-10 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-inner border border-gray-100">
                             {adm.avatar && (adm.avatar.startsWith('http') || adm.avatar.startsWith('data:image')) ? (
                               <img src={adm.avatar} alt={adm.name} className="w-full h-full object-cover" />
                             ) : (
@@ -195,7 +195,7 @@ export default function SignUpDataPanel() {
                       </td>
                       <td>
                         <span className={`text-[8.5px] uppercase tracking-wider px-2 py-0.5 rounded font-bold ${
-                          adm.role === 'SUPER_ADMIN' ? 'bg-[rgba(197,160,89,0.1)] text-[#C5A059]' : 'bg-gray-100 text-gray-600'
+                          adm.role === 'SUPER_ADMIN' ? 'bg-[rgba(255, 106, 0,0.1)] text-[#FF6A00]' : 'bg-gray-100 text-gray-600'
                         }`}>
                           {adm.role.replace('_', ' ')}
                         </span>

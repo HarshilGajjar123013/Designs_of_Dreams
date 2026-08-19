@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,12 +10,11 @@ import {
   ArrowLeft,
   ShieldCheck,
   CheckCircle,
-  CreditCard,
-  Landmark,
   Truck,
   ArrowRight,
   ShoppingBag
 } from "lucide-react";
+import InvoiceGenerator, { InvoiceData } from "@/components/common/InvoiceGenerator/InvoiceGenerator";
 import "./Checkout.scss";
 
 export default function CheckoutPage() {
@@ -24,14 +23,17 @@ export default function CheckoutPage() {
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderId, setOrderId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
 
   // Form fields
   const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [pincode, setPincode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const paymentMethod = "COD";
 
   // Saved Addresses
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -44,8 +46,9 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setMounted(true);
-    if (user?.isLoggedIn && user?.name) {
-      setFullName(user.name);
+    if (user?.isLoggedIn) {
+      if (user?.name) setFullName(user.name);
+      if (user?.email) setEmail(user.email);
     }
   }, [user]);
 
@@ -112,19 +115,48 @@ export default function CheckoutPage() {
         },
         body: JSON.stringify({
           fullName,
+          email,
           phone,
           address,
           city,
+          state,
           pincode,
           paymentMethod,
           cart,
-          customerEmail: user?.email || 'guest@luxury.in',
+          customerEmail: email || user?.email || 'guest@luxury.in',
           customerId: user?.id || 'guest-1',
         }),
       });
 
       const data = await response.json();
       if (data.success) {
+        // Build invoice data from current form state + cart (before clearing)
+        const checkoutSubtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+        const checkoutTax = Math.round(checkoutSubtotal * 0.05);
+        const checkoutShipping = checkoutSubtotal > 1999 || checkoutSubtotal === 0 ? 0 : 150;
+        const checkoutGrandTotal = checkoutSubtotal + checkoutTax + checkoutShipping;
+
+        setInvoiceData({
+          orderId: data.orderId,
+          date: new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }),
+          customerName: fullName,
+          customerEmail: email,
+          customerPhone: phone,
+          address: [address, city, state, pincode].filter(Boolean).join(", "),
+          paymentMode: paymentMethod === "COD" ? "Cash On Delivery (COD)" : paymentMethod,
+          items: cart.map((item) => ({
+            title: item.product.title,
+            price: item.product.price,
+            quantity: item.quantity,
+            size: item.size,
+            sku: (item.product as any).sku || `DOD-SKU-${item.product.id}`,
+          })),
+          subtotal: checkoutSubtotal,
+          gst: checkoutTax,
+          shipping: checkoutShipping,
+          grandTotal: checkoutGrandTotal,
+        });
+
         setOrderId(data.orderId);
         setOrderComplete(true);
         clearCart();
@@ -151,34 +183,162 @@ export default function CheckoutPage() {
         <AnimatePresence mode="wait">
 
           {orderComplete ? (
-            // SUCCESS CHECKOUT PANEL
+            // SUCCESS CHECKOUT PANEL WITH FULL INVOICE
             <motion.div
               key="success-order"
-              className="checkout-success text-center"
+              className="checkout-success-full"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="success-icon-wrapper">
-                <CheckCircle size={48} className="text-emerald-500" />
-              </div>
-              <h2 className="success-title">Order Placed Successfully</h2>
-              <p className="success-subtitle">Order ID: <strong>{orderId}</strong></p>
-
-              <div className="success-card">
-                <h4>Thank You for Booking Heritage</h4>
-                <p>A confirmation SMS and email have been sent to your registered address. Our atelier courier partner will contact you shortly to coordinate the delivery of your handloom masterpiece.</p>
-                <div className="delivery-badge">
-                  <Truck size={16} />
-                  <span>Estimated Delivery: 4-6 business days</span>
+              {/* Success Header */}
+              <div className="invoice-success-header">
+                <div className="success-icon-wrapper">
+                  <CheckCircle size={44} className="text-emerald-500" />
                 </div>
+                <h2 className="success-title">Order Placed Successfully</h2>
+                <p className="success-subtitle">Order ID: <strong>{orderId}</strong></p>
               </div>
 
-              <Link href="/collection" className="back-catalog-btn">
-                <ArrowLeft size={16} />
-                Continue Exploring
-              </Link>
+              {/* Invoice Card */}
+              {invoiceData && (
+                <div className="invoice-inline-card">
+                  {/* Invoice Header Bar */}
+                  <div className="invoice-header-bar">
+                    <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                      <img src="/logo.png" alt="Designs of Dreams" style={{ height: "42px", width: "auto", objectFit: "contain" }} />
+                      <div>
+                        <h3 className="invoice-brand">DESIGNS OF DREAMS</h3>
+                        <p className="invoice-brand-sub">Heritage Atelier — Tax Invoice</p>
+                      </div>
+                    </div>
+                    <div className="invoice-meta-right">
+                      <span className="invoice-tag">TAX INVOICE</span>
+                    </div>
+                  </div>
+
+                  {/* Invoice Meta */}
+                  <div className="invoice-meta-row">
+                    <div className="invoice-meta-item">
+                      <span className="meta-label">Invoice No.</span>
+                      <span className="meta-value meta-value--accent">INV-{invoiceData.orderId}</span>
+                    </div>
+                    <div className="invoice-meta-item">
+                      <span className="meta-label">Order ID</span>
+                      <span className="meta-value">{invoiceData.orderId}</span>
+                    </div>
+                    <div className="invoice-meta-item">
+                      <span className="meta-label">Date</span>
+                      <span className="meta-value">{invoiceData.date}</span>
+                    </div>
+                  </div>
+
+                  {/* Billing Info */}
+                  <div className="invoice-billing-row">
+                    <div className="invoice-billing-col">
+                      <span className="billing-label">Billed To</span>
+                      <p className="billing-name">{invoiceData.customerName}</p>
+                      {invoiceData.customerEmail && <p className="billing-detail">{invoiceData.customerEmail}</p>}
+                      {invoiceData.customerPhone && <p className="billing-detail">+91 {invoiceData.customerPhone}</p>}
+                      <p className="billing-detail">{invoiceData.address}</p>
+                    </div>
+                    <div className="invoice-billing-col">
+                      <span className="billing-label">Sold By</span>
+                      <p className="billing-name">Designs Of Dreams Pvt. Ltd.</p>
+                      <p className="billing-detail">Atelier Workshop, Heritage Weave District</p>
+                      <p className="billing-detail">Varanasi, Uttar Pradesh 221001</p>
+                      <p className="billing-detail" style={{ color: "rgba(0,0,0,0.4)", marginTop: "4px" }}>GSTIN: 09AABCD1234E1Z5</p>
+                    </div>
+                  </div>
+
+                  {/* Items Table */}
+                  <div className="invoice-items-table">
+                    <div className="invoice-table-header">
+                      <span className="col-item">Item Description</span>
+                      <span className="col-qty">Qty</span>
+                      <span className="col-price">Unit Price</span>
+                      <span className="col-total">Total</span>
+                    </div>
+                    {invoiceData.items.map((item, i) => (
+                      <div key={i} className="invoice-table-row">
+                        <div className="col-item">
+                          <span className="item-title">{item.title}</span>
+                          <span className="item-sub">Size: {item.size}{item.sku ? ` | SKU: ${item.sku}` : ''}</span>
+                        </div>
+                        <span className="col-qty">{item.quantity}</span>
+                        <span className="col-price">₹{item.price.toLocaleString("en-IN")}</span>
+                        <span className="col-total">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Totals */}
+                  <div className="invoice-totals">
+                    <div className="invoice-totals-inner">
+                      <div className="total-row">
+                        <span>Subtotal</span>
+                        <span>₹{invoiceData.subtotal.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="total-row">
+                        <span>GST (5%)</span>
+                        <span>₹{invoiceData.gst.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="total-row">
+                        <span>Shipping</span>
+                        <span>{invoiceData.shipping === 0 ? "FREE" : `₹${invoiceData.shipping}`}</span>
+                      </div>
+                      <div className="total-divider" />
+                      <div className="total-row total-row--grand">
+                        <span>Grand Total</span>
+                        <span>₹{invoiceData.grandTotal.toLocaleString("en-IN")}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Info */}
+                  <div className="invoice-payment-bar">
+                    <div>
+                      <span className="meta-label">Payment Method</span>
+                      <p className="billing-name" style={{ marginTop: "4px" }}>{invoiceData.paymentMode}</p>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <span className="meta-label">Payment Status</span>
+                      <div style={{ marginTop: "6px" }}>
+                        <span className="payment-status-badge">
+                          {invoiceData.paymentMode?.includes('COD') ? 'COLLECT ON DELIVERY' : 'PAID'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Invoice Footer */}
+                  <div className="invoice-footer-note">
+                    <p>This is a computer-generated invoice and does not require a physical signature.</p>
+                    <p>For queries contact us at <strong>support@designsofdreams.in</strong></p>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="invoice-actions">
+                {invoiceData && (
+                  <InvoiceGenerator
+                    data={invoiceData}
+                    buttonClassName="back-catalog-btn download-invoice-btn"
+                    buttonStyle={{
+                      backgroundColor: "#FF6A00",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  />
+                )}
+
+                <Link href="/collection" className="back-catalog-btn">
+                  <ArrowLeft size={16} />
+                  Continue Exploring
+                </Link>
+              </div>
             </motion.div>
           ) : cart.length === 0 ? (
             <motion.div
@@ -265,6 +425,17 @@ export default function CheckoutPage() {
                       </div>
 
                       <div className="form-group full-width">
+                        <label>Email Address</label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="e.g. priyanshu@gmail.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="form-group full-width">
                         <label>Phone Number</label>
                         <input
                           type="tel"
@@ -299,6 +470,17 @@ export default function CheckoutPage() {
                       </div>
 
                       <div className="form-group">
+                        <label>State</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Uttar Pradesh"
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="form-group full-width">
                         <label>Pincode</label>
                         <input
                           type="text"
@@ -312,52 +494,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  <div className="form-section-card">
-                    <h4>2. Select Payment Mode</h4>
-                    <div className="payment-options">
-                      <label className={`payment-option ${paymentMethod === "COD" ? "is-selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="COD"
-                          checked={paymentMethod === "COD"}
-                          onChange={() => setPaymentMethod("COD")}
-                        />
-                        <div className="option-inner">
-                          <Truck size={20} />
-                          <span>Cash On Delivery</span>
-                        </div>
-                      </label>
 
-                      <label className={`payment-option ${paymentMethod === "UPI" ? "is-selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="UPI"
-                          checked={paymentMethod === "UPI"}
-                          onChange={() => setPaymentMethod("UPI")}
-                        />
-                        <div className="option-inner">
-                          <Landmark size={20} />
-                          <span>UPI Payment</span>
-                        </div>
-                      </label>
-
-                      <label className={`payment-option ${paymentMethod === "CARD" ? "is-selected" : ""}`}>
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="CARD"
-                          checked={paymentMethod === "CARD"}
-                          onChange={() => setPaymentMethod("CARD")}
-                        />
-                        <div className="option-inner">
-                          <CreditCard size={20} />
-                          <span>Credit / Debit Card</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
 
                   <div className="mobile-sticky-btn-wrapper">
                     <button

@@ -175,6 +175,7 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
       { label: 'Returns & Refunds', href: '/orders/returns', icon: 'RotateCcw', permission: 'returns:view' },
       { label: 'Customers', href: '/customers', icon: 'Users', permission: 'customers:view' },
       { label: 'Contact Forms', href: '/support', icon: 'MessageSquare', permission: 'contact:view' },
+      { label: 'Check Out', href: '/support/checkout', icon: 'ShoppingBag', permission: 'orders:view' },
     ],
   },
   {

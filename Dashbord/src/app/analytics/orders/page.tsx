@@ -40,8 +40,8 @@ export default function OrderAnalytics() {
       <AdminLayout>
         <div className="min-h-[400px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-t-2 border-b-2 border-[#C5A059] rounded-full animate-spin" />
-            <p className="text-xs uppercase tracking-widest text-[#C5A059]">Loading Logistics Insights...</p>
+            <div className="w-10 h-10 border-t-2 border-b-2 border-[#FF6A00] rounded-full animate-spin" />
+            <p className="text-xs uppercase tracking-widest text-[#FF6A00]">Loading Logistics Insights...</p>
           </div>
         </div>
       </AdminLayout>
@@ -87,7 +87,7 @@ export default function OrderAnalytics() {
     value: value
   })).filter((p: any) => p.value > 0);
 
-  const paymentColors = ['#C5A059', '#FF6A00', '#0FA958', '#D99A00'];
+  const paymentColors = ['#FF6A00', '#FF6A00', '#0FA958', '#D99A00'];
 
   // Average Lead Time calculation (createdAt to delivered time)
   const getAvgLeadTime = () => {
@@ -145,7 +145,7 @@ export default function OrderAnalytics() {
       }
     });
     
-    const colorsList = ['#C5A059', '#FF6A00', '#0FA958', '#D99A00'];
+    const colorsList = ['#FF6A00', '#FF6A00', '#0FA958', '#D99A00'];
     return Object.entries(performance).map(([name, stats]: [string, any], idx: number) => {
       const avgSpeed = stats.successCount > 0 ? (stats.speedSum / stats.successCount).toFixed(1) : '2.0';
       const successRate = stats.totalCount > 0 ? Number((stats.successCount / stats.totalCount * 100).toFixed(1)) : 100.0;
@@ -171,7 +171,7 @@ export default function OrderAnalytics() {
           </div>
           <button
             onClick={loadOrders}
-            className="p-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#C5A059] transition-all"
+            className="p-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#FF6A00] transition-all"
           >
             <RefreshCw size={14} />
           </button>
@@ -180,7 +180,7 @@ export default function OrderAnalytics() {
         {/* Top summary row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="glass-card rounded-2xl p-6 shadow-luxury flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[rgba(197,160,89,0.08)] flex items-center justify-center text-[#C5A059] flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-[rgba(255, 106, 0,0.08)] flex items-center justify-center text-[#FF6A00] flex-shrink-0">
               <ShoppingBag size={20} />
             </div>
             <div>
@@ -218,7 +218,7 @@ export default function OrderAnalytics() {
           {/* Fulfillment Stages BarChart */}
           <div className="lg:col-span-2 glass-card rounded-[28px] p-6 shadow-luxury min-h-[400px] flex flex-col justify-between">
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-widest">Fulfillment Flow</span>
+              <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-widest">Fulfillment Flow</span>
               <h3 className="font-marcellus text-xl text-[#1A1A1A] mt-1 font-light uppercase tracking-wider">
                 Order Pipeline Volumes
               </h3>
@@ -236,7 +236,7 @@ export default function OrderAnalytics() {
                   />
                   <Bar dataKey="count" radius={[8, 8, 0, 0]} barSize={24}>
                     {fulfillmentStageData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={index === 4 ? '#0FA958' : index === 5 ? '#D83A3A' : '#C5A059'} />
+                      <Cell key={`cell-${index}`} fill={index === 4 ? '#0FA958' : index === 5 ? '#D83A3A' : '#FF6A00'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -315,7 +315,7 @@ export default function OrderAnalytics() {
               {courierPerformance.map((c: any, idx: number) => (
                 <div 
                   key={idx} 
-                  className="p-5 rounded-2xl bg-[#FAF9F6] border border-[rgba(0,0,0,0.03)] hover:border-[#C5A059] transition-all flex flex-col justify-between h-[160px] relative overflow-hidden"
+                  className="p-5 rounded-2xl bg-[#FAF9F6] border border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00] transition-all flex flex-col justify-between h-[160px] relative overflow-hidden"
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -332,7 +332,7 @@ export default function OrderAnalytics() {
                     </div>
                     <div className="text-right">
                       <p className="text-[9px] text-gray-400 uppercase tracking-wider">SLA Success</p>
-                      <p className="font-inter text-lg font-semibold" style={{ color: c.success > 98 ? '#0FA958' : '#C5A059' }}>{c.success}%</p>
+                      <p className="font-inter text-lg font-semibold" style={{ color: c.success > 98 ? '#0FA958' : '#FF6A00' }}>{c.success}%</p>
                     </div>
                   </div>
 

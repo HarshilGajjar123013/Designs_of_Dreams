@@ -269,7 +269,7 @@ $font-accent: var(--font-marcellus), 'Marcellus', serif;
     &:focus {
       border-bottom-color: transparent;
 
-      ~ .booking-form__line {
+      ~.booking-form__line {
         transform: scaleX(1);
       }
     }

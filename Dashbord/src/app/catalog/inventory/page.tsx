@@ -122,14 +122,14 @@ export default function InventoryManagement() {
           <div className="flex items-center gap-2">
             <button 
               onClick={loadInventoryData}
-              className="p-2 border border-gray-200 rounded-xl hover:border-[#C5A059] transition-all cursor-pointer bg-white text-gray-500"
+              className="p-2 border border-gray-200 rounded-xl hover:border-[#FF6A00] transition-all cursor-pointer bg-white text-gray-500"
             >
               <RefreshCw size={16} />
             </button>
             <div className="flex items-center gap-1 bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] rounded-full p-1 text-[10px] font-semibold text-[#6E6E6E]">
               <button 
                 onClick={() => setStockFilters('ALL')} 
-                className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${stockFilters === 'ALL' ? 'bg-white text-[#C5A059] shadow-sm' : 'hover:text-[#1a1a1a]'}`}
+                className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${stockFilters === 'ALL' ? 'bg-white text-[#FF6A00] shadow-sm' : 'hover:text-[#1a1a1a]'}`}
               >
                 All Stock
               </button>
@@ -152,7 +152,7 @@ export default function InventoryManagement() {
         {/* Inventory Statistics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="glass-card rounded-2xl p-6 shadow-luxury flex items-center gap-4 bg-white border border-[rgba(0,0,0,0.03)]">
-            <div className="w-12 h-12 rounded-full bg-[rgba(197,160,89,0.08)] flex items-center justify-center text-[#C5A059] flex-shrink-0">
+            <div className="w-12 h-12 rounded-full bg-[rgba(255, 106, 0,0.08)] flex items-center justify-center text-[#FF6A00] flex-shrink-0">
               <Package size={20} />
             </div>
             <div>
@@ -198,7 +198,7 @@ export default function InventoryManagement() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 size={36} className="animate-spin text-[#C5A059]" />
+            <Loader2 size={36} className="animate-spin text-[#FF6A00]" />
             <span className="text-xs text-gray-400 uppercase tracking-widest font-inter">Loading stock registry...</span>
           </div>
         ) : (
@@ -234,7 +234,7 @@ export default function InventoryManagement() {
                             </div>
                             <div>
                               <p className="text-xs font-semibold text-gray-900 truncate max-w-[150px]">{p.name}</p>
-                              <p className="text-[9px] text-[#C5A059] uppercase tracking-wider font-medium font-inter">{p.category?.name || 'Sarees'}</p>
+                              <p className="text-[9px] text-[#FF6A00] uppercase tracking-wider font-medium font-inter">{p.category?.name || 'Sarees'}</p>
                             </div>
                           </div>
                         </td>
@@ -262,7 +262,7 @@ export default function InventoryManagement() {
                             <button
                               disabled={adjustingId !== null}
                               onClick={() => handleStockUpdate(p.id, 5, 'Quick stock increment (+5)')}
-                              className="w-7 h-7 bg-white border border-gray-200 rounded-lg hover:border-[#C5A059] hover:text-[#C5A059] flex items-center justify-center transition-all text-gray-600 font-semibold cursor-pointer"
+                              className="w-7 h-7 bg-white border border-gray-200 rounded-lg hover:border-[#FF6A00] hover:text-[#FF6A00] flex items-center justify-center transition-all text-gray-600 font-semibold cursor-pointer"
                             >
                               +5
                             </button>
@@ -283,12 +283,12 @@ export default function InventoryManagement() {
                               placeholder={p.stock.toString()}
                               value={tempAdjustments[p.id] !== undefined ? tempAdjustments[p.id] : ''}
                               onChange={(e) => setTempAdjustments({ ...tempAdjustments, [p.id]: parseInt(e.target.value) })}
-                              className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-center text-xs font-inter focus:outline-none focus:border-[#C5A059]"
+                              className="w-14 px-2 py-1.5 border border-gray-200 rounded-lg text-center text-xs font-inter focus:outline-none focus:border-[#FF6A00]"
                             />
                             {tempAdjustments[p.id] !== undefined && (
                               <button
                                 onClick={() => handleManualInputSave(p.id, p.stock)}
-                                className="px-2 py-1.5 bg-[#C5A059] text-white rounded-lg text-[10px] font-semibold hover:bg-black transition-all cursor-pointer flex items-center justify-center"
+                                className="px-2 py-1.5 bg-[#FF6A00] text-white rounded-lg text-[10px] font-semibold hover:bg-black transition-all cursor-pointer flex items-center justify-center"
                               >
                                 <Save size={10} />
                               </button>
@@ -312,7 +312,7 @@ export default function InventoryManagement() {
                     </h3>
                     <p className="text-[10px] text-[#6E6E6E] uppercase tracking-wider font-inter">Live movement tracking</p>
                   </div>
-                  <ClipboardList size={18} className="text-[#C5A059]" />
+                  <ClipboardList size={18} className="text-[#FF6A00]" />
                 </div>
 
                 <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">

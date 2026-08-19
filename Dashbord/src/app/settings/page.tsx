@@ -99,7 +99,7 @@ export default function SettingsPanel() {
           </div>
           <button
             onClick={handleSaveSettings}
-            className="px-5 py-3 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider"
+            className="px-5 py-3 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider"
           >
             <Save size={14} /> Save Settings
           </button>
@@ -111,7 +111,7 @@ export default function SettingsPanel() {
             {/* General store settings */}
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">
               <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                <Globe size={18} className="text-[#C5A059]" /> Boutique Configurations
+                <Globe size={18} className="text-[#FF6A00]" /> Boutique Configurations
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
@@ -121,7 +121,7 @@ export default function SettingsPanel() {
                     type="text"
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
                 <div>
@@ -130,7 +130,7 @@ export default function SettingsPanel() {
                     type="email"
                     value={supportEmail}
                     onChange={(e) => setSupportEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
                 </div>
               </div>
@@ -160,7 +160,7 @@ export default function SettingsPanel() {
             {/* API Keys */}
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">
               <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                <Key size={18} className="text-[#C5A059]" /> Integrations & API Credentials
+                <Key size={18} className="text-[#FF6A00]" /> Integrations & API Credentials
               </h3>
 
               <div className="space-y-4">
@@ -189,7 +189,7 @@ export default function SettingsPanel() {
           {/* Profile Sidebar Info (Col 3) */}
           <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-6">
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-widest">Operator Profile</span>
+              <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-widest">Operator Profile</span>
               <h3 className="font-marcellus text-xl text-[#1A1A1A] mt-1 font-light uppercase tracking-wider">
                 Session Dossier
               </h3>
@@ -199,7 +199,7 @@ export default function SettingsPanel() {
               <div className="flex flex-col items-center py-2 text-center space-y-3 relative group">
                 <div 
                   onClick={() => avatarInputRef.current?.click()}
-                  className="w-16 h-16 rounded-full bg-[#C5A059] text-white flex items-center justify-center font-semibold text-xl shadow-md overflow-hidden cursor-pointer relative"
+                  className="w-16 h-16 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-semibold text-xl shadow-md overflow-hidden cursor-pointer relative"
                 >
                   {adminAvatar && (adminAvatar.startsWith('http') || adminAvatar.startsWith('data:image')) ? (
                     <img src={adminAvatar} alt={adminName} className="w-full h-full object-cover" />
@@ -226,7 +226,7 @@ export default function SettingsPanel() {
                     type="text"
                     value={adminName}
                     onChange={(e) => setAdminName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                     required
                   />
                 </div>
@@ -236,7 +236,7 @@ export default function SettingsPanel() {
                     type="email"
                     value={adminEmail}
                     onChange={(e) => setAdminEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                     required
                   />
                 </div>
@@ -254,7 +254,7 @@ export default function SettingsPanel() {
               <button
                 type="submit"
                 disabled={savingProfile}
-                className="w-full bg-[#1A1A1A] hover:bg-[#C5A059] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                className="w-full bg-[#1A1A1A] hover:bg-[#FF6A00] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm"
               >
                 {savingProfile ? 'Saving...' : 'Update Operator Profile'}
               </button>
@@ -267,7 +267,7 @@ export default function SettingsPanel() {
               </p>
               <button
                 onClick={toggleRole}
-                className="w-full bg-[#1A1A1A] hover:bg-[#C5A059] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                className="w-full bg-[#1A1A1A] hover:bg-[#FF6A00] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Shield size={12} /> Toggle Operator Role
               </button>

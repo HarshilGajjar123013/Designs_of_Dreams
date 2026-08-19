@@ -428,6 +428,457 @@ $brand-black: #1a1a1a;
   }
 }
 
+// ── Success state (Full Invoice) ─────────────────────────────────────────────
+.checkout-success-full {
+  max-width: 780px;
+  margin: 20px auto 40px;
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  @media (max-width: 600px) {
+    margin: 10px auto 20px;
+    gap: 16px;
+  }
+
+  .invoice-success-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+
+    .success-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: rgba(#10B981, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .success-title {
+      font-family: $font-display;
+      font-size: 2rem;
+      color: $brand-black;
+      margin: 0;
+
+      @media (max-width: 600px) {
+        font-size: 1.5rem;
+      }
+    }
+
+    .success-subtitle {
+      font-family: $font-body;
+      font-size: 0.95rem;
+      color: rgba($brand-black, 0.5);
+      margin: 0;
+
+      strong {
+        color: $brand-orange;
+      }
+    }
+  }
+
+  // ── Invoice Inline Card ──────────────────────────────────
+  .invoice-inline-card {
+    background-color: #ffffff;
+    border: 1px solid rgba($brand-black, 0.07);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.04);
+  }
+
+  .invoice-header-bar {
+    background: #ffffff;
+    border-bottom: 2px solid $brand-orange;
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    @media (max-width: 600px) {
+      padding: 20px;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .invoice-brand {
+      font-family: $font-display;
+      font-size: 1.4rem;
+      color: $brand-orange;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin: 0;
+
+      @media (max-width: 600px) {
+        font-size: 1.15rem;
+      }
+    }
+
+    .invoice-brand-sub {
+      font-size: 0.65rem;
+      color: rgba($brand-black, 0.55);
+      margin-top: 4px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: $font-body;
+    }
+
+    .invoice-tag {
+      display: inline-block;
+      background: $brand-orange;
+      color: #fff;
+      padding: 6px 18px;
+      border-radius: 50px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: $font-body;
+    }
+  }
+
+  .invoice-meta-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid rgba($brand-black, 0.06);
+    background-color: #fdfcfa;
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 20px;
+    }
+
+    .invoice-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+  }
+
+  .meta-label {
+    font-size: 0.6rem;
+    color: rgba($brand-black, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    font-family: $font-body;
+  }
+
+  .meta-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $brand-black;
+    font-family: $font-body;
+
+    &--accent {
+      color: $brand-orange;
+    }
+  }
+
+  // ── Billing Row ──────────────────────────────────
+  .invoice-billing-row {
+    display: flex;
+    gap: 32px;
+    padding: 24px 32px;
+    border-bottom: 1px solid rgba($brand-black, 0.06);
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .invoice-billing-col {
+      flex: 1;
+    }
+  }
+
+  .billing-label {
+    font-size: 0.6rem;
+    color: rgba($brand-black, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    font-family: $font-body;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .billing-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: $brand-black;
+    font-family: $font-body;
+    margin: 0 0 2px 0;
+  }
+
+  .billing-detail {
+    font-size: 0.78rem;
+    color: rgba($brand-black, 0.55);
+    font-family: $font-body;
+    margin: 0 0 1px 0;
+    line-height: 1.5;
+  }
+
+  // ── Items Table ──────────────────────────────────
+  .invoice-items-table {
+    padding: 0 32px 24px;
+
+    @media (max-width: 600px) {
+      padding: 0 20px 20px;
+    }
+  }
+
+  .invoice-table-header,
+  .invoice-table-row {
+    display: grid;
+    grid-template-columns: 1fr 60px 100px 100px;
+    align-items: center;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr 40px 70px 80px;
+    }
+  }
+
+  .invoice-table-header {
+    padding: 12px 0;
+    border-bottom: 2px solid rgba($brand-black, 0.06);
+
+    span {
+      font-size: 0.6rem;
+      color: rgba($brand-black, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      font-family: $font-body;
+    }
+  }
+
+  .invoice-table-row {
+    padding: 14px 0;
+    border-bottom: 1px solid rgba($brand-black, 0.04);
+
+    .col-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      .item-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: $brand-black;
+        font-family: $font-body;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .item-sub {
+        font-size: 0.7rem;
+        color: rgba($brand-black, 0.4);
+        font-family: $font-body;
+      }
+    }
+
+    .col-qty {
+      text-align: center;
+      font-size: 0.85rem;
+      color: rgba($brand-black, 0.7);
+      font-family: $font-body;
+    }
+
+    .col-price {
+      text-align: right;
+      font-size: 0.85rem;
+      color: rgba($brand-black, 0.7);
+      font-family: $font-body;
+    }
+
+    .col-total {
+      text-align: right;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: $brand-black;
+      font-family: $font-body;
+    }
+  }
+
+  .col-qty {
+    text-align: center;
+  }
+
+  .col-price,
+  .col-total {
+    text-align: right;
+  }
+
+  // ── Totals ──────────────────────────────────
+  .invoice-totals {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 32px 24px;
+
+    @media (max-width: 600px) {
+      padding: 0 20px 20px;
+    }
+
+    .invoice-totals-inner {
+      width: 280px;
+
+      @media (max-width: 600px) {
+        width: 100%;
+      }
+    }
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-family: $font-body;
+    font-size: 0.85rem;
+    color: rgba($brand-black, 0.6);
+
+    span:last-child {
+      font-weight: 600;
+      color: rgba($brand-black, 0.8);
+    }
+
+    &--grand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding: 10px 0;
+
+      span {
+        color: $brand-black !important;
+      }
+
+      span:last-child {
+        color: $brand-orange !important;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .total-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba($brand-black, 0.1), transparent);
+    margin: 6px 0;
+  }
+
+  // ── Payment Bar ──────────────────────────────────
+  .invoice-payment-bar {
+    margin: 0 32px;
+    padding: 16px 20px;
+    background-color: #faf8f4;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba($brand-black, 0.04);
+
+    @media (max-width: 600px) {
+      margin: 0 20px;
+      padding: 14px 16px;
+      flex-direction: column;
+      gap: 12px;
+      align-items: flex-start;
+    }
+  }
+
+  .payment-status-badge {
+    display: inline-block;
+    background: rgba($brand-orange, 0.08);
+    color: $brand-orange;
+    padding: 4px 14px;
+    border-radius: 50px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    font-family: $font-body;
+  }
+
+  // ── Invoice Footer ──────────────────────────────────
+  .invoice-footer-note {
+    padding: 20px 32px;
+    margin-top: 16px;
+    border-top: 1px solid rgba($brand-black, 0.06);
+    text-align: center;
+
+    @media (max-width: 600px) {
+      padding: 16px 20px;
+    }
+
+    p {
+      font-family: $font-body;
+      font-size: 0.7rem;
+      color: rgba($brand-black, 0.35);
+      line-height: 1.6;
+      margin: 0;
+
+      strong {
+        color: $brand-orange;
+      }
+    }
+  }
+
+  // ── Actions Row ──────────────────────────────────
+  .invoice-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    @media (max-width: 480px) {
+      flex-direction: column;
+      gap: 12px;
+    }
+  }
+
+  .back-catalog-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 30px;
+    border-radius: 50px;
+    background-color: $brand-black;
+    color: $brand-white;
+    font-family: $font-body;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    transition: all 0.3s;
+
+    &:hover {
+      background-color: $brand-orange;
+    }
+  }
+
+  .download-invoice-btn {
+    background-color: $brand-orange !important;
+    box-shadow: 0 8px 24px rgba($brand-orange, 0.2);
+
+    &:hover {
+      background-color: darken($brand-orange, 8%) !important;
+      box-shadow: 0 8px 30px rgba($brand-orange, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+}
+
 // ── Success state ────────────────────────────────────────────────────────────
 .checkout-success {
   background-color: #FAF9F6;
@@ -531,6 +982,17 @@ $brand-black: #1a1a1a;
 
     &:hover {
       background-color: $brand-orange;
+    }
+  }
+
+  .download-invoice-btn {
+    background-color: $brand-orange !important;
+    box-shadow: 0 8px 24px rgba($brand-orange, 0.2);
+    
+    &:hover {
+      background-color: darken($brand-orange, 8%) !important;
+      box-shadow: 0 8px 30px rgba($brand-orange, 0.35);
+      transform: translateY(-1px);
     }
   }
 }

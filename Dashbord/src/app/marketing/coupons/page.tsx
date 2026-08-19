@@ -111,7 +111,7 @@ export default function CouponsDesk() {
                 </h3>
                 <p className="text-[10px] text-[#6E6E6E] uppercase tracking-wider font-inter">Store-wide promotion campaigns</p>
               </div>
-              <Tag size={16} className="text-[#C5A059]" />
+              <Tag size={16} className="text-[#FF6A00]" />
             </div>
 
             <div className="overflow-x-auto">
@@ -161,7 +161,7 @@ export default function CouponsDesk() {
           <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-6 h-fit">
             <div className="border-b border-gray-100 pb-4">
               <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider font-light flex items-center gap-1.5">
-                <Percent size={16} className="text-[#C5A059]" /> Create Promo Code
+                <Percent size={16} className="text-[#FF6A00]" /> Create Promo Code
               </h3>
             </div>
 
@@ -174,7 +174,7 @@ export default function CouponsDesk() {
                   value={newCode}
                   onChange={(e) => setNewCode(e.target.value)}
                   placeholder="e.g. ATELIER25"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059] uppercase"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00] uppercase"
                 />
               </div>
 
@@ -187,7 +187,7 @@ export default function CouponsDesk() {
                   max={99}
                   value={newDiscount}
                   onChange={(e) => setNewDiscount(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-inter focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-inter focus:outline-none focus:border-[#FF6A00]"
                 />
               </div>
 
@@ -198,13 +198,13 @@ export default function CouponsDesk() {
                   required
                   value={newMinOrder}
                   onChange={(e) => setNewMinOrder(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-inter focus:outline-none focus:border-[#C5A059]"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs font-inter focus:outline-none focus:border-[#FF6A00]"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full bg-[#1A1A1A] hover:bg-[#C5A059] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="w-full bg-[#1A1A1A] hover:bg-[#FF6A00] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-1.5"
               >
                 <Plus size={12} /> Provision Coupon
               </button>
@@ -221,7 +221,7 @@ export default function CouponsDesk() {
               </h3>
               <p className="text-[10px] text-[#6E6E6E] uppercase tracking-wider font-inter">Customer Search queries and conversion rates</p>
             </div>
-            <BarChart2 size={18} className="text-[#C5A059]" />
+            <BarChart2 size={18} className="text-[#FF6A00]" />
           </div>
 
           <div className="overflow-x-auto">
@@ -248,7 +248,7 @@ export default function CouponsDesk() {
                           <div className="w-16 bg-gray-100 h-1.5 rounded-full overflow-hidden">
                             <div 
                               style={{ width: `${rate * 5}%` }} 
-                              className="bg-[#C5A059] h-full"
+                              className="bg-[#FF6A00] h-full"
                             />
                           </div>
                           <span className="font-semibold text-xs text-gray-900 font-inter">{rate}%</span>
@@ -256,7 +256,7 @@ export default function CouponsDesk() {
                       </td>
                       <td>
                         <span className={`text-[8.5px] uppercase tracking-widest font-semibold ${
-                          rate > 8 ? 'text-[#0FA958]' : rate > 3 ? 'text-[#C5A059]' : 'text-[#D99A00]'
+                          rate > 8 ? 'text-[#0FA958]' : rate > 3 ? 'text-[#FF6A00]' : 'text-[#D99A00]'
                         }`}>
                           {rate > 8 ? 'High Yield' : rate > 3 ? 'Moderate' : 'Low Yield'}
                         </span>

@@ -40,7 +40,7 @@ export default function AdminManagement() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#C5A059]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF6A00]"></div>
         </div>
       </AdminLayout>
     );
@@ -116,7 +116,7 @@ export default function AdminManagement() {
           </div>
           <button
             onClick={() => setModalOpen(true)}
-            className="px-5 py-3 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider"
+            className="px-5 py-3 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-2 shadow-md uppercase tracking-wider"
           >
             <UserPlus size={14} /> Provision Admin
           </button>
@@ -161,7 +161,7 @@ export default function AdminManagement() {
                       <td className="text-xs text-gray-500 font-inter">{adm.email}</td>
                       <td>
                         <span className={`text-[9px] uppercase tracking-wider px-2 py-0.5 rounded font-bold ${
-                          adm.role === 'SUPER_ADMIN' ? 'bg-[rgba(197,160,89,0.1)] text-[#C5A059]' : 'bg-gray-100 text-gray-500'
+                          adm.role === 'SUPER_ADMIN' ? 'bg-[rgba(255, 106, 0,0.1)] text-[#FF6A00]' : 'bg-gray-100 text-gray-500'
                         }`}>
                           {adm.role.replace('_', ' ')}
                         </span>
@@ -198,7 +198,7 @@ export default function AdminManagement() {
           {/* Permission Matrix Sidebar (Col 3) */}
           <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-6">
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-widest">Authorization</span>
+              <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-widest">Authorization</span>
               <h3 className="font-marcellus text-xl text-[#1A1A1A] mt-1 font-light uppercase tracking-wider">
                 Permission Matrix
               </h3>
@@ -283,7 +283,7 @@ export default function AdminManagement() {
               >
                 <div className="border-b border-gray-100 pb-4">
                   <h3 className="font-marcellus text-xl text-gray-800 uppercase tracking-wider font-light flex items-center gap-2">
-                    <Shield size={18} className="text-[#C5A059]" /> Provision Admin Account
+                    <Shield size={18} className="text-[#FF6A00]" /> Provision Admin Account
                   </h3>
                   <p className="text-[10px] text-gray-400 font-poppins mt-1">Define credentials and restrict system access privileges</p>
                 </div>
@@ -334,7 +334,7 @@ export default function AdminManagement() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Rohini Sen"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                     />
                   </div>
 
@@ -346,7 +346,7 @@ export default function AdminManagement() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="e.g. name@designsofdreams.in"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                     />
                   </div>
 
@@ -358,7 +358,7 @@ export default function AdminManagement() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="At least 8 characters"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                     />
                   </div>
 
@@ -367,7 +367,7 @@ export default function AdminManagement() {
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value as 'SUPER_ADMIN' | 'MANAGER')}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059] bg-white text-gray-700 font-medium"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00] bg-white text-gray-700 font-medium"
                     >
                       <option value="MANAGER">MANAGER (Restricted Catalog/Orders)</option>
                       <option value="SUPER_ADMIN">SUPER_ADMIN (Full Command Access)</option>
@@ -384,7 +384,7 @@ export default function AdminManagement() {
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 px-4 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#C5A059] transition-all shadow-md uppercase tracking-wider"
+                      className="flex-1 px-4 py-2.5 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#FF6A00] transition-all shadow-md uppercase tracking-wider"
                     >
                       Create Profile
                     </button>

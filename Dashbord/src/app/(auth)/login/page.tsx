@@ -61,7 +61,7 @@ export default function LoginPage() {
 
   return (
     <div className="bg-white border border-[rgba(0,0,0,0.06)] rounded-[24px] p-8 shadow-luxury relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-[3px] bg-[#C5A059]" />
+      <div className="absolute top-0 left-0 w-full h-[3px] bg-[#FF6A00]" />
 
       <h2 className="font-marcellus text-xl text-[#1A1A1A] mb-2 uppercase tracking-wider text-center font-light">
         Staff Sign In
@@ -92,7 +92,7 @@ export default function LoginPage() {
               className={`w-full px-4 py-3 pl-10 bg-[#FAF9F6] border rounded-[16px] text-xs transition-all outline-none text-[#1A1A1A] ${
                 errors.email
                   ? 'border-red-300 focus:border-red-500'
-                  : 'border-[rgba(0,0,0,0.06)] focus:border-[#C5A059]'
+                  : 'border-[rgba(0,0,0,0.06)] focus:border-[#FF6A00]'
               }`}
             />
             <Mail
@@ -121,7 +121,7 @@ export default function LoginPage() {
               className={`w-full px-4 py-3 pl-10 pr-10 bg-[#FAF9F6] border rounded-[16px] text-xs transition-all outline-none text-[#1A1A1A] ${
                 errors.password
                   ? 'border-red-300 focus:border-red-500'
-                  : 'border-[rgba(0,0,0,0.06)] focus:border-[#C5A059]'
+                  : 'border-[rgba(0,0,0,0.06)] focus:border-[#FF6A00]'
               }`}
             />
             <Lock
@@ -145,7 +145,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-[#1A1A1A] hover:bg-[#C5A059] text-white font-semibold rounded-[16px] text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-8"
+          className="w-full py-3 bg-[#1A1A1A] hover:bg-[#FF6A00] text-white font-semibold rounded-[16px] text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-8"
         >
           {isLoading ? (
             <>

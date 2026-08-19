@@ -1840,23 +1840,24 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    background: #000000;
-    border: 1.5px solid var(--accent);
-    color: white;
+    background: #25D366;
+    border: none;
+    color: #ffffff;
     width: 56px;
     height: 56px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
     z-index: 100;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     cursor: pointer;
 
     &:hover {
+      background: #20ba5a;
       transform: scale(1.1);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 25px rgba(37, 211, 102, 0.6);
     }
 
     @media (max-width: 768px) {

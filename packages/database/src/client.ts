@@ -25,12 +25,9 @@ export async function isDbReachable(): Promise<boolean> {
   if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
     return true;
   }
-  // If we have a DATABASE_URL, assume it's reachable and let Prisma handle connection natively.
-  // This prevents false negatives from short TCP handshake timeouts (e.g. 800ms) on remote databases.
-  if (process.env.DATABASE_URL) {
-    return true;
-  }
 
+  // In development or local runs, still verify reachability even when DATABASE_URL is configured.
+  // This allows the app to fall back to the local JSON database when the remote service is down.
   const now = Date.now();
   // Cache the status for 5 seconds to prevent spamming TCP connections
   if (cachedReachable !== null && now - lastChecked < 5000) {

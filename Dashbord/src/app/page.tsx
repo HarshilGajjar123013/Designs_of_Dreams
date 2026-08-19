@@ -88,8 +88,8 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-t-2 border-b-2 border-[#C5A059] rounded-full animate-spin" />
-          <p className="font-marcellus text-sm tracking-widest text-[#C5A059] uppercase">Loading Atelier...</p>
+          <div className="w-12 h-12 border-t-2 border-b-2 border-[#FF6A00] rounded-full animate-spin" />
+          <p className="font-marcellus text-sm tracking-widest text-[#FF6A00] uppercase">Loading Atelier...</p>
         </div>
       </div>
     );
@@ -156,13 +156,13 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <button 
               onClick={fetchStats}
-              className="px-4 py-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-semibold text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#C5A059] transition-all flex items-center gap-2 shadow-sm"
+              className="px-4 py-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-semibold text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#FF6A00] transition-all flex items-center gap-2 shadow-sm"
             >
               <RefreshCw size={14} /> Refresh Data
             </button>
             <Link 
               href="/catalog/products"
-              className="px-4 py-2 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#C5A059] transition-all flex items-center gap-2 shadow-md"
+              className="px-4 py-2 bg-[#1A1A1A] text-white rounded-[16px] text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-2 shadow-md"
             >
               <Plus size={14} /> Add Product
             </Link>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-[#6E6E6E] uppercase tracking-wider font-inter">Monthly Sales & Volume</p>
               </div>
               <div className="flex items-center gap-1 bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] rounded-full p-1 text-[10px] font-semibold text-[#6E6E6E]">
-                <button className="px-3 py-1.5 rounded-full bg-white text-[#C5A059] shadow-sm">Monthly</button>
+                <button className="px-3 py-1.5 rounded-full bg-white text-[#FF6A00] shadow-sm">Monthly</button>
                 <button className="px-3 py-1.5 rounded-full hover:text-[#1A1A1A]">Weekly</button>
               </div>
             </div>
@@ -262,8 +262,8 @@ export default function DashboardPage() {
                 <AreaChart data={revenueTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C5A059" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#C5A059" stopOpacity={0.0}/>
+                      <stop offset="5%" stopColor="#FF6A00" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#FF6A00" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.03)" />
@@ -273,7 +273,7 @@ export default function DashboardPage() {
                     contentStyle={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', fontSize: '12px' }} 
                     formatter={(value) => [`₹${(value as number).toLocaleString()}`, 'Revenue']}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="#C5A059" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="revenue" stroke="#FF6A00" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
               </div>
               <Link
                 href="/orders"
-                className="text-xs font-semibold text-[#C5A059] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#FF6A00] hover:underline flex items-center gap-1"
               >
                 View All <ChevronRight size={14} />
               </Link>
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                         {order.status === 'PROCESSING' && (
                           <button
                             onClick={() => handleUpdateStatus(order.id, 'PACKED')}
-                            className="text-[10px] bg-white border border-[rgba(197,160,89,0.3)] hover:bg-[#C5A059] hover:text-white px-2 py-1 rounded-md transition-all text-[#C5A059] font-medium"
+                            className="text-[10px] bg-white border border-[rgba(255, 106, 0,0.3)] hover:bg-[#FF6A00] hover:text-white px-2 py-1 rounded-md transition-all text-[#FF6A00] font-medium"
                           >
                             Pack Order
                           </button>
@@ -442,7 +442,7 @@ export default function DashboardPage() {
                   {lowStockProducts.map((product: any) => (
                     <div 
                       key={product.id} 
-                      className="flex justify-between items-center p-3 rounded-2xl bg-white border border-[rgba(0,0,0,0.03)] hover:border-[#C5A059] transition-all"
+                      className="flex justify-between items-center p-3 rounded-2xl bg-white border border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00] transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 relative">
@@ -458,7 +458,7 @@ export default function DashboardPage() {
                       </div>
                       <button
                         onClick={() => handleReplenishStock(product.id)}
-                        className="bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] hover:bg-[#C5A059] hover:text-white px-2 py-1.5 rounded-xl text-[10px] font-semibold transition-all text-gray-700 flex items-center gap-1"
+                        className="bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] hover:bg-[#FF6A00] hover:text-white px-2 py-1.5 rounded-xl text-[10px] font-semibold transition-all text-gray-700 flex items-center gap-1"
                       >
                         <Plus size={10} /> Replenish
                       </button>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
             <div className="border-t border-gray-100 pt-4 mt-4">
               <Link
                 href="/catalog/inventory"
-                className="w-full bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] hover:border-[#C5A059] hover:text-[#1A1A1A] py-3.5 rounded-[16px] text-xs font-semibold text-center text-gray-700 block transition-all shadow-sm"
+                className="w-full bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] hover:border-[#FF6A00] hover:text-[#1A1A1A] py-3.5 rounded-[16px] text-xs font-semibold text-center text-gray-700 block transition-all shadow-sm"
               >
                 Manage Atelier Inventory
               </Link>

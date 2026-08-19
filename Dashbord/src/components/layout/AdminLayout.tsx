@@ -105,7 +105,8 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
   {
     title: 'Support',
     items: [
-      { name: 'Contact Forms', href: '/support', icon: Inbox, roles: ['SUPER_ADMIN', 'MANAGER'] }
+      { name: 'Contact Forms', href: '/support', icon: Inbox, roles: ['SUPER_ADMIN', 'MANAGER'] },
+      { name: 'Check Out', href: '/support/checkout', icon: ShoppingBag, roles: ['SUPER_ADMIN', 'MANAGER'] }
     ]
   },
   {
@@ -268,30 +269,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         transition={{ duration: 0.3, ease: [0.25, 0.8, 0.25, 1] }}
       >
         {/* Logo Container */}
-        <div className="h-16 lg:h-20 flex items-center justify-between px-4 lg:px-6 border-b border-[rgba(0,0,0,0.06)]">
+        <div className={`h-16 lg:h-20 flex items-center border-b border-[rgba(0,0,0,0.06)] relative ${collapsed ? 'justify-center px-2' : 'justify-between px-4 lg:px-6'}`}>
           {!collapsed && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer"
               onClick={() => router.push('/')}
             >
-              <span className="font-marcellus text-lg tracking-[0.2em] uppercase font-light">
-                Designs
-              </span>
-              <span className="font-marcellus text-xs tracking-[0.4em] uppercase text-[#C5A059] -mt-1 font-semibold">
-                Of Dreams
-              </span>
+              <img src="/icon.png" alt="Logo" className="h-11 w-11 object-contain rounded-xl shadow-sm" />
+              <div className="flex flex-col">
+                <span className="font-marcellus text-sm tracking-[0.12em] uppercase font-bold text-gray-800 leading-tight">
+                  Designs
+                </span>
+                <span className="font-marcellus text-[10px] tracking-[0.25em] uppercase text-[#FF6A00] font-bold">
+                  Of Dreams
+                </span>
+              </div>
             </motion.div>
           )}
 
           {collapsed && (
             <div
-              className="font-marcellus text-xl font-light text-[#C5A059] mx-auto cursor-pointer"
-              onClick={() => router.push('/')}
+              className="mx-auto cursor-pointer flex items-center justify-center animate-fade-in hover:scale-105 transition-transform"
+              onClick={() => setCollapsed(false)}
+              title="Expand Sidebar"
             >
-              DOD
+              <img src="/icon.png" alt="DOD" className="h-11 w-11 object-contain rounded-lg cursor-pointer" />
             </div>
           )}
 
@@ -306,9 +311,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Desktop collapse toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-full hover:bg-[#FAF9F6] border border-transparent hover:border-[rgba(0,0,0,0.06)] transition-all hidden lg:block text-[#6E6E6E]"
+            className={`
+              p-1 rounded-full bg-white border border-gray-200 shadow-md transition-all text-[#6E6E6E] hover:text-[#1A1A1A] hover:scale-105
+              hidden lg:flex items-center justify-center
+              ${collapsed ? 'absolute -right-3.5 top-6.5 z-50 w-7 h-7' : 'relative'}
+            `}
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
 
@@ -328,7 +337,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return (
               <div key={idx} className="space-y-2">
                 {!collapsed && (
-                  <h3 className="text-[10px] tracking-[0.25em] font-semibold text-[#C5A059] uppercase px-3 mb-3">
+                  <h3 className="text-[10px] tracking-[0.25em] font-semibold text-[#FF6A00] uppercase px-3 mb-3">
                     {section.title}
                   </h3>
                 )}
@@ -345,12 +354,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           <button
                             onClick={() => toggleSubmenu(item.name)}
                             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[16px] text-sm transition-all ${active
-                                ? 'bg-[rgba(197,160,89,0.08)] text-[#C5A059] font-medium'
+                                ? 'bg-[rgba(255,106,0,0.08)] text-[#FF6A00] font-medium'
                                 : 'text-[#6E6E6E] hover:text-[#1A1A1A] hover:bg-[#FAF9F6]'
                               }`}
                           >
                             <div className="flex items-center gap-3">
-                              <Icon size={18} className={active ? 'text-[#C5A059]' : 'text-[#6E6E6E]'} />
+                              <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#6E6E6E]'} />
                               {!collapsed && <span>{item.name}</span>}
                             </div>
                             {!collapsed && (
@@ -381,7 +390,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         key={subIdx}
                                         href={sub.href}
                                         className={`block py-2 text-xs rounded-lg transition-all ${subActive
-                                            ? 'text-[#C5A059] font-semibold'
+                                            ? 'text-[#FF6A00] font-semibold'
                                             : 'text-[#6E6E6E] hover:text-[#1A1A1A]'
                                           }`}
                                       >
@@ -390,7 +399,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                           {subActive && (
                                             <motion.div
                                               layoutId="activeIndicator"
-                                              className="w-1 h-1 rounded-full bg-[#C5A059]"
+                                              className="w-1 h-1 rounded-full bg-[#FF6A00]"
                                             />
                                           )}
                                         </div>
@@ -409,11 +418,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         key={itemIdx}
                         href={item.href || '#'}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-[16px] text-sm transition-all ${active
-                            ? 'bg-[rgba(197,160,89,0.08)] text-[#C5A059] font-medium border-l-2 border-[#C5A059]'
+                            ? 'bg-[rgba(255,106,0,0.08)] text-[#FF6A00] font-medium border-l-2 border-[#FF6A00]'
                             : 'text-[#6E6E6E] hover:text-[#1A1A1A] hover:bg-[#FAF9F6]'
                           }`}
                       >
-                        <Icon size={18} className={active ? 'text-[#C5A059]' : 'text-[#6E6E6E]'} />
+                        <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#6E6E6E]'} />
                         {!collapsed && <span>{item.name}</span>}
                       </Link>
                     );
@@ -427,7 +436,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Footer Admin Card */}
         <div className="p-4 border-t border-[rgba(0,0,0,0.06)]">
           <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-10 h-10 rounded-full bg-[#C5A059] text-white flex items-center justify-center font-semibold text-sm">
+            <div className="w-10 h-10 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-semibold text-sm">
               {currentAdmin.avatar}
             </div>
             {!collapsed && (
@@ -471,7 +480,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="hidden sm:flex items-center gap-2 bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] p-1 rounded-full">
               <button
                 onClick={toggleRole}
-                className="px-3 lg:px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 lg:gap-2 bg-white text-[#C5A059] shadow-sm border border-[rgba(197,160,89,0.15)]"
+                className="px-3 lg:px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 lg:gap-2 bg-white text-[#FF6A00] shadow-sm border border-[rgba(255,106,0,0.15)]"
               >
                 <Activity size={12} className="text-[#0FA958] animate-pulse" />
                 <span className="font-poppins uppercase tracking-wider font-semibold text-[10px]">
@@ -486,7 +495,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Mobile-only compact role badge */}
             <button
               onClick={toggleRole}
-              className="sm:hidden p-2 rounded-full bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] text-[#C5A059] shrink-0"
+              className="sm:hidden p-2 rounded-full bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] text-[#FF6A00] shrink-0"
               title={`Role: ${role.replace('_', ' ')}`}
             >
               <Activity size={16} className="text-[#0FA958]" />
@@ -512,7 +521,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   >
                     <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
                       <h4 className="font-marcellus text-sm font-semibold">Notifications</h4>
-                      <span className="text-[10px] text-[#C5A059] cursor-pointer">Mark all read</span>
+                      <span className="text-[10px] text-[#FF6A00] cursor-pointer">Mark all read</span>
                     </div>
                     <div className="space-y-3">
                       <div className="flex gap-3 text-xs">
@@ -546,9 +555,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="relative">
               <button
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="w-10 h-10 rounded-full bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer hover:border-[#C5A059] transition-all"
+                className="w-10 h-10 rounded-full bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] flex items-center justify-center cursor-pointer hover:border-[#FF6A00] transition-all"
               >
-                <User size={16} className="text-[#C5A059]" />
+                <User size={16} className="text-[#FF6A00]" />
               </button>
 
               <AnimatePresence>
@@ -566,14 +575,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <Link
                       href="/settings"
                       onClick={() => setProfileOpen(false)}
-                      className="block px-4 py-2 text-xs text-gray-700 hover:bg-[#FAF9F6] hover:text-[#C5A059]"
+                      className="block px-4 py-2 text-xs text-gray-700 hover:bg-[#FAF9F6] hover:text-[#FF6A00]"
                     >
                       Atelier Settings
                     </Link>
                     <Link
                       href="/administration"
                       onClick={() => setProfileOpen(false)}
-                      className="block px-4 py-2 text-xs text-gray-700 hover:bg-[#FAF9F6] hover:text-[#C5A059]"
+                      className="block px-4 py-2 text-xs text-gray-700 hover:bg-[#FAF9F6] hover:text-[#FF6A00]"
                     >
                       Admin Settings
                     </Link>
@@ -615,8 +624,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 exit={{ opacity: 0, scale: 0.98 }}
                 className="min-h-[70vh] flex flex-col items-center justify-center"
               >
-                <div className="glass-card shadow-luxury rounded-[24px] p-6 sm:p-12 max-w-lg text-center border border-[rgba(197,160,89,0.15)] flex flex-col items-center mx-3">
-                  <div className="w-16 h-16 rounded-full bg-[rgba(197,160,89,0.08)] border border-[rgba(197,160,89,0.2)] flex items-center justify-center mb-6 text-[#C5A059]">
+                <div className="glass-card shadow-luxury rounded-[24px] p-6 sm:p-12 max-w-lg text-center border border-[rgba(255,106,0,0.15)] flex flex-col items-center mx-3">
+                  <div className="w-16 h-16 rounded-full bg-[rgba(255,106,0,0.08)] border border-[rgba(255,106,0,0.2)] flex items-center justify-center mb-6 text-[#FF6A00]">
                     <Lock size={24} className="stroke-[1.5]" />
                   </div>
 
@@ -631,7 +640,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <div className="flex flex-col sm:flex-row gap-4 w-full">
                     <button
                       onClick={toggleRole}
-                      className="flex-1 bg-[#1A1A1A] text-white py-3 px-6 rounded-[16px] text-xs font-semibold hover:bg-[#C5A059] transition-all duration-300 flex items-center justify-center gap-2"
+                      className="flex-1 bg-[#1A1A1A] text-white py-3 px-6 rounded-[16px] text-xs font-semibold hover:bg-[#FF6A00] transition-all duration-300 flex items-center justify-center gap-2"
                     >
                       Elevate Role <ArrowRight size={14} />
                     </button>

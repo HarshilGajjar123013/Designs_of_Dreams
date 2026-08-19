@@ -69,7 +69,7 @@ export async function GET() {
       return {
         name: cat.name,
         value: salesAmount,
-        color: cat.name === 'Sarees' ? '#C5A059' : 
+        color: cat.name === 'Sarees' ? '#FF6A00' : 
                cat.name === 'Kurtis' ? '#FF6A00' :
                cat.name === 'Blouses' ? '#0FA958' : 
                cat.name === 'Dupattas' ? '#D99A00' : '#800020'

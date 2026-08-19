@@ -48,8 +48,8 @@ export default function RevenueAnalytics() {
       <AdminLayout>
         <div className="min-h-[400px] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-t-2 border-b-2 border-[#C5A059] rounded-full animate-spin" />
-            <p className="text-xs uppercase tracking-widest text-[#C5A059]">Loading Revenue Insights...</p>
+            <div className="w-10 h-10 border-t-2 border-b-2 border-[#FF6A00] rounded-full animate-spin" />
+            <p className="text-xs uppercase tracking-widest text-[#FF6A00]">Loading Revenue Insights...</p>
           </div>
         </div>
       </AdminLayout>
@@ -276,7 +276,7 @@ export default function RevenueAnalytics() {
     .filter((c: any) => c.value > 0)
     .sort((a: any, b: any) => b.value - a.value);
 
-  const colors = ['#C5A059', '#FF6A00', '#0FA958', '#D99A00', '#4E0707', '#6E6E6E'];
+  const colors = ['#FF6A00', '#FF6A00', '#0FA958', '#D99A00', '#4E0707', '#6E6E6E'];
   topCategories.forEach((cat: any, index: number) => {
     cat.color = colors[index % colors.length];
   });
@@ -302,7 +302,7 @@ export default function RevenueAnalytics() {
                 className={`px-4 py-2 rounded-[16px] text-xs font-semibold uppercase tracking-wider transition-all border ${
                   timeframe === t
                     ? 'bg-[#1A1A1A] text-white border-transparent'
-                    : 'bg-white text-[#6E6E6E] border-[rgba(0,0,0,0.06)] hover:border-[#C5A059]'
+                    : 'bg-white text-[#6E6E6E] border-[rgba(0,0,0,0.06)] hover:border-[#FF6A00]'
                 }`}
               >
                 {t}
@@ -310,7 +310,7 @@ export default function RevenueAnalytics() {
             ))}
             <button
               onClick={fetchData}
-              className="p-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#C5A059] transition-all"
+              className="p-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#FF6A00] transition-all"
             >
               <RefreshCw size={14} />
             </button>
@@ -322,7 +322,7 @@ export default function RevenueAnalytics() {
           {/* Main Area Chart */}
           <div className="lg:col-span-2 glass-card rounded-[28px] p-6 shadow-luxury min-h-[420px] flex flex-col justify-between">
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-widest">Revenue Timeline</span>
+              <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-widest">Revenue Timeline</span>
               <h3 className="font-marcellus text-xl text-[#1A1A1A] mt-1 font-light uppercase tracking-wider">
                 Sales Volume
               </h3>
@@ -333,8 +333,8 @@ export default function RevenueAnalytics() {
                 <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorGoldGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C5A059" stopOpacity={0.25}/>
-                      <stop offset="95%" stopColor="#C5A059" stopOpacity={0.0}/>
+                      <stop offset="5%" stopColor="#FF6A00" stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor="#FF6A00" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.02)" />
@@ -344,7 +344,7 @@ export default function RevenueAnalytics() {
                     contentStyle={{ background: '#fff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '12px', fontSize: '11px' }}
                     formatter={(value) => [`₹${(value as number).toLocaleString()}`, 'Total Sales']}
                   />
-                  <Area type="monotone" dataKey="revenue" stroke="#C5A059" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGoldGrad)" />
+                  <Area type="monotone" dataKey="revenue" stroke="#FF6A00" strokeWidth={2.5} fillOpacity={1} fill="url(#colorGoldGrad)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -376,7 +376,7 @@ export default function RevenueAnalytics() {
                     />
                     <Bar dataKey="revenue" radius={[0, 6, 6, 0]} barSize={12}>
                       {topProducts.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={index === 0 ? '#C5A059' : '#C5A059CC'} />
+                        <Cell key={`cell-${index}`} fill={index === 0 ? '#FF6A00' : '#FF6A00CC'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -464,7 +464,7 @@ export default function RevenueAnalytics() {
           {/* Revenue Heatmap grid (Visual representation) */}
           <div className="lg:col-span-2 glass-card rounded-[28px] p-6 shadow-luxury flex flex-col justify-between">
             <div>
-              <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-widest">Engagement Density</span>
+              <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-widest">Engagement Density</span>
               <h3 className="font-marcellus text-xl text-[#1A1A1A] mt-1 font-light uppercase tracking-wider">
                 Weekly Revenue Heatmap
               </h3>
@@ -491,8 +491,8 @@ export default function RevenueAnalytics() {
                       {heatmapData[day]?.map((val, vIdx) => (
                         <div
                           key={vIdx}
-                          style={{ backgroundColor: `rgba(197, 160, 89, ${val})` }}
-                          className="h-8 rounded-lg relative group transition-all duration-200 cursor-pointer border border-[rgba(197,160,89,0.05)] hover:border-[#C5A059]"
+                          style={{ backgroundColor: `rgba(255, 106, 0, ${val})` }}
+                          className="h-8 rounded-lg relative group transition-all duration-200 cursor-pointer border border-[rgba(255, 106, 0,0.05)] hover:border-[#FF6A00]"
                         >
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[9px] px-2 py-1 rounded whitespace-nowrap z-50">
                             Sales Index: {Math.floor(val * 100)}%
@@ -508,10 +508,10 @@ export default function RevenueAnalytics() {
               <div className="flex justify-between items-center border-t border-gray-100 pt-4 mt-4 text-[10px] text-gray-500 font-poppins">
                 <span>Lower Sales Density</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded bg-[rgba(197,160,89,0.1)]" />
-                  <span className="w-3 h-3 rounded bg-[rgba(197,160,89,0.4)]" />
-                  <span className="w-3 h-3 rounded bg-[rgba(197,160,89,0.7)]" />
-                  <span className="w-3 h-3 rounded bg-[rgba(197,160,89,0.95)]" />
+                  <span className="w-3 h-3 rounded bg-[rgba(255, 106, 0,0.1)]" />
+                  <span className="w-3 h-3 rounded bg-[rgba(255, 106, 0,0.4)]" />
+                  <span className="w-3 h-3 rounded bg-[rgba(255, 106, 0,0.7)]" />
+                  <span className="w-3 h-3 rounded bg-[rgba(255, 106, 0,0.95)]" />
                 </div>
                 <span>Peak Sales Density</span>
               </div>

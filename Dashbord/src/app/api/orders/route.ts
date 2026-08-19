@@ -52,7 +52,8 @@ export async function GET(req: Request) {
         orders = orders.filter(o => 
           o.id.toLowerCase().includes(query) ||
           o.customerName.toLowerCase().includes(query) ||
-          o.customerEmail.toLowerCase().includes(query)
+          o.customerEmail.toLowerCase().includes(query) ||
+          (o.shippingAddress?.phone || '').includes(query)
         );
       }
       

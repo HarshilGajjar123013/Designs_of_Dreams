@@ -8,6 +8,7 @@ import {
   X, ArrowRight, Printer, ShieldAlert, CreditCard 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { printInvoice } from '@/lib/printInvoice';
 
 export default function OrderManagement() {
   const [mounted, setMounted] = useState(false);
@@ -103,7 +104,9 @@ export default function OrderManagement() {
 
   const filteredOrders = orders.filter((o) => {
     const matchesSearch = o.id.toLowerCase().includes(search.toLowerCase()) || 
-                          o.customerName.toLowerCase().includes(search.toLowerCase());
+                          o.customerName.toLowerCase().includes(search.toLowerCase()) ||
+                          o.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
+                          (o.shippingAddress?.phone || '').includes(search);
     const matchesStatus = statusFilter === 'ALL' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -132,16 +135,16 @@ export default function OrderManagement() {
         <div className="flex flex-col md:flex-row gap-4">
           <input
             type="text"
-            placeholder="Search by Order ID or Patron Name..."
+            placeholder="Search by Order ID, Name, Email, or Phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#C5A059] shadow-sm"
+            className="flex-1 px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00] shadow-sm"
           />
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#C5A059] text-gray-700 shadow-sm"
+            className="px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00] text-gray-700 shadow-sm"
           >
             <option value="ALL">All Order Statuses</option>
             <option value="PENDING">Pending</option>
@@ -162,6 +165,7 @@ export default function OrderManagement() {
                 <tr>
                   <th>Order ID</th>
                   <th>Customer</th>
+                  <th>Phone</th>
                   <th>Order Date</th>
                   <th>Grand Total</th>
                   <th>Status</th>
@@ -179,6 +183,7 @@ export default function OrderManagement() {
                         <p className="text-[10px] text-gray-500">{o.customerEmail}</p>
                       </div>
                     </td>
+                    <td className="text-xs text-gray-600 font-inter">{o.shippingAddress?.phone || '—'}</td>
                     <td className="text-xs text-gray-600 font-inter">
                       {new Date(o.createdAt).toLocaleDateString('en-IN', {
                         year: 'numeric', month: 'short', day: 'numeric'
@@ -203,7 +208,7 @@ export default function OrderManagement() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => setSelectedOrder(o)}
-                          className="p-1.5 bg-white border border-gray-200 hover:border-[#C5A059] rounded-lg text-gray-600 hover:text-[#C5A059] transition-all flex items-center gap-1 text-[10px]"
+                          className="p-1.5 bg-white border border-gray-200 hover:border-[#FF6A00] rounded-lg text-gray-600 hover:text-[#FF6A00] transition-all flex items-center gap-1 text-[10px]"
                         >
                           <Eye size={12} /> Inspect
                         </button>
@@ -259,15 +264,15 @@ export default function OrderManagement() {
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-6">
                   {/* Status update widget */}
-                  <div className="border border-[rgba(197,160,89,0.2)] bg-[#FAF9F6] p-5 rounded-[20px] space-y-3">
-                    <span className="text-[10px] uppercase font-bold text-[#C5A059] tracking-wider block">Fulfillment Action Center</span>
+                  <div className="border border-[rgba(255, 106, 0,0.2)] bg-[#FAF9F6] p-5 rounded-[20px] space-y-3">
+                    <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-wider block">Fulfillment Action Center</span>
                     <div className="flex gap-2">
                       <select
                         value={selectedOrder.status}
                         onChange={(e) => {
                           handleUpdateOrderStatus(selectedOrder.id, e.target.value);
                         }}
-                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059] bg-white text-gray-700 font-semibold"
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00] bg-white text-gray-700 font-semibold"
                       >
                         <option value="PENDING">Pending</option>
                         <option value="PROCESSING">Processing</option>
@@ -290,10 +295,23 @@ export default function OrderManagement() {
                   {/* Customer information */}
                   <div className="space-y-2">
                     <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Patron Information</h4>
-                    <div className="p-4 border border-gray-100 rounded-xl text-xs space-y-1">
-                      <p className="font-semibold text-gray-900">{selectedOrder.customerName}</p>
-                      <p className="text-gray-500">{selectedOrder.customerEmail}</p>
-                      <p className="text-gray-500">{selectedOrder.shippingAddress.phone}</p>
+                    <div className="p-4 border border-gray-100 rounded-xl text-xs space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Name</span>
+                        <p className="font-semibold text-gray-900">{selectedOrder.customerName}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Email</span>
+                        <p className="text-gray-700">{selectedOrder.customerEmail}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Phone</span>
+                        <p className="text-gray-700 font-inter">{selectedOrder.shippingAddress?.phone || '—'}</p>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">Payment</span>
+                        <p className="text-gray-700 font-inter font-semibold">{selectedOrder.paymentMethod?.replace('_', ' ')}</p>
+                      </div>
                     </div>
                   </div>
 
@@ -349,7 +367,7 @@ export default function OrderManagement() {
                             value={carrier}
                             onChange={(e) => setCarrier(e.target.value)}
                             placeholder="DHL Premium Cargo"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                           />
                         </div>
                         <div>
@@ -359,7 +377,7 @@ export default function OrderManagement() {
                             value={trackingId}
                             onChange={(e) => setTrackingId(e.target.value)}
                             placeholder="DHL-DOD-8921"
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                           />
                         </div>
                       </div>
@@ -371,12 +389,12 @@ export default function OrderManagement() {
                             type="date"
                             value={estDelivery}
                             onChange={(e) => setEstDelivery(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-inter focus:outline-none focus:border-[#C5A059]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-inter focus:outline-none focus:border-[#FF6A00]"
                           />
                         </div>
                         <button
                           type="submit"
-                          className="bg-[#1A1A1A] hover:bg-[#C5A059] text-white px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all self-end"
+                          className="bg-[#1A1A1A] hover:bg-[#FF6A00] text-white px-4 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all self-end"
                         >
                           Save
                         </button>
@@ -395,7 +413,7 @@ export default function OrderManagement() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 0.6 }}
+                animate={{ opacity: 0.5 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setInvoiceOrder(null)}
                 className="absolute inset-0 bg-black"
@@ -405,131 +423,156 @@ export default function OrderManagement() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl relative z-10 p-10 flex flex-col justify-between max-h-[90vh]"
+                className="w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl relative z-10 flex flex-col justify-between max-h-[90vh]"
               >
                 {/* Print area */}
-                <div id="print-area" className="flex-1 overflow-y-auto pr-2 space-y-8 print:p-0">
-                  {/* Brand Header */}
-                  <div className="flex justify-between items-start border-b border-gray-200 pb-6">
-                    <div>
-                      <span className="font-marcellus text-2xl tracking-[0.2em] uppercase font-light">
-                        Designs of Dreams
-                      </span>
-                      <p className="text-[9px] uppercase tracking-[0.3em] text-[#C5A059] font-semibold">Atelier Couture</p>
-                      <p className="text-[10px] text-gray-500 mt-2 font-poppins">Artisanal Hub: Sector 15, Noida, UP, India</p>
-                      <p className="text-[10px] text-gray-500 font-poppins">Atelier GSTIN: 09AADCD1234F1Z5</p>
+                <div id="print-area" className="flex-1 overflow-y-auto space-y-6">
+                  {/* Invoice Header Bar */}
+                  <div className="bg-white border-b-2 border-[#FF6A00] p-6 sm:p-8 flex justify-between items-center">
+                    <div className="flex items-center gap-3.5">
+                      <img src="/logo.png" alt="Designs of Dreams" className="h-11 w-auto object-contain" />
+                      <div>
+                        <h3 className="font-playfair text-xl sm:text-2xl font-bold text-[#FF6A00] tracking-wide m-0">DESIGNS OF DREAMS</h3>
+                        <p className="text-[10px] text-gray-500 font-semibold tracking-[0.15em] uppercase mt-1">HERITAGE ATELIER — TAX INVOICE</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <h3 className="font-marcellus text-2xl font-light text-gray-800 uppercase tracking-widest">Invoice</h3>
-                      <p className="text-xs font-semibold text-gray-800 font-inter mt-1">#INV-{invoiceOrder.id}</p>
-                      <p className="text-[10px] text-gray-500 mt-1 font-inter">Date: {new Date(invoiceOrder.createdAt).toLocaleDateString()}</p>
+                    <div>
+                      <span className="inline-block bg-[#FF6A00] text-white text-[10px] font-bold px-4 py-1.5 rounded-full tracking-widest uppercase">TAX INVOICE</span>
                     </div>
                   </div>
 
-                  {/* Customer Billing & Shipping */}
-                  <div className="grid grid-cols-2 gap-8 text-xs font-poppins">
+                  {/* Invoice Meta Row */}
+                  <div className="flex justify-between items-center px-6 sm:px-8 py-4 bg-[#FAF9F6] border-b border-gray-100 text-xs">
                     <div>
-                      <h5 className="font-semibold text-gray-800 uppercase text-[10px] tracking-wider mb-2">Billed To:</h5>
-                      <p className="font-bold text-gray-900">{invoiceOrder.customerName}</p>
-                      <p className="text-gray-600 mt-1">{invoiceOrder.shippingAddress.line1}</p>
-                      {invoiceOrder.shippingAddress.line2 && <p className="text-gray-600">{invoiceOrder.shippingAddress.line2}</p>}
-                      <p className="text-gray-600">
-                        {invoiceOrder.shippingAddress.city}, {invoiceOrder.shippingAddress.state} — {invoiceOrder.shippingAddress.postalCode}
-                      </p>
-                      <p className="text-gray-600 font-semibold">{invoiceOrder.shippingAddress.phone}</p>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-0.5">INVOICE NO.</span>
+                      <span className="font-bold text-[#FF6A00] text-sm">INV-{invoiceOrder.id}</span>
                     </div>
-
+                    <div>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-0.5">ORDER ID</span>
+                      <span className="font-bold text-gray-900">{invoiceOrder.id}</span>
+                    </div>
                     <div className="text-right">
-                      <h5 className="font-semibold text-gray-800 uppercase text-[10px] tracking-wider mb-2">Shipment details:</h5>
-                      <p className="text-gray-700"><strong className="text-gray-900">Carrier:</strong> {invoiceOrder.trackingDetails?.carrier || 'Standard Atelier'}</p>
-                      <p className="text-gray-700 mt-0.5"><strong className="text-gray-900">Tracking Code:</strong> {invoiceOrder.trackingDetails?.trackingId || 'N/A'}</p>
-                      <p className="text-gray-700 mt-0.5"><strong className="text-gray-900">Method:</strong> {invoiceOrder.paymentMethod.replace('_', ' ')}</p>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-0.5">DATE</span>
+                      <span className="font-semibold text-gray-800">{new Date(invoiceOrder.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    </div>
+                  </div>
+
+                  {/* Billing Row */}
+                  <div className="grid grid-cols-2 gap-6 px-6 sm:px-8 py-4 border-b border-gray-100 text-xs">
+                    <div>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-2">BILLED TO</span>
+                      <p className="font-bold text-gray-900">{invoiceOrder.customerName}</p>
+                      {invoiceOrder.customerEmail && <p className="text-gray-500 text-[11px] mt-0.5">{invoiceOrder.customerEmail}</p>}
+                      {invoiceOrder.shippingAddress?.phone && <p className="text-gray-500 text-[11px]">+91 {invoiceOrder.shippingAddress.phone}</p>}
+                      <p className="text-gray-600 text-[11px] mt-1 leading-relaxed">
+                        {[
+                          invoiceOrder.shippingAddress?.line1,
+                          invoiceOrder.shippingAddress?.line2,
+                          invoiceOrder.shippingAddress?.city,
+                          invoiceOrder.shippingAddress?.state,
+                          invoiceOrder.shippingAddress?.postalCode
+                        ].filter(Boolean).join(', ')}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block mb-2">SOLD BY</span>
+                      <p className="font-bold text-gray-900">Designs Of Dreams Pvt. Ltd.</p>
+                      <p className="text-gray-500 text-[11px] mt-0.5">Atelier Workshop, Heritage Weave District</p>
+                      <p className="text-gray-500 text-[11px]">Varanasi, Uttar Pradesh 221001</p>
+                      <p className="text-gray-400 text-[10px] mt-1">GSTIN: 09AABCD1234E1Z5</p>
                     </div>
                   </div>
 
                   {/* Items Invoice Table */}
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray-200 text-[#C5A059] uppercase tracking-wider font-semibold text-[9px]">
-                        <th className="py-3">Couture Piece</th>
-                        <th className="py-3 text-center">SKU</th>
-                        <th className="py-3 text-center">Qty</th>
-                        <th className="py-3 text-right">Unit Price</th>
-                        <th className="py-3 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invoiceOrder.items.map((item: any, index: number) => (
-                        <tr key={index} className="border-b border-gray-100 text-gray-700">
-                          <td className="py-4 font-semibold">{item.name} ({item.size})</td>
-                          <td className="py-4 text-center font-inter">{item.sku}</td>
-                          <td className="py-4 text-center font-inter">{item.quantity}</td>
-                          <td className="py-4 text-right font-inter">₹{item.price.toLocaleString()}</td>
-                          <td className="py-4 text-right font-inter font-semibold">₹{(item.price * item.quantity).toLocaleString()}</td>
+                  <div className="px-6 sm:px-8">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="border-b-2 border-gray-100 text-gray-400 uppercase tracking-wider font-semibold text-[10px]">
+                          <th className="py-3">ITEM DESCRIPTION</th>
+                          <th className="py-3 text-center">QTY</th>
+                          <th className="py-3 text-right">UNIT PRICE</th>
+                          <th className="py-3 text-right">TOTAL</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {invoiceOrder.items.map((item: any, index: number) => (
+                          <tr key={index} className="border-b border-gray-100 text-gray-700">
+                            <td className="py-3.5 pr-2">
+                              <span className="font-semibold text-gray-900 block">{item.name}</span>
+                              <span className="text-[10px] text-gray-400 block mt-0.5">Size: {item.size || 'Standard'}{item.sku ? ` | SKU: ${item.sku}` : ''}</span>
+                            </td>
+                            <td className="py-3.5 text-center font-inter text-gray-600">{item.quantity}</td>
+                            <td className="py-3.5 text-right font-inter text-gray-600">₹{item.price.toLocaleString('en-IN')}</td>
+                            <td className="py-3.5 text-right font-inter font-bold text-gray-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-                  {/* Invoice Summary totals */}
-                  <div className="flex justify-end pt-4">
-                    <div className="w-64 space-y-2 text-xs font-poppins">
+                  {/* Totals */}
+                  <div className="flex justify-end px-6 sm:px-8">
+                    <div className="w-64 space-y-1.5 text-xs">
                       <div className="flex justify-between text-gray-500">
-                        <span>Items Subtotal:</span>
-                        <span className="font-semibold font-inter">₹{invoiceOrder.totalAmount.toLocaleString()}</span>
+                        <span>Subtotal</span>
+                        <span className="font-semibold text-gray-700">₹{invoiceOrder.totalAmount.toLocaleString('en-IN')}</span>
                       </div>
                       <div className="flex justify-between text-gray-500">
-                        <span>GST Tax (5% / 12%):</span>
-                        <span className="font-semibold font-inter">₹{invoiceOrder.gstAmount.toLocaleString()}</span>
+                        <span>GST (5%)</span>
+                        <span className="font-semibold text-gray-700">₹{invoiceOrder.gstAmount.toLocaleString('en-IN')}</span>
                       </div>
                       <div className="flex justify-between text-gray-500">
-                        <span>Delivery Fee:</span>
-                        <span className="font-semibold font-inter">
-                          {invoiceOrder.shippingAmount === 0 ? 'Free' : `₹${invoiceOrder.shippingAmount}`}
-                        </span>
+                        <span>Shipping</span>
+                        <span className="font-semibold text-gray-700">{invoiceOrder.shippingAmount === 0 ? 'FREE' : `₹${invoiceOrder.shippingAmount}`}</span>
                       </div>
-                      {invoiceOrder.discountAmount > 0 && (
-                        <div className="flex justify-between text-[#FF6A00] font-semibold">
-                          <span>Coupons Discount:</span>
-                          <span className="font-inter">-₹{invoiceOrder.discountAmount.toLocaleString()}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-gray-900 font-bold border-t border-gray-200 pt-3 text-sm">
-                        <span>Grand Total:</span>
-                        <span className="text-[#C5A059] font-inter">₹{invoiceOrder.grandTotal.toLocaleString()}</span>
+                      <div className="border-t border-gray-100 my-1.5" />
+                      <div className="flex justify-between text-base font-bold text-gray-900 py-1">
+                        <span>Grand Total</span>
+                        <span className="text-[#FF6A00]">₹{invoiceOrder.grandTotal.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Terms & Signature */}
-                  <div className="border-t border-gray-100 pt-6 mt-8 flex justify-between items-center text-[10px] text-gray-400 font-poppins">
-                    <p className="max-w-xs leading-relaxed">
-                      * All boutique purchases are subject to Atelier registration terms. Returns must be requested within 7 days of delivery.
-                    </p>
-                    <div className="text-center">
-                      <div className="w-32 h-[1px] bg-gray-200 mb-2 mx-auto" />
-                      <p className="uppercase tracking-widest font-semibold text-[8px] text-gray-500">Atelier Registrar</p>
+                  {/* Payment Bar */}
+                  <div className="mx-6 sm:mx-8 p-4 bg-[#FAF8F4] rounded-xl flex justify-between items-center border border-gray-100 text-xs">
+                    <div>
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block">PAYMENT METHOD</span>
+                      <p className="font-bold text-gray-900 mt-0.5">{invoiceOrder.paymentMethod === 'COD' ? 'Cash On Delivery (COD)' : invoiceOrder.paymentMethod}</p>
                     </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold block">PAYMENT STATUS</span>
+                      <span className="inline-block bg-[#FF6A00]/10 text-[#FF6A00] font-bold text-[10px] px-3 py-1 rounded-full uppercase tracking-wider mt-1">
+                        {invoiceOrder.paymentMethod === 'COD' ? 'COLLECT ON DELIVERY' : 'PAID'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Footer Note */}
+                  <div className="px-6 sm:px-8 pb-4 text-center">
+                    <p className="text-[11px] text-gray-400 leading-relaxed">
+                      This is a computer-generated invoice and does not require a physical signature.<br/>
+                      For queries contact us at <span className="text-[#FF6A00] font-semibold">support@designsofdreams.in</span>
+                    </p>
                   </div>
                 </div>
 
                 {/* Print button & footer */}
-                <div className="border-t border-gray-100 pt-6 mt-6 flex justify-between items-center bg-white z-20">
+                <div className="border-t border-gray-100 p-4 px-6 sm:px-8 flex justify-between items-center bg-white z-20">
                   <span className="text-[10px] text-gray-400">Atelier Print Server v1.0</span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <button
                       onClick={() => setInvoiceOrder(null)}
-                      className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-all"
+                      className="px-5 py-2.5 border border-gray-200 rounded-full text-xs font-bold text-gray-600 bg-white hover:bg-gray-50 transition-all uppercase tracking-wider"
                     >
                       Close Window
                     </button>
                     <button
                       onClick={() => {
-                        window.print();
+                        printInvoice(invoiceOrder);
                       }}
-                      className="px-5 py-2 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#C5A059] transition-all shadow-md flex items-center gap-1.5 uppercase tracking-wider"
+                      className="px-6 py-2.5 bg-[#FF6A00] text-white rounded-full text-xs font-bold hover:bg-[#e05d00] transition-all shadow-md flex items-center gap-2 uppercase tracking-wider"
                     >
-                      <Printer size={14} /> Send to Printer
+                      <Printer size={15} /> Send to Printer
                     </button>
                   </div>
                 </div>

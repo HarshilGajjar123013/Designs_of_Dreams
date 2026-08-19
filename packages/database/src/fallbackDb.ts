@@ -4,7 +4,20 @@ import path from 'path';
 // Find the monorepo root dynamically to ensure a single shared db-fallback.json file
 export function getSharedFallbackPath(): string {
   let currentDir = process.cwd();
+
+  // Prefer an explicit shared fallback file if it already exists in an ancestor.
+  for (let i = 0; i < 10; i++) {
+    const fallbackPath = path.join(currentDir, 'db-fallback.json');
+    if (fs.existsSync(fallbackPath)) {
+      return fallbackPath;
+    }
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) break;
+    currentDir = parentDir;
+  }
+
   // Traverse up to 5 levels to find the monorepo root containing package.json with name "designs-of-dreams"
+  currentDir = process.cwd();
   for (let i = 0; i < 5; i++) {
     const pkgPath = path.join(currentDir, 'package.json');
     if (fs.existsSync(pkgPath)) {
@@ -21,7 +34,7 @@ export function getSharedFallbackPath(): string {
     if (parentDir === currentDir) break;
     currentDir = parentDir;
   }
-  
+
   // Try locating relative to __dirname (when compiled inside node_modules/@dod/database)
   // __dirname is usually packages/database/src/ or packages/database/dist/
   let dir = __dirname;
@@ -336,7 +349,8 @@ const isReadOnlyEnv = !!(process.env.VERCEL || process.env.NODE_ENV === 'product
 let inMemoryData: any = null;
 
 function getRawData(): any {
-  if (inMemoryData) {
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (!isDev && inMemoryData) {
     return inMemoryData;
   }
 
@@ -376,7 +390,7 @@ function getRawData(): any {
     console.error('Failed to read fallback DB, resetting to defaults.', error);
     try {
       fs.unlinkSync(FALLBACK_FILE);
-    } catch (e) {}
+    } catch (e) { }
     inMemoryData = null;
     return getRawData();
   }

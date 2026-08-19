@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useAdminStore, ContactForm } from '@/store/adminStore';
-import { 
-  Inbox, Send, ArrowRight, Download, Mail, 
-  Phone, Calendar, CheckSquare, Clock, Search 
+import {
+  Inbox, Send, ArrowRight, Download, Mail,
+  Phone, Calendar, CheckSquare, Clock, Search
 } from 'lucide-react';
 
 export default function SupportDesk() {
@@ -14,10 +14,10 @@ export default function SupportDesk() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'UNREAD' | 'REPLIED'>('ALL');
-  
+
   // Selected Message
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
-  
+
   // Reply composer
   const [replyText, setReplyText] = useState('');
 
@@ -80,7 +80,7 @@ export default function SupportDesk() {
 
     // Build CSV Headers & Rows
     const headers = ['Ticket ID', 'Name', 'Email', 'Phone', 'Subject', 'Message', 'Status', 'Reply Text', 'Replied At', 'Created At'];
-    
+
     const rows = contactForms.map(cf => [
       cf.id,
       `"${cf.name.replace(/"/g, '""')}"`,
@@ -95,7 +95,7 @@ export default function SupportDesk() {
     ]);
 
     const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    
+
     // Create Blob and download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -108,12 +108,12 @@ export default function SupportDesk() {
   };
 
   const filteredTickets = contactForms.filter((cf) => {
-    const matchesSearch = cf.name.toLowerCase().includes(search.toLowerCase()) || 
-                          cf.subject.toLowerCase().includes(search.toLowerCase()) ||
-                          cf.message.toLowerCase().includes(search.toLowerCase());
-    
+    const matchesSearch = cf.name.toLowerCase().includes(search.toLowerCase()) ||
+      cf.subject.toLowerCase().includes(search.toLowerCase()) ||
+      cf.message.toLowerCase().includes(search.toLowerCase());
+
     const matchesStatus = statusFilter === 'ALL' || cf.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -128,7 +128,7 @@ export default function SupportDesk() {
           </div>
           <button
             onClick={handleExportCSV}
-            className="px-4 py-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-semibold text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#C5A059] transition-all flex items-center gap-2 shadow-sm"
+            className="px-4 py-2 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-semibold text-[#6E6E6E] hover:text-[#1A1A1A] hover:border-[#FF6A00] transition-all flex items-center gap-2 shadow-sm"
           >
             <Download size={14} /> Export Tickets (CSV)
           </button>
@@ -143,7 +143,7 @@ export default function SupportDesk() {
               placeholder="Search by sender, subject, or message keyword..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#C5A059] shadow-sm"
+              className="w-full pl-11 pr-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00] shadow-sm"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function SupportDesk() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#C5A059] text-gray-700 shadow-sm"
+              className="px-4 py-3.5 bg-white border border-[rgba(0,0,0,0.06)] rounded-[16px] text-xs font-poppins focus:outline-none focus:border-[#FF6A00] text-gray-700 shadow-sm"
             >
               <option value="ALL">All Enquiries</option>
               <option value="UNREAD">Unread / Unanswered</option>
@@ -175,19 +175,17 @@ export default function SupportDesk() {
                 <div
                   key={cf.id}
                   onClick={() => setSelectedTicket(cf)}
-                  className={`p-5 rounded-[24px] border transition-all cursor-pointer flex flex-col justify-between h-[150px] ${
-                    selectedTicket?.id === cf.id
-                      ? 'bg-white border-[#C5A059] shadow-luxury'
+                  className={`p-5 rounded-[24px] border transition-all cursor-pointer flex flex-col justify-between h-[150px] ${selectedTicket?.id === cf.id
+                      ? 'bg-white border-[#FF6A00] shadow-luxury'
                       : 'bg-white hover:bg-gray-50 border-[rgba(0,0,0,0.03)] shadow-sm'
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className={`text-[8px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded border ${
-                        cf.status === 'UNREAD'
+                      <span className={`text-[8px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded border ${cf.status === 'UNREAD'
                           ? 'bg-amber-50 text-[#D99A00] border-[rgba(217,154,0,0.15)] animate-pulse'
                           : 'bg-green-50 text-[#0FA958] border-[rgba(15,169,88,0.15)]'
-                      }`}>
+                        }`}>
                         {cf.status}
                       </span>
                       <h4 className="font-marcellus text-base text-gray-900 font-light mt-2">
@@ -207,7 +205,7 @@ export default function SupportDesk() {
 
                   <div className="flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-50 pt-2 mt-2 font-poppins">
                     <span>Sender: <strong>{cf.name}</strong> ({cf.email})</span>
-                    <span className="text-[#C5A059] font-semibold flex items-center gap-0.5">
+                    <span className="text-[#FF6A00] font-semibold flex items-center gap-0.5">
                       Inspect Request <ArrowRight size={10} />
                     </span>
                   </div>
@@ -268,17 +266,17 @@ export default function SupportDesk() {
                 {/* Reply Composer Form */}
                 {selectedTicket.status === 'UNREAD' && (
                   <form onSubmit={handleSendReply} className="space-y-3 border-t border-gray-100 pt-4 bg-white">
-                    <span className="text-[9px] uppercase font-bold text-[#C5A059] tracking-wider block">Compose Atelier Reply</span>
+                    <span className="text-[9px] uppercase font-bold text-[#FF6A00] tracking-wider block">Compose Atelier Reply</span>
                     <textarea
                       rows={4}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       placeholder="Dear client, Thank you for writing to Designs of Dreams..."
-                      className="w-full p-3 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#C5A059]"
+                      className="w-full p-3 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                     />
                     <button
                       type="submit"
-                      className="w-full bg-[#1A1A1A] hover:bg-[#C5A059] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md"
+                      className="w-full bg-[#1A1A1A] hover:bg-[#FF6A00] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md"
                     >
                       <Send size={12} /> Send Response
                     </button>
