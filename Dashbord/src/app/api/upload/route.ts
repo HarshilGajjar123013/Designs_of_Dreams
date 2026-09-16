@@ -1,12 +1,12 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Image Upload API — Local File Storage
-// Saves to both Dashboard and Storefront public folders
+// Image Upload API — Hybrid Storage
+// Local dev: saves to filesystem
+// Vercel/Production: returns base64 data URLs (no Cloudinary needed)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir, copyFile } from 'fs/promises';
 import path from 'path';
-import { uploadToCloudinary } from '@/lib/cloudinary';
 import { verifyAdminSession } from '@/lib/auth';
 import { randomUUID } from 'crypto';
 
@@ -96,31 +96,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const isCloudinaryConfigured =
-      process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_CLOUD_NAME !== 'your-cloud-name';
-
-    if (isReadOnlyEnv && !isCloudinaryConfigured) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Local filesystem is read-only on Vercel. Please configure Cloudinary environment variables (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) to enable uploads in production.'
-        },
-        { status: 400 }
-      );
-    }
-
-    // Save each file (Cloudinary if configured, otherwise local fallback for local development)
+    // Save each file
     const uploadResults = await Promise.all(
       files.map(async (file) => {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        if (isCloudinaryConfigured) {
-          const isVideo = file.type.startsWith('video/');
-          const uploadRes = await uploadToCloudinary(buffer, 'dod_products', isVideo ? 'video' : 'image');
+        if (isReadOnlyEnv) {
+          // On Vercel: convert to base64 data URL (stored in DB with product)
+          const base64 = buffer.toString('base64');
+          const dataUrl = `data:${file.type};base64,${base64}`;
           return {
-            url: uploadRes.url,
+            url: dataUrl,
             originalName: file.name,
           };
         } else {
