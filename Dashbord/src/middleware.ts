@@ -1,16 +1,21 @@
-
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dod-atelier-fallback-secret-key-at-least-32-bytes-long'
-);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production!');
+    }
+    return new TextEncoder().encode('dod-atelier-dev-fallback-secret-key-at-least-32-bytes-long');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const COOKIE_NAME = 'dod-admin-token';
 
-// Pages that require SUPER_ADMIN role
+// Pages and APIs that require SUPER_ADMIN role
 const SUPER_ADMIN_ROUTES = [
   '/analytics',
   '/cms',
@@ -20,15 +25,22 @@ const SUPER_ADMIN_ROUTES = [
   '/settings',
 ];
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Bypass public files, api/auth/login, and next.js internal assets
+  // 1. Bypass public files, login API, logout API, PWA assets, and Next.js internal assets
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth/login') ||
+    pathname.startsWith('/api/auth/logout') ||
     pathname === '/favicon.ico' ||
-    pathname.startsWith('/images')
+    pathname === '/manifest.json' ||
+    pathname === '/sw.js' ||
+    pathname === '/logo.png' ||
+    pathname === '/icon.png' ||
+    pathname.startsWith('/icons') ||
+    pathname.startsWith('/images') ||
+    pathname.startsWith('/uploads')
   ) {
     return NextResponse.next();
   }
@@ -40,7 +52,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/login') {
     if (token) {
       try {
-        await jwtVerify(token, JWT_SECRET);
+        await jwtVerify(token, getJwtSecret());
         // If already logged in, redirect to overview
         return NextResponse.redirect(new URL('/', request.url));
       } catch {
@@ -55,16 +67,14 @@ export async function proxy(request: NextRequest) {
 
   // 4. Guarantees for all other pages & APIs
   if (!token) {
-    // If accessing API, return 401 JSON
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized: Admin authentication required' }, { status: 401 });
     }
-    // If page, redirect to login
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     const userRole = payload.role as string;
 
     // 5. Role validation for SUPER_ADMIN restricted sections
@@ -73,15 +83,13 @@ export async function proxy(request: NextRequest) {
     );
 
     if (isSuperAdminRoute && userRole !== 'SUPER_ADMIN') {
-      // Block MANAGER from accessing SUPER_ADMIN APIs
       if (pathname.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
       }
-      // Redirect MANAGER from accessing SUPER_ADMIN pages
       return NextResponse.redirect(new URL('/', request.url));
     }
 
-    // Allow access, pass down user role and details in headers
+    // Set request headers for downstream server components
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', payload.id as string);
     requestHeaders.set('x-user-role', userRole);
@@ -94,11 +102,9 @@ export async function proxy(request: NextRequest) {
 
   } catch (error) {
     console.error('Middleware token validation failed:', error);
-    // If API, return 401
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ error: 'Unauthorized session' }, { status: 401 });
     }
-    // Otherwise redirect to login
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete(COOKIE_NAME);
     return response;
@@ -107,13 +113,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api/auth/login (public auth endpoint)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|logo.png|icon.png|icons).*)',
   ],
 };

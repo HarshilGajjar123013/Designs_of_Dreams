@@ -1,98 +1,64 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
+import { verifyAdminSession } from '@/lib/auth';
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+const editableFields = ['name', 'email', 'phone', 'alternatePhone', 'notes', 'joinedDate', 'purchaseCount', 'lifetimeValue'] as const;
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
+    const { response } = await verifyAdminSession();
+    if (response) return response;
+    const { id } = await params;
     const body = await req.json();
-    const { notes } = body;
-
-    let databaseConnected = true;
-    let updatedCustomer = null;
-
+    const update = Object.fromEntries(editableFields.filter(key => key in body).map(key => [key,
+      key === 'email' ? (String(body[key] || '').trim().toLowerCase() || null)
+        : key === 'joinedDate' ? new Date(body[key])
+          : key === 'purchaseCount' ? Math.max(0, Math.trunc(Number(body[key]) || 0))
+            : key === 'lifetimeValue' ? Math.max(0, Number(body[key]) || 0)
+              : body[key]
+    ]));
+    if ('customerType' in body) delete update.customerType;
     try {
-      const dbCust = await prisma.customer.update({
-        where: { id },
-        data: { notes },
-        include: {
-          orders: true,
-          addresses: true,
-          cartItems: { include: { product: true } },
-          wishlistItems: { include: { product: true } }
-        }
-      });
-
-      const totalSpent = dbCust.orders.reduce((sum: number, o: any) => sum + o.grandTotal, 0);
-      updatedCustomer = {
-        id: dbCust.id,
-        name: dbCust.name,
-        email: dbCust.email,
-        phone: dbCust.phone || '',
-        avatar: dbCust.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || 'P',
-        totalOrders: dbCust.orders.length,
-        totalSpent,
-        notes: dbCust.notes || '',
-        joinedDate: dbCust.joinedDate.toISOString().split('T')[0],
-        wishlist: dbCust.wishlistItems.map((w: any) => ({
-          productId: w.productId,
-          name: w.product.name,
-          price: w.product.sellingPrice,
-          image: w.product.images?.[0] || ''
-        })),
-        cart: dbCust.cartItems.map((ci: any) => ({
-          productId: ci.productId,
-          name: ci.product.name,
-          price: ci.product.sellingPrice,
-          quantity: ci.quantity,
-          image: ci.product.images?.[0] || ''
-        })),
-        addresses: dbCust.addresses.map((a: any) => ({
-          type: a.label,
-          address: `${a.line1}, ${a.line2 ? a.line2 + ', ' : ''}${a.city}, ${a.state} ${a.postalCode}`
-        }))
-      };
-      
-    } catch (dbError) {
-      console.warn('⚠️ Database patch failed, falling back to JSON DB:', dbError);
-      databaseConnected = false;
-    }
-
-    if (!databaseConnected) {
+      const existing = await (prisma as any).oldCustomer.findUnique({ where: { id } });
+      if (!existing) return NextResponse.json({ error: 'Old customer not found' }, { status: 404 });
+      const customer = await (prisma as any).oldCustomer.update({ where: { id }, data: { ...update, address: String(body.address || '').trim() || null, city: String(body.city || '').trim() || null, state: String(body.state || '').trim() || null, country: String(body.country || 'India').trim() || 'India', pincode: String(body.pincode || '').trim() || null } });
+      return NextResponse.json({ success: true, customer: { ...customer, customerType: 'old', totalOrders: customer.purchaseCount, totalSpent: customer.lifetimeValue, wishlist: [], cart: [], addresses: customer.address ? [{ type: 'Home', address: [customer.address, customer.city, customer.state, customer.pincode, customer.country].filter(Boolean).join(', ') }] : [] } });
+    } catch {
       const customers = fallbackDb.getCollection('customers');
-      const idx = customers.findIndex(c => c.id === id);
-      if (idx === -1) {
-        return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
-      }
-
-      customers[idx].notes = notes;
+      const index = customers.findIndex((customer: any) => customer.id === id);
+      if (index < 0) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      if (String(customers[index].customerType || 'NEW').toUpperCase() !== 'OLD' && Object.keys(update).some(key => key !== 'notes')) return NextResponse.json({ error: 'Only old customers can have their historical records edited.' }, { status: 403 });
+      customers[index] = { ...customers[index], ...update, joinedDate: update.joinedDate ? new Date(update.joinedDate).toISOString() : customers[index].joinedDate, ...(body.address ? { addresses: [{ type: 'Home', address: [body.address, body.city, body.state, body.pincode, body.country || 'India'].filter(Boolean).join(', ') }] } : {}) };
       fallbackDb.saveCollection('customers', customers);
-      
-      const orders = fallbackDb.getCollection('orders');
-      const custOrders = orders.filter((o: any) => o.customerName === customers[idx].name || o.customerId === customers[idx].id);
-      const totalSpent = custOrders.reduce((sum: number, o: any) => sum + o.grandTotal, 0);
-      
-      updatedCustomer = {
-        ...customers[idx],
-        totalOrders: custOrders.length,
-        totalSpent,
-      };
+      return NextResponse.json({ success: true, customer: { ...customers[index], totalOrders: Number(customers[index].purchaseCount) || 0, totalSpent: Number(customers[index].lifetimeValue) || 0 } });
     }
+  } catch (error) {
+    console.error('Customer PATCH error:', error);
+    return NextResponse.json({ error: 'Failed to update customer' }, { status: 500 });
+  }
+}
 
-    return NextResponse.json({
-      success: true,
-      customer: updatedCustomer
-    });
-
-  } catch (err: any) {
-    console.error('Customer PATCH error:', err);
-    return NextResponse.json(
-      { error: 'Failed to update customer' },
-      { status: 500 }
-    );
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { response } = await verifyAdminSession();
+    if (response) return response;
+    const { id } = await params;
+    try {
+      const customer = await (prisma as any).oldCustomer.findUnique({ where: { id } });
+      if (!customer) return NextResponse.json({ error: 'Old customer not found' }, { status: 404 });
+      await (prisma as any).oldCustomer.delete({ where: { id } });
+    } catch {
+      const customers = fallbackDb.getCollection('customers');
+      const customer = customers.find((entry: any) => entry.id === id);
+      if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+      if (String(customer.customerType || 'NEW').toUpperCase() !== 'OLD') return NextResponse.json({ error: 'Only manually added old customers can be deleted.' }, { status: 403 });
+      if (fallbackDb.getCollection('orders').some((order: any) => order.customerId === id)) return NextResponse.json({ error: 'This customer has orders and cannot be deleted.' }, { status: 409 });
+      fallbackDb.saveCollection('customers', customers.filter((entry: any) => entry.id !== id));
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Customer DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete customer' }, { status: 500 });
   }
 }

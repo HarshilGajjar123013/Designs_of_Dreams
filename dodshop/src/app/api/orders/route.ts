@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
+import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const queryUserId = searchParams.get('userId');
+    const customer = await resolveCustomer(req, queryUserId);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
+    if (!customer) {
+      return NextResponse.json({
+        success: true,
+        orders: []
+      });
     }
+
+    const userId = customer.userId;
 
     let userOrders: any[] = [];
     let databaseConnected = true;
@@ -70,6 +74,7 @@ export async function GET(req: Request) {
         status,
         amount: o.grandTotal,
         items: (o.items || []).map((item: any) => ({
+          productId: item.productId,
           title: item.name,
           price: item.price,
           size: item.size,

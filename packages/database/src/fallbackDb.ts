@@ -167,7 +167,7 @@ const INITIAL_PRODUCTS = [
     bestSeller: true,
     premium: false,
     newArrival: true,
-    images: ['https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=600'],
+    images: ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600'],
     rating: 4.8,
     reviewCount: 36,
   }
@@ -286,7 +286,7 @@ const INITIAL_CMS_CONFIG = {
       title: "Indigo Dye Vat",
       category: "Organic Coloring",
       filterTag: "coloring",
-      image: "https://images.unsplash.com/photo-1524295988555-44ade8b4034f?q=80&w=600&auto=format&fit=crop",
+      image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
       desc: "Traditional hand-dyeing processes using pure organic botanical indigo vats."
     },
     {
@@ -345,10 +345,32 @@ const INITIAL_CMS_CONFIG = {
 };
 
 const isReadOnlyEnv = !!(process.env.VERCEL || process.env.NODE_ENV === 'production');
+// Enable fallback DB by default unless explicitly turned off, ensuring offline safety
+const isFallbackEnabled = process.env.ALLOW_FALLBACK_DB !== 'false';
 
 let inMemoryData: any = null;
 
+function getEmptyData() {
+  return {
+    products: [],
+    categories: [],
+    collections: [],
+    orders: [],
+    customers: [],
+    inventoryLogs: [],
+    contactForms: [],
+    securityLogs: [],
+    coupons: [],
+    cmsConfig: null,
+    customizationRequests: [],
+  };
+}
+
 function getRawData(): any {
+  if (!isFallbackEnabled) {
+    return getEmptyData();
+  }
+
   const isDev = process.env.NODE_ENV !== 'production';
   if (!isDev && inMemoryData) {
     return inMemoryData;
@@ -365,6 +387,7 @@ function getRawData(): any {
     securityLogs: INITIAL_SECURITY_LOGS,
     coupons: INITIAL_COUPONS,
     cmsConfig: INITIAL_CMS_CONFIG,
+    customizationRequests: [],
   };
 
   if (isReadOnlyEnv) {
@@ -397,6 +420,10 @@ function getRawData(): any {
 }
 
 function saveRawData(data: any) {
+  if (!isFallbackEnabled) {
+    return;
+  }
+
   inMemoryData = data;
   if (isReadOnlyEnv) {
     return;

@@ -17,17 +17,15 @@ export { cloudinary };
  */
 export async function uploadToCloudinary(
   buffer: Buffer,
-  folder: string = 'dod_products'
+  folder: string = 'dod_products',
+  resourceType: 'auto' | 'image' | 'video' = 'auto'
 ): Promise<{ url: string; publicId: string; width: number; height: number }> {
   return new Promise((resolve, reject) => {
     cloudinary.uploader
       .upload_stream(
         {
           folder,
-          resource_type: 'image',
-          transformation: [
-            { quality: 'auto', fetch_format: 'auto' },
-          ],
+          resource_type: resourceType,
         },
         (error, result) => {
           if (error) reject(error);

@@ -10,14 +10,14 @@
     "lint": "eslint",
     "db:generate": "cd ../packages/database && npx prisma generate",
     "db:push": "cd ../packages/database && npx prisma db push",
-    "db:migrate": "cd ../packages/database && npx prisma migrate dev",
+    "db:migrate": "cd ../packages/database && npx prisma db push",
     "db:seed": "cd ../packages/database && npx tsx prisma/seed.ts",
     "db:studio": "cd ../packages/database && npx prisma studio"
   },
   "dependencies": {
     "@dod/database": "*",
     "@hookform/resolvers": "^5.4.0",
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "6.19.3",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.6.0",
     "framer-motion": "^12.41.0",
@@ -43,7 +43,7 @@
     "@types/recharts": "^1.8.29",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "prisma": "^6.4.1",
+    "prisma": "6.19.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma, fallbackDb } from '@/lib/db';
 import { signToken, setAuthCookie } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
+  // Rate limit: max 10 requests per 15 minutes per IP
+  const rateLimitRes = checkRateLimit(getClientIp(req), 10, 15 * 60 * 1000);
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const { email, password } = await req.json();
 

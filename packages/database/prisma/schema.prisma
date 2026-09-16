@@ -2,17 +2,18 @@
 // 🏛️  DESIGNS OF DREAMS — Unified Database Schema
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Shared across: Dashboard (Admin) + dodshop (Customer Website)
-// Database:      PostgreSQL
-// ORM:           Prisma v7
+// Database:      MongoDB
+// ORM:           Prisma v6
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 // ────────────────────────────────────────────────────────────
@@ -27,6 +28,11 @@ enum AdminRole {
 enum AccountStatus {
   ACTIVE
   INACTIVE
+}
+
+enum CustomerType {
+  NEW
+  OLD
 }
 
 enum ProductStatus {
@@ -93,7 +99,7 @@ enum AuditStatus {
 // ────────────────────────────────────────────────────────────
 
 model AdminUser {
-  id           String        @id @default(uuid())
+  id           String        @id @default(uuid()) @map("_id")
   name         String
   email        String        @unique
   passwordHash String
@@ -112,10 +118,10 @@ model AdminUser {
 // ────────────────────────────────────────────────────────────
 
 model Category {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @map("_id")
   name        String   @unique
   slug        String   @unique
-  description String?  @db.Text
+  description String?
   image       String?
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
@@ -132,10 +138,10 @@ model Category {
 // ────────────────────────────────────────────────────────────
 
 model Collection {
-  id          String    @id @default(uuid())
+  id          String    @id @default(uuid()) @map("_id")
   name        String    @unique
   slug        String    @unique
-  description String?   @db.Text
+  description String?
   image       String?
   season      String?
   isActive    Boolean   @default(true)
@@ -154,7 +160,7 @@ model Collection {
 // ────────────────────────────────────────────────────────────
 
 model Product {
-  id            String        @id @default(uuid())
+  id            String        @id @default(uuid()) @map("_id")
   name          String
   slug          String        @unique
   sku           String        @unique
@@ -169,7 +175,7 @@ model Product {
   gst           Float         @default(5)
   stock         Int           @default(0)
   lowStockAlert Int           @default(2)
-  description   String        @db.Text
+  description   String
   fabric        String
   weaveType     String
   occasion      String
@@ -190,6 +196,7 @@ model Product {
   videoUrl      String?
   rating        Float         @default(0)
   reviewCount   Int           @default(0)
+  customizationConfig Json?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -197,6 +204,7 @@ model Product {
   orderItems    OrderItem[]
   cartItems     CartItem[]
   wishlistItems WishlistItem[]
+  customizationRequests CustomizationRequest[]
 
   @@map("products")
 }
@@ -206,13 +214,15 @@ model Product {
 // ────────────────────────────────────────────────────────────
 
 model Customer {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @map("_id")
   name         String
-  email        String   @unique
-  passwordHash String
+  email        String?  @unique
+  passwordHash String?
   phone        String?
+  alternatePhone String?
   avatar       String?
-  notes        String?  @db.Text
+  notes        String?
+  customerType CustomerType @default(NEW)
   isVerified   Boolean  @default(false)
   joinedDate   DateTime @default(now())
   createdAt    DateTime @default(now())
@@ -223,8 +233,35 @@ model Customer {
   wishlistItems WishlistItem[]
   orders        Order[]
   returnRequests ReturnRequest[]
+  customizationRequests CustomizationRequest[]
 
   @@map("customers")
+}
+
+// Historical customers entered by administrators. These records are kept
+// separate from storefront accounts and intentionally have no login or order
+// relationship until historical order import is introduced.
+model OldCustomer {
+  id             String   @id @default(uuid()) @map("_id")
+  name           String
+  email          String?
+  phone          String
+  alternatePhone String?
+  address        String?
+  city           String?
+  state          String?
+  country        String   @default("India")
+  pincode        String?
+  joinedDate     DateTime
+  purchaseCount  Int      @default(0)
+  lifetimeValue  Float    @default(0)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([phone])
+  @@index([email])
+  @@map("old_customers")
 }
 
 // ────────────────────────────────────────────────────────────
@@ -232,9 +269,9 @@ model Customer {
 // ────────────────────────────────────────────────────────────
 
 model Address {
-  id         String  @id @default(uuid())
+  id         String  @id @default(uuid()) @map("_id")
   customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id])
   label      String   @default("Home")
   line1      String
   line2      String?
@@ -253,11 +290,11 @@ model Address {
 // ────────────────────────────────────────────────────────────
 
 model CartItem {
-  id         String   @id @default(uuid())
+  id         String   @id @default(uuid()) @map("_id")
   customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id])
   productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
   quantity   Int      @default(1)
   size       String
   createdAt  DateTime @default(now())
@@ -271,11 +308,11 @@ model CartItem {
 // ────────────────────────────────────────────────────────────
 
 model WishlistItem {
-  id         String   @id @default(uuid())
+  id         String   @id @default(uuid()) @map("_id")
   customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id])
   productId  String
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
   createdAt  DateTime @default(now())
 
   @@unique([customerId, productId])
@@ -287,7 +324,7 @@ model WishlistItem {
 // ────────────────────────────────────────────────────────────
 
 model Order {
-  id              String        @id // Format: DOD-XXXXXX
+  id              String        @id @map("_id") // Format: DOD-XXXXXX
   customerId      String
   customer        Customer      @relation(fields: [customerId], references: [id])
   customerName    String
@@ -302,8 +339,8 @@ model Order {
   paymentMethod   PaymentMethod
   shippingAddress Json          // { line1, line2, city, state, postalCode, country, phone }
   trackingDetails Json?         // { carrier, trackingId, estimatedDelivery, logs[] }
-  cancelReason    String?       @db.Text
-  returnReason    String?       @db.Text
+  cancelReason    String?
+  returnReason    String?
   couponCode      String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -319,9 +356,9 @@ model Order {
 // ────────────────────────────────────────────────────────────
 
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String  @id @default(uuid()) @map("_id")
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order   @relation(fields: [orderId], references: [id])
   productId String
   product   Product @relation(fields: [productId], references: [id])
   name      String
@@ -340,9 +377,9 @@ model OrderItem {
 // ────────────────────────────────────────────────────────────
 
 model InventoryLog {
-  id          String           @id @default(uuid())
+  id          String           @id @default(uuid()) @map("_id")
   productId   String
-  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product     Product          @relation(fields: [productId], references: [id])
   productName String
   sku         String
   change      Int              // + for stock in, - for stock out
@@ -358,17 +395,17 @@ model InventoryLog {
 // ────────────────────────────────────────────────────────────
 
 model ReturnRequest {
-  id              String       @id @default(uuid())
+  id              String       @id @default(uuid()) @map("_id")
   orderId         String
-  order           Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order           Order        @relation(fields: [orderId], references: [id])
   customerId      String
   customer        Customer     @relation(fields: [customerId], references: [id])
   reason          String
-  description     String?      @db.Text
+  description     String?
   images          String[]
   status          ReturnStatus @default(PENDING)
   refundAmount    Float?
-  rejectionReason String?      @db.Text
+  rejectionReason String?
   createdAt       DateTime     @default(now())
   resolvedAt      DateTime?
 
@@ -380,14 +417,14 @@ model ReturnRequest {
 // ────────────────────────────────────────────────────────────
 
 model ContactForm {
-  id        String        @id @default(uuid())
+  id        String        @id @default(uuid()) @map("_id")
   name      String
   email     String
   phone     String?
   subject   String
-  message   String        @db.Text
+  message   String
   status    ContactStatus @default(UNREAD)
-  reply     String?       @db.Text
+  reply     String?
   repliedAt DateTime?
   createdAt DateTime      @default(now())
 
@@ -399,7 +436,7 @@ model ContactForm {
 // ────────────────────────────────────────────────────────────
 
 model CMSConfig {
-  id                  String   @id @default("singleton")
+  id                  String   @id @default("singleton") @map("_id")
   heroTitle           String
   heroSubtitle        String
   heroImage           String
@@ -409,9 +446,9 @@ model CMSConfig {
   featuredCollections Json     // [{ id, name, image, count }]
   gallery             Json?
   bannerMiddle        String?
-  footerBio           String?  @db.Text
+  footerBio           String?
   seoTitle            String
-  seoDescription      String   @db.Text
+  seoDescription      String
   updatedAt           DateTime @updatedAt
 
   @@map("cms_config")
@@ -422,7 +459,7 @@ model CMSConfig {
 // ────────────────────────────────────────────────────────────
 
 model Coupon {
-  id              String   @id @default(uuid())
+  id              String   @id @default(uuid()) @map("_id")
   code            String   @unique
   discountPercent Float
   maxDiscount     Float?
@@ -443,7 +480,7 @@ model Coupon {
 // ────────────────────────────────────────────────────────────
 
 model SecurityLog {
-  id        String      @id @default(uuid())
+  id        String      @id @default(uuid()) @map("_id")
   timestamp DateTime    @default(now())
   action    String
   adminName String
@@ -453,4 +490,31 @@ model SecurityLog {
   status    AuditStatus
 
   @@map("security_logs")
+}
+
+// ────────────────────────────────────────────────────────────
+// 17. CUSTOMIZATION REQUEST — Bespoke Weave Customization Inquiries
+// ────────────────────────────────────────────────────────────
+
+model CustomizationRequest {
+  id                 String    @id @default(uuid()) @map("_id")
+  productId          String
+  product            Product   @relation(fields: [productId], references: [id])
+  customerId         String?
+  customer           Customer? @relation(fields: [customerId], references: [id])
+  customerName       String?
+  customerEmail      String?
+  customerPhone      String?
+  fabric             String
+  color              String
+  budget             String
+  aemroduriType      String
+  tassels            String    // "Yes" | "No"
+  timeEstimateMonths Int       // 1 - 60
+  notes              String?
+  status             String    @default("PENDING") // PENDING, IN_REVIEW, APPROVED, COMPLETED, CANCELLED
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("customization_requests")
 }

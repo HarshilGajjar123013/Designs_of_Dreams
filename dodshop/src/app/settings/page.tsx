@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Settings, 
-  Shield, 
-  RotateCcw, 
-  CreditCard, 
-  HelpCircle, 
-  CheckCircle2, 
+import {
+  Settings,
+  Shield,
+  RotateCcw,
+  CreditCard,
+  HelpCircle,
+  CheckCircle2,
   ShieldAlert,
   LogIn
 } from "lucide-react";
@@ -73,9 +73,9 @@ export default function SettingsPage() {
   return (
     <main className="relative pt-[120px] pb-[100px] bg-white min-h-screen">
       {/* Decorative background jali */}
-      <div 
-        className="absolute inset-0 opacity-5 pointer-events-none" 
-        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='38' fill='none' stroke='%23000000' stroke-width='0.5'/%3E%3C/svg%3E\")" }} 
+      <div
+        className="absolute inset-0 opacity-5 pointer-events-none"
+        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='38' fill='none' stroke='%23000000' stroke-width='0.5'/%3E%3C/svg%3E\")" }}
       />
 
       <div className="settings-page-container">
@@ -103,7 +103,7 @@ export default function SettingsPage() {
             {/* Notification alert */}
             <AnimatePresence>
               {saveSuccess && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -120,28 +120,28 @@ export default function SettingsPage() {
               {/* Sidebar Navigation */}
               <aside className="settings-sidebar">
                 <div className="sidebar-nav-links">
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "privacy" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("privacy")}
                   >
                     <Shield size={16} />
                     Privacy Settings
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "policies" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("policies")}
                   >
                     <HelpCircle size={16} />
                     Returns & Refunds
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "requests" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("requests")}
                   >
                     <RotateCcw size={16} />
                     Return Requests
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "refunds" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("refunds")}
                   >
@@ -155,7 +155,7 @@ export default function SettingsPage() {
               <div className="settings-content-area">
                 <AnimatePresence mode="wait">
                   {activeTab === "privacy" && (
-                    <motion.div 
+                    <motion.div
                       key="privacy-card"
                       className="settings-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -171,9 +171,9 @@ export default function SettingsPage() {
                             <p>Receive weekly announcements of new handloom drops and seasonal collection invitations.</p>
                           </div>
                           <label className="switch-wrapper">
-                            <input 
-                              type="checkbox" 
-                              checked={marketingEmails} 
+                            <input
+                              type="checkbox"
+                              checked={marketingEmails}
                               onChange={(e) => setMarketingEmails(e.target.checked)}
                             />
                             <span className="switch-slider"></span>
@@ -186,9 +186,9 @@ export default function SettingsPage() {
                             <p>Verify logins using temporary tokens sent to your registered mobile number.</p>
                           </div>
                           <label className="switch-wrapper">
-                            <input 
-                              type="checkbox" 
-                              checked={twoFactor} 
+                            <input
+                              type="checkbox"
+                              checked={twoFactor}
                               onChange={(e) => setTwoFactor(e.target.checked)}
                             />
                             <span className="switch-slider"></span>
@@ -201,9 +201,9 @@ export default function SettingsPage() {
                             <p>Allow us to tailor social recommendations based on sarees you favored.</p>
                           </div>
                           <label className="switch-wrapper">
-                            <input 
-                              type="checkbox" 
-                              checked={personalizedAds} 
+                            <input
+                              type="checkbox"
+                              checked={personalizedAds}
                               onChange={(e) => setPersonalizedAds(e.target.checked)}
                             />
                             <span className="switch-slider"></span>
@@ -216,9 +216,9 @@ export default function SettingsPage() {
                             <p>Share anonymized navigation paths so our engineering team can audit load speeds.</p>
                           </div>
                           <label className="switch-wrapper">
-                            <input 
-                              type="checkbox" 
-                              checked={analyticsCookies} 
+                            <input
+                              type="checkbox"
+                              checked={analyticsCookies}
                               onChange={(e) => setAnalyticsCookies(e.target.checked)}
                             />
                             <span className="switch-slider"></span>
@@ -232,7 +232,7 @@ export default function SettingsPage() {
                   )}
 
                   {activeTab === "policies" && (
-                    <motion.div 
+                    <motion.div
                       key="policies-card"
                       className="settings-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -259,7 +259,7 @@ export default function SettingsPage() {
                   )}
 
                   {activeTab === "requests" && (
-                    <motion.div 
+                    <motion.div
                       key="requests-card"
                       className="settings-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -291,7 +291,7 @@ export default function SettingsPage() {
                   )}
 
                   {activeTab === "refunds" && (
-                    <motion.div 
+                    <motion.div
                       key="refunds-card"
                       className="settings-card"
                       initial={{ opacity: 0, x: 20 }}

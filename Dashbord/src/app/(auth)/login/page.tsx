@@ -50,8 +50,7 @@ export default function LoginPage() {
       // Sync Zustand store with login details
       setCredentials(result.user, result.user.role);
 
-      router.push('/');
-      router.refresh();
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please check your credentials.');
     } finally {

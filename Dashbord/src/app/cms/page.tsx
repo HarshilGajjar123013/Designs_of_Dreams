@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { Sliders, Save, Image, Sparkles, Globe, Megaphone, Plus, Trash2, Edit2, Upload } from 'lucide-react';
+import { Sliders, Save, Image, Sparkles, Globe, Megaphone } from 'lucide-react';
 
 export default function CMSEditor() {
   const [mounted, setMounted] = useState(false);
@@ -18,101 +18,6 @@ export default function CMSEditor() {
   const [announcementActive, setAnnouncementActive] = useState(false);
   const [seoTitle, setSeoTitle] = useState('');
   const [seoDescription, setSeoDescription] = useState('');
-  
-  // Gallery configurations
-  const [gallery, setGallery] = useState<any[]>([]);
-  const [isEditingItem, setIsEditingItem] = useState(false);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [galleryTitle, setGalleryTitle] = useState('');
-  const [galleryCategory, setGalleryCategory] = useState('');
-  const [galleryFilterTag, setGalleryFilterTag] = useState<'weaving' | 'embroidery' | 'coloring' | 'finishing'>('weaving');
-  const [galleryImage, setGalleryImage] = useState('');
-  const [galleryDesc, setGalleryDesc] = useState('');
-  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
-
-  const galleryFileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleAddNewItemClick = () => {
-    setEditingIndex(null);
-    setGalleryTitle('');
-    setGalleryCategory('');
-    setGalleryFilterTag('weaving');
-    setGalleryImage('');
-    setGalleryDesc('');
-    setIsEditingItem(true);
-  };
-
-  const handleEditGalleryItem = (index: number) => {
-    const item = gallery[index];
-    setEditingIndex(index);
-    setGalleryTitle(item.title || '');
-    setGalleryCategory(item.category || '');
-    setGalleryFilterTag(item.filterTag || 'weaving');
-    setGalleryImage(item.image || '');
-    setGalleryDesc(item.desc || '');
-    setIsEditingItem(true);
-  };
-
-  const handleSaveGalleryItem = () => {
-    if (!galleryTitle.trim() || !galleryImage.trim() || !galleryCategory.trim()) {
-      alert('Please fill Title, Category, and Image fields.');
-      return;
-    }
-
-    const item = {
-      id: editingIndex !== null ? gallery[editingIndex].id : Date.now(),
-      title: galleryTitle.trim(),
-      category: galleryCategory.trim(),
-      filterTag: galleryFilterTag,
-      image: galleryImage.trim(),
-      desc: galleryDesc.trim()
-    };
-
-    if (editingIndex !== null) {
-      setGallery(prev => {
-        const updated = [...prev];
-        updated[editingIndex] = item;
-        return updated;
-      });
-    } else {
-      setGallery(prev => [...prev, item]);
-    }
-    setIsEditingItem(false);
-  };
-
-  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    const file = files[0];
-
-    if (file.size > 4 * 1024 * 1024) {
-      alert("File exceeds 4MB limit");
-      return;
-    }
-
-    setIsUploadingGallery(true);
-    try {
-      const formData = new FormData();
-      formData.append('files', file);
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const result = await response.json();
-      if (response.ok && result.success) {
-        setGalleryImage(result.images[0].url);
-      } else {
-        alert(result.error || "Upload failed");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Upload failed");
-    } finally {
-      setIsUploadingGallery(false);
-      if (galleryFileInputRef.current) galleryFileInputRef.current.value = '';
-    }
-  };
 
   useEffect(() => {
     setMounted(true);
@@ -130,7 +35,6 @@ export default function CMSEditor() {
           setAnnouncementActive(data.cms.announcementActive || false);
           setSeoTitle(data.cms.seoTitle || '');
           setSeoDescription(data.cms.seoDescription || '');
-          setGallery(data.cms.gallery || []);
         }
       } catch (err) {
         console.error('Failed to load CMS configs:', err);
@@ -154,10 +58,15 @@ export default function CMSEditor() {
   const handleSaveCMS = async (e: any) => {
     if (e && e.preventDefault) e.preventDefault();
     try {
+      const getRes = await fetch('/api/cms');
+      const getData = await getRes.json();
+      const currentCms = getData.success ? getData.cms : {};
+
       const res = await fetch('/api/cms', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...currentCms,
           heroTitle,
           heroSubtitle,
           heroImage,
@@ -165,8 +74,7 @@ export default function CMSEditor() {
           announcementLink,
           announcementActive,
           seoTitle,
-          seoDescription,
-          gallery
+          seoDescription
         })
       });
       const data = await res.json();
@@ -283,164 +191,7 @@ export default function CMSEditor() {
               </div>
             </div>
 
-            {/* Gallery Exhibition Section */}
-            <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-6">
-              <div className="border-b border-gray-100 pb-4 flex justify-between items-center">
-                <h3 className="font-marcellus text-lg text-gray-800 uppercase tracking-wider flex items-center gap-2 font-light">
-                  <Image size={18} className="text-[#FF6A00]" /> Artisan Exhibition Gallery
-                </h3>
-                <button
-                  type="button"
-                  onClick={handleAddNewItemClick}
-                  className="px-4 py-2 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#FF6A00] transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer font-poppins"
-                >
-                  <Plus size={12} /> Add Item
-                </button>
-              </div>
 
-              {/* Add/Edit Gallery Item Form */}
-              {isEditingItem && (
-                <div className="border border-[rgba(255, 106, 0,0.25)] rounded-2xl p-5 bg-[#FAF9F6] space-y-4 font-poppins">
-                  <h4 className="font-marcellus text-sm font-semibold text-gray-800 uppercase tracking-wide">
-                    {editingIndex !== null ? "Edit Gallery Exhibition Card" : "New Gallery Exhibition Card"}
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Card Title</label>
-                      <input
-                        type="text"
-                        value={galleryTitle}
-                        onChange={(e) => setGalleryTitle(e.target.value)}
-                        placeholder="e.g. Master Silk Weaver"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Display Category</label>
-                      <input
-                        type="text"
-                        value={galleryCategory}
-                        onChange={(e) => setGalleryCategory(e.target.value)}
-                        placeholder="e.g. Artisanal Handloom"
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Filter Tag Category</label>
-                      <select
-                        value={galleryFilterTag}
-                        onChange={(e) => setGalleryFilterTag(e.target.value as any)}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] text-gray-700 bg-white font-poppins"
-                      >
-                        <option value="weaving">Weaving Studio</option>
-                        <option value="embroidery">Intricate Embroidery</option>
-                        <option value="coloring">Organic Coloring</option>
-                        <option value="finishing">Artisanal Finishing</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Upload Card Image</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={galleryImage}
-                          onChange={(e) => setGalleryImage(e.target.value)}
-                          placeholder="Paste URL or upload image file"
-                          className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => galleryFileInputRef.current?.click()}
-                          className="px-3 bg-gray-150 hover:bg-[#FF6A00] hover:text-white rounded-lg text-xs transition-all border border-gray-200 cursor-pointer flex items-center justify-center text-gray-700 hover:text-white"
-                          title="Upload Image"
-                        >
-                          <Upload size={14} />
-                        </button>
-                        <input
-                          ref={galleryFileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleGalleryUpload}
-                          className="hidden"
-                        />
-                      </div>
-                      {isUploadingGallery && <span className="text-[10px] text-gray-400 mt-1 block">Uploading...</span>}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1">Short Narrative Description</label>
-                    <textarea
-                      rows={2}
-                      value={galleryDesc}
-                      onChange={(e) => setGalleryDesc(e.target.value)}
-                      placeholder="Narrate the craftsmanship story behind this stage..."
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#FF6A00] bg-white"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingItem(false)}
-                      className="px-4 py-2 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveGalleryItem}
-                      className="px-4 py-2 bg-[#1A1A1A] text-white rounded-lg text-xs font-semibold hover:bg-[#FF6A00] cursor-pointer"
-                    >
-                      Save Card
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Gallery Items Grid List */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 font-poppins">
-                {gallery.map((item, idx) => (
-                  <div key={item.id || idx} className="relative group border border-gray-150 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col justify-between hover:border-[#FF6A00] transition-all">
-                    <div className="relative h-28 bg-gray-50">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                      <div className="absolute top-2 right-2 flex gap-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => handleEditGalleryItem(idx)}
-                          className="p-1.5 bg-white text-gray-700 rounded-full shadow hover:bg-[#FF6A00] hover:text-white cursor-pointer"
-                          title="Edit Card"
-                        >
-                          <Edit2 size={10} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setGallery(gallery.filter((_, i) => i !== idx))}
-                          className="p-1.5 bg-white text-red-600 rounded-full shadow hover:bg-red-600 hover:text-white cursor-pointer"
-                          title="Remove Card"
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
-                      <span className="absolute bottom-2 left-2 text-[9px] uppercase tracking-wider font-semibold bg-black/60 text-white px-2 py-0.5 rounded backdrop-blur-[2px]">
-                        {item.filterTag}
-                      </span>
-                    </div>
-                    <div className="p-3 space-y-1">
-                      <span className="text-[8px] uppercase tracking-widest text-[#FF6A00] font-bold block">{item.category}</span>
-                      <h5 className="font-semibold text-gray-800 text-xs truncate" title={item.title}>{item.title}</h5>
-                      <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Search & SEO settings */}
             <div className="glass-card rounded-[28px] p-6 shadow-luxury space-y-4">

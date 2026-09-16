@@ -1,15 +1,22 @@
 import React, { Suspense } from "react";
 import CollectionCatalog from "@/app/collection/CollectionCatalog";
-import { getDbProducts } from "@/lib/db";
+import { getDbProducts, getDbCategories } from "@/lib/db";
+
+export const dynamic = 'force-dynamic';
 
 export default async function CollectionPage() {
-  const dbProducts = await getDbProducts();
+  const [dbProducts, dbCategories] = await Promise.all([
+    getDbProducts(),
+    getDbCategories()
+  ]);
   
   const mappedProducts = dbProducts.map((p: any) => ({
     id: p.id,
     title: p.name,
     subtitle: p.fabric || p.subCategory || '',
+    categoryId: p.categoryId,
     category: (p.category as any)?.name || 'Saree',
+    categorySlug: (p.category as any)?.slug || '',
     subcategory: p.subCategory,
     desc: p.description,
     longDesc: p.description,
@@ -38,7 +45,7 @@ export default async function CollectionPage() {
           <div className="w-8 h-8 border-4 border-[#C5A059] border-t-transparent rounded-full animate-spin" />
         </div>
       }>
-        <CollectionCatalog initialProducts={mappedProducts} />
+        <CollectionCatalog initialProducts={mappedProducts} initialCategories={dbCategories} />
       </Suspense>
     </main>
   );

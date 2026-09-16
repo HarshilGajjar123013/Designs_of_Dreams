@@ -185,10 +185,8 @@ export default function MobileBottomNav() {
             preserveAspectRatio="none"
             className="fill-white stroke-[#C5A059]/15"
           >
-            <motion.path
+            <path
               d={getPath(activeIndex)}
-              animate={{ d: getPath(activeIndex) }}
-              transition={{ type: "spring", stiffness: 280, damping: 28 }}
               strokeWidth="0.5"
             />
           </svg>

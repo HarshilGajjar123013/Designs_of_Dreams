@@ -2,19 +2,125 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { Save, Image, Plus, Trash2, Edit2, Upload, Sparkles, Eye } from 'lucide-react';
+import { Save, Image, Plus, Trash2, Edit2, Upload, Sparkles, Eye, X, Tag } from 'lucide-react';
+
+const defaultGalleryData = [
+  {
+    id: 1,
+    title: "Detail & Thread",
+    category: "Detail Studio",
+    filterTag: "embroidery",
+    image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=600&auto=format&fit=crop",
+    desc: "Finely spun gold threads embroidered onto heavy velvet base fabric."
+  },
+  {
+    id: 2,
+    title: "The Master Weaver",
+    category: "Artisanal Handloom",
+    filterTag: "weaving",
+    image: "https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=1000&auto=format&fit=crop",
+    desc: "Varanasi master weaver hand-weaving mulberry silk over weeks of dedicated labor."
+  },
+  {
+    id: 3,
+    title: "Zardozi Handwork",
+    category: "Intricate Embroidery",
+    filterTag: "embroidery",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600&auto=format&fit=crop",
+    desc: "Detailed shadow embroidery and metal wire applique from Lucknow on georgette."
+  },
+  {
+    id: 4,
+    title: "Heritage Spools",
+    category: "Weaving Spools",
+    filterTag: "weaving",
+    image: "https://images.unsplash.com/photo-1608748010899-18f300247112?q=80&w=800&auto=format&fit=crop",
+    desc: "Premium colored silk threads prepared on traditional reels, ready for looms."
+  },
+  {
+    id: 5,
+    title: "Draping Elegance",
+    category: "Bridal Drape",
+    filterTag: "weaving",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+    desc: "Mulberry silk saree exhibiting detailed pure silver zari brocade work."
+  },
+  {
+    id: 6,
+    title: "Indigo Dye Vat",
+    category: "Organic Coloring",
+    filterTag: "coloring",
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
+    desc: "Traditional hand-dyeing processes using pure organic botanical indigo vats."
+  },
+  {
+    id: 7,
+    title: "The Crimson Silk",
+    category: "Festive Crimson",
+    filterTag: "coloring",
+    image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=600&auto=format&fit=crop",
+    desc: "Crimson hand-dyed organic silk threads drying in the afternoon sun."
+  },
+  {
+    id: 8,
+    title: "Craft Dyeing Vat",
+    category: "Colors & Craft",
+    filterTag: "coloring",
+    image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=600&auto=format&fit=crop",
+    desc: "Botanical ingredients creating natural organic coloring solutions for yarn."
+  },
+  {
+    id: 9,
+    title: "Block Print Matrix",
+    category: "Hand-Block Printing",
+    filterTag: "finishing",
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
+    desc: "Hand-carved seasoned teak wood block matrices used for printing intricate motifs."
+  },
+  {
+    id: 10,
+    title: "Gold Zari Skeins",
+    category: "Pure Zari Work",
+    filterTag: "weaving",
+    image: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?q=80&w=800&auto=format&fit=crop",
+    desc: "Fine silver wire bundles electroplated with pure gold ready to be woven into borders."
+  },
+  {
+    id: 11,
+    title: "The Finishing Touch",
+    category: "Quality Inspection",
+    filterTag: "finishing",
+    image: "https://images.unsplash.com/photo-1590736969955-71cc94801759?q=80&w=800&auto=format&fit=crop",
+    desc: "Meticulous quality inspection and thread trimming on finished sarees before packing."
+  },
+  {
+    id: 12,
+    title: "Loom Drafting",
+    category: "Design Mapping",
+    filterTag: "weaving",
+    image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800&auto=format&fit=crop",
+    desc: "Traditional card drafting and loom-harness mapping for floral zari grids."
+  }
+];
+
+const defaultFilterTags = [
+  { id: 'weaving', label: 'Weaving Studio' },
+  { id: 'embroidery', label: 'Intricate Embroidery' },
+  { id: 'coloring', label: 'Organic Coloring' },
+  { id: 'finishing', label: 'Artisanal Finishing' }
+];
 
 export default function GalleryManager() {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Gallery state
-  const [gallery, setGallery] = useState<any[]>([]);
+  const [gallery, setGallery] = useState<any[]>(defaultGalleryData);
   const [isEditingItem, setIsEditingItem] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [galleryTitle, setGalleryTitle] = useState('');
   const [galleryCategory, setGalleryCategory] = useState('');
-  const [galleryFilterTag, setGalleryFilterTag] = useState<'weaving' | 'embroidery' | 'coloring' | 'finishing'>('weaving');
+  const [galleryFilterTag, setGalleryFilterTag] = useState<string>('weaving');
   const [galleryImage, setGalleryImage] = useState('');
   const [galleryDesc, setGalleryDesc] = useState('');
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
@@ -25,13 +131,16 @@ export default function GalleryManager() {
 
   // Filter state
   const [activeFilter, setActiveFilter] = useState<string>('all');
-  const filterTags = [
-    { id: 'all', label: 'All Items' },
-    { id: 'weaving', label: 'Weaving' },
-    { id: 'embroidery', label: 'Embroidery' },
-    { id: 'coloring', label: 'Coloring' },
-    { id: 'finishing', label: 'Finishing' },
-  ];
+
+  // Dynamic filter tag categories
+  const [customFilterTags, setCustomFilterTags] = useState<{ id: string; label: string }[]>(defaultFilterTags);
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [modalTagName, setModalTagName] = useState('');
+  const [modalTagError, setModalTagError] = useState('');
+  const modalTagInputRef = React.useRef<HTMLInputElement>(null);
+
+  const allFilterTags = [...customFilterTags];
+  const filterTags = [{ id: 'all', label: 'All Items' }, ...allFilterTags];
 
   const filteredGallery = activeFilter === 'all'
     ? gallery
@@ -41,7 +150,7 @@ export default function GalleryManager() {
     setEditingIndex(null);
     setGalleryTitle('');
     setGalleryCategory('');
-    setGalleryFilterTag('weaving');
+    setGalleryFilterTag(allFilterTags.length > 0 ? allFilterTags[0].id : 'weaving');
     setGalleryImage('');
     setGalleryDesc('');
     setIsEditingItem(true);
@@ -128,6 +237,76 @@ export default function GalleryManager() {
     }
   };
 
+  // Add tag via modal (from form or top bar + button)
+  const handleModalAddTag = async () => {
+    const name = modalTagName.trim();
+    if (!name) { setModalTagError('Please enter a tag name'); return; }
+    const id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    if (allFilterTags.some(t => t.id === id)) {
+      setModalTagError('A tag with that name already exists');
+      return;
+    }
+    const nextTags = [...customFilterTags, { id, label: name }];
+    setCustomFilterTags(nextTags);
+    setGalleryFilterTag(id);
+    setActiveFilter(id);
+    setModalTagName('');
+    setModalTagError('');
+    setShowTagModal(false);
+
+    // Auto-save to database immediately
+    try {
+      const getRes = await fetch('/api/cms');
+      const getData = await getRes.json();
+      const currentCms = getData.success ? getData.cms : {};
+
+      await fetch('/api/cms', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...currentCms,
+          gallery,
+          galleryFilterTags: nextTags
+        })
+      });
+    } catch (err) {
+      console.error('Failed to auto-save new tag:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (showTagModal && modalTagInputRef.current) {
+      modalTagInputRef.current.focus();
+    }
+  }, [showTagModal]);
+
+  // Delete custom filter tag
+  const handleDeleteFilterTag = async (tagId: string) => {
+    if (!confirm('Remove this filter tag? Gallery items using it will keep their tag but won\'t be filterable until reassigned.')) return;
+    const nextTags = customFilterTags.filter(t => t.id !== tagId);
+    setCustomFilterTags(nextTags);
+    if (activeFilter === tagId) setActiveFilter('all');
+
+    // Auto-save tag removal immediately so it never returns on refresh
+    try {
+      const getRes = await fetch('/api/cms');
+      const getData = await getRes.json();
+      const currentCms = getData.success ? getData.cms : {};
+
+      await fetch('/api/cms', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...currentCms,
+          gallery,
+          galleryFilterTags: nextTags
+        })
+      });
+    } catch (err) {
+      console.error('Failed to auto-save tag deletion:', err);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
     const fetchGallery = async () => {
@@ -135,7 +314,20 @@ export default function GalleryManager() {
         const res = await fetch('/api/cms');
         const data = await res.json();
         if (data.success && data.cms) {
-          setGallery(data.cms.gallery || []);
+          if (Array.isArray(data.cms.gallery)) {
+            setGallery(data.cms.gallery);
+          } else {
+            setGallery(defaultGalleryData);
+          }
+
+          if (Array.isArray(data.cms.galleryFilterTags)) {
+            setCustomFilterTags(data.cms.galleryFilterTags);
+          } else {
+            setCustomFilterTags(defaultFilterTags);
+          }
+        } else {
+          setGallery(defaultGalleryData);
+          setCustomFilterTags(defaultFilterTags);
         }
       } catch (err) {
         console.error('Failed to load gallery:', err);
@@ -159,7 +351,8 @@ export default function GalleryManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...currentCms,
-          gallery
+          gallery,
+          galleryFilterTags: customFilterTags
         })
       });
       const data = await res.json();
@@ -216,18 +409,40 @@ export default function GalleryManager() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 w-full sm:w-auto">
             {filterTags.map(tag => (
-              <button
-                key={tag.id}
-                onClick={() => setActiveFilter(tag.id)}
-                className={`px-3 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-semibold transition-all cursor-pointer uppercase tracking-wider whitespace-nowrap shrink-0 ${
-                  activeFilter === tag.id
-                    ? 'bg-[#1A1A1A] text-white shadow-sm'
-                    : 'bg-white text-[#6E6E6E] border border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00]'
-                }`}
-              >
-                {tag.label}
-              </button>
+              <div key={tag.id} className="relative flex items-center shrink-0">
+                <button
+                  onClick={() => setActiveFilter(tag.id)}
+                  className={`px-3 sm:px-4 py-2 rounded-full text-[10px] sm:text-xs font-semibold transition-all cursor-pointer uppercase tracking-wider whitespace-nowrap ${
+                    activeFilter === tag.id
+                      ? 'bg-[#1A1A1A] text-white shadow-sm'
+                      : 'bg-white text-[#6E6E6E] border border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00]'
+                  } ${customFilterTags.some(ct => ct.id === tag.id) ? 'pr-7 sm:pr-8' : ''}`}
+                >
+                  {tag.label}
+                </button>
+                {/* Show delete X on custom tags */}
+                {customFilterTags.some(ct => ct.id === tag.id) && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteFilterTag(tag.id); }}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
+                    title={`Remove "${tag.label}" tag`}
+                  >
+                    <X size={9} />
+                  </button>
+                )}
+              </div>
             ))}
+
+            {/* Add new filter tag button - opens stylish popup */}
+            <button
+              type="button"
+              onClick={() => { setModalTagName(''); setModalTagError(''); setShowTagModal(true); }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-dashed border-[#FF6A00]/50 bg-[#FF6A00]/5 text-[10px] sm:text-xs text-[#FF6A00] hover:bg-[#FF6A00] hover:text-white transition-all cursor-pointer shrink-0 uppercase tracking-wider font-semibold"
+              title="Add new filter tag category"
+            >
+              <Plus size={12} /> Add Tag
+            </button>
           </div>
           <button
             type="button"
@@ -271,17 +486,31 @@ export default function GalleryManager() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1.5">Filter Tag Category</label>
-                <select
-                  value={galleryFilterTag}
-                  onChange={(e) => setGalleryFilterTag(e.target.value as any)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] text-gray-700 bg-white font-poppins"
-                >
-                  <option value="weaving">Weaving Studio</option>
-                  <option value="embroidery">Intricate Embroidery</option>
-                  <option value="coloring">Organic Coloring</option>
-                  <option value="finishing">Artisanal Finishing</option>
-                </select>
+                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-1.5">
+                  <span className="flex items-center gap-1"><Tag size={10} /> Filter Tag Category</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={galleryFilterTag}
+                    onChange={(e) => setGalleryFilterTag(e.target.value)}
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF6A00] text-gray-700 bg-white font-poppins"
+                  >
+                    {allFilterTags.length === 0 && (
+                      <option value="" disabled>No tags yet — add one →</option>
+                    )}
+                    {allFilterTags.map(t => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => { setModalTagName(''); setModalTagError(''); setShowTagModal(true); }}
+                    className="px-3 py-3 bg-gray-100 hover:bg-[#FF6A00] hover:text-white rounded-xl text-xs transition-all border border-gray-200 cursor-pointer flex items-center justify-center text-gray-700"
+                    title="Add new filter tag"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -457,6 +686,111 @@ export default function GalleryManager() {
             </div>
           </div>
         )}
+        {/* Add Tag Modal */}
+        {showTagModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTagModal(false)}
+            style={{ animation: 'fadeIn 0.2s ease' }}
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+
+            {/* Modal Card */}
+            <div
+              className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              style={{ animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+            >
+              {/* Top Accent Bar */}
+              <div className="h-1 w-full bg-gradient-to-r from-[#FF6A00] via-[#FF8C38] to-[#FF6A00]" />
+
+              <div className="p-6 sm:p-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6A00] to-[#FF8C38] flex items-center justify-center shadow-lg">
+                      <Tag size={18} className="text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-marcellus text-lg font-semibold text-[#1A1A1A]">New Filter Tag</h3>
+                      <p className="text-[10px] text-[#6E6E6E] font-poppins uppercase tracking-wider">Create a custom gallery category</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowTagModal(false)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#1A1A1A] transition-all cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Input */}
+                <div className="mb-2">
+                  <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider block mb-2 font-poppins">Tag Name</label>
+                  <input
+                    ref={modalTagInputRef}
+                    type="text"
+                    value={modalTagName}
+                    onChange={(e) => { setModalTagName(e.target.value); setModalTagError(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleModalAddTag(); if (e.key === 'Escape') setShowTagModal(false); }}
+                    placeholder="e.g. Block Printing, Zari Work…"
+                    className={`w-full px-4 py-3.5 border rounded-xl text-sm focus:outline-none bg-[#FAF9F6] font-poppins transition-all ${
+                      modalTagError
+                        ? 'border-red-300 focus:border-red-500'
+                        : 'border-gray-200 focus:border-[#FF6A00] focus:shadow-[0_0_0_3px_rgba(255,106,0,0.08)]'
+                    }`}
+                  />
+                  {modalTagError && (
+                    <p className="text-[10px] text-red-500 mt-1.5 font-poppins font-medium">{modalTagError}</p>
+                  )}
+                </div>
+
+                {/* Preview */}
+                {modalTagName.trim() && !modalTagError && (
+                  <div className="flex items-center gap-2 mb-5 mt-3">
+                    <span className="text-[10px] text-[#6E6E6E] font-poppins uppercase tracking-wider">Preview:</span>
+                    <span className="px-3 py-1 rounded-full bg-[#1A1A1A] text-white text-[10px] font-semibold uppercase tracking-wider">
+                      {modalTagName.trim()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowTagModal(false)}
+                    className="flex-1 px-5 py-3 border border-gray-200 rounded-xl text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 cursor-pointer transition-all font-poppins uppercase tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleModalAddTag}
+                    disabled={!modalTagName.trim()}
+                    className="flex-1 px-5 py-3 bg-[#1A1A1A] text-white rounded-xl text-xs font-semibold hover:bg-[#FF6A00] cursor-pointer transition-all flex items-center justify-center gap-2 font-poppins uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+                  >
+                    <Plus size={14} /> Create Tag
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal animations */}
+        <style>{`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+        `}</style>
       </div>
     </AdminLayout>
   );

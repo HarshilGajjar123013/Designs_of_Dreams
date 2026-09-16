@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,56 +21,134 @@ interface CollectionItem {
   features: string[];
 }
 
-const collectionsData: CollectionItem[] = [
-  {
-    id: 1,
-    title: "Kurti",
+interface CollectionProps {
+  initialCategories?: any[];
+}
+
+const defaultCategoryVisuals: Record<string, { image: string; badge: string; subtitle: string; desc: string; longDesc: string; fabrics: string[]; features: string[] }> = {
+  Kurti: {
+    badge: "Handcrafted Heritage",
     subtitle: "Chikankari & Designer Kurtis",
     desc: "Elegant shadow work embroidery from Lucknow on fine fabrics.",
     longDesc: "Our Kurti collection features authentic Chikankari hand embroidery and contemporary designer cuts. Every stitch is hand-sewn by master artisans, preserving age-old Lucknowi traditions for modern styling.",
     image: "https://images.unsplash.com/photo-1608748010899-18f300247112?q=80&w=800&auto=format&fit=crop",
-    link: "/collection?category=Kurti",
-    badge: "Handcrafted Heritage",
     fabrics: ["Georgette", "Premium Cotton", "Mulmul Silk"],
     features: ["Hand embroidery", "Shadow work", "Traditional motifs"]
   },
-  {
-    id: 2,
-    title: "Saree",
+  Kurtis: {
+    badge: "Handcrafted Heritage",
+    subtitle: "Chikankari & Designer Kurtis",
+    desc: "Elegant shadow work embroidery from Lucknow on fine fabrics.",
+    longDesc: "Our Kurti collection features authentic Chikankari hand embroidery and contemporary designer cuts. Every stitch is hand-sewn by master artisans, preserving age-old Lucknowi traditions for modern styling.",
+    image: "https://images.unsplash.com/photo-1608748010899-18f300247112?q=80&w=800&auto=format&fit=crop",
+    fabrics: ["Georgette", "Premium Cotton", "Mulmul Silk"],
+    features: ["Hand embroidery", "Shadow work", "Traditional motifs"]
+  },
+  Saree: {
+    badge: "Royal Drape",
     subtitle: "Banarasi & Heritage Sarees",
     desc: "Intricate pure gold and silver zari weaves from Varanasi.",
     longDesc: "Draped in sheer luxury, our sarees are hand-woven in Varanasi using the finest mulberry silk and real zari threads. A timeless inheritance designed to be passed down through generations.",
     image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-    link: "/collection?category=Saree",
-    badge: "Royal Drape",
     fabrics: ["Katan Silk", "Organza", "Chanderi"],
     features: ["Pure Zari work", "Kadwa weave", "Intricate borders"]
   },
-  {
-    id: 3,
-    title: "Blouse",
+  Sarees: {
+    badge: "Royal Drape",
+    subtitle: "Banarasi & Heritage Sarees",
+    desc: "Intricate pure gold and silver zari weaves from Varanasi.",
+    longDesc: "Draped in sheer luxury, our sarees are hand-woven in Varanasi using the finest mulberry silk and real zari threads. A timeless inheritance designed to be passed down through generations.",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+    fabrics: ["Katan Silk", "Organza", "Chanderi"],
+    features: ["Pure Zari work", "Kadwa weave", "Intricate borders"]
+  },
+  Blouse: {
+    badge: "Designer Cuts",
     subtitle: "Trendy & Artisanal Blouses",
     desc: "Statement designer silhouettes with elaborate embroidery.",
     longDesc: "Redefine elegance with blouses customized with elaborate handwork, zardozi, and contemporary necklines. The perfect companion to complete your royal ethnic look.",
     image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-    link: "/collection?category=Blouse",
-    badge: "Designer Cuts",
     fabrics: ["Raw Silk", "Velvet", "Brocade"],
     features: ["Zardozi detailing", "Custom tailoring", "Padded styling"]
   },
-  {
-    id: 4,
-    title: "Dupatta",
+  Blouses: {
+    badge: "Designer Cuts",
+    subtitle: "Trendy & Artisanal Blouses",
+    desc: "Statement designer silhouettes with elaborate embroidery.",
+    longDesc: "Redefine elegance with blouses customized with elaborate handwork, zardozi, and contemporary necklines. The perfect companion to complete your royal ethnic look.",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
+    fabrics: ["Raw Silk", "Velvet", "Brocade"],
+    features: ["Zardozi detailing", "Custom tailoring", "Padded styling"]
+  },
+  Dupatta: {
+    badge: "Signature Stoles",
     subtitle: "Handcrafted & Heavy Dupattas",
     desc: "Ornate borders and flowy drapes that elevate any outfit.",
     longDesc: "From Banarasi silk weaves to heavy Phulkari and Gota Patti work, our statement dupattas are designed to instantly elevate your basic silhouettes into royal ensembles.",
     image: "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=800&auto=format&fit=crop",
-    link: "/collection?category=Dupatta",
-    badge: "Signature Stoles",
     fabrics: ["Pure Silk", "Chiffon", "Net"],
     features: ["Gota Patti work", "Banarasi borders", "Hand-dyed colors"]
+  },
+  Dupattas: {
+    badge: "Signature Stoles",
+    subtitle: "Handcrafted & Heavy Dupattas",
+    desc: "Ornate borders and flowy drapes that elevate any outfit.",
+    longDesc: "From Banarasi silk weaves to heavy Phulkari and Gota Patti work, our statement dupattas are designed to instantly elevate your basic silhouettes into royal ensembles.",
+    image: "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=800&auto=format&fit=crop",
+    fabrics: ["Pure Silk", "Chiffon", "Net"],
+    features: ["Gota Patti work", "Banarasi borders", "Hand-dyed colors"]
+  },
+  "Heritage Weaves": {
+    badge: "Artisanal Looms",
+    subtitle: "Rare Masterpieces & Silks",
+    desc: "Rare handloom treasures woven by generations of master artisans.",
+    longDesc: "Preserving historical weaving patterns and centuries of royal tradition, our Heritage Weaves represent the pinnacle of Indian textile art.",
+    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+    fabrics: ["Pure Mulberry Silk", "Zari Handloom", "Chanderi Weaves"],
+    features: ["Gold Zari Border", "Kadwa Motif Weave", "Silk Mark Certified"]
+  },
+  Bridal: {
+    badge: "Bridal Trousseau",
+    subtitle: "Curated Bridal Couture",
+    desc: "Exquisite couture designed for once-in-a-lifetime celebrations.",
+    longDesc: "Intricate embroideries, heavy zardozi handcrafting, and royal drapes designed for modern regal brides.",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
+    fabrics: ["Raw Silk", "Silk Velvet", "Pure Brocade"],
+    features: ["Intricate Zardozi", "Custom Bridal Tailoring", "Hand-Dyed Colors"]
   }
+};
+
+const fallbackImages = [
+  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1608748010899-18f300247112?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?q=80&w=800&auto=format&fit=crop"
 ];
+
+const mapDbCategoryToItem = (cat: any, index: number): CollectionItem => {
+  const preset = defaultCategoryVisuals[cat.name] || {};
+  const image = cat.image || preset.image || fallbackImages[index % fallbackImages.length];
+
+  const dbFabrics = Array.isArray(cat.fabrics) && cat.fabrics.length > 0 ? cat.fabrics : [];
+  const fabrics = dbFabrics.length > 0 ? dbFabrics : (preset.fabrics || ["Pure Silk", "Fine Handloom", "Artisanal Cotton"]);
+
+  const dbSubs = Array.isArray(cat.subcategories) && cat.subcategories.length > 0 ? cat.subcategories : [];
+  const features = dbSubs.length > 0 ? dbSubs : (preset.features || ["Handcrafted", "Heritage Weave", "Custom Tailoring"]);
+
+  return {
+    id: index + 1,
+    title: cat.name,
+    subtitle: cat.description ? cat.description : (preset.subtitle || `${cat.name} Masterpieces`),
+    desc: cat.description ? cat.description : (preset.desc || `Curated collection of artisanal ${cat.name}.`),
+    longDesc: preset.longDesc || cat.description || `Explore our exclusive collection of ${cat.name}, designed with royal craftsmanship and the finest fabrics.`,
+    image,
+    link: `/collection?category=${encodeURIComponent(cat.name)}`,
+    badge: preset.badge || "Signature Collection",
+    fabrics,
+    features
+  };
+};
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -94,10 +172,33 @@ const cardVariants = {
   }
 };
 
-const Collection: React.FC = () => {
+const Collection: React.FC<CollectionProps> = ({ initialCategories }) => {
   const router = useRouter();
+  const [categories, setCategories] = useState<any[]>(initialCategories || []);
   const [activePopup, setActivePopup] = useState<CollectionItem | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/categories", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+        setCategories(data.categories);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch categories on landing page", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!initialCategories || initialCategories.length === 0) {
+      fetchCategories();
+    }
+    window.addEventListener("focus", fetchCategories);
+    return () => window.removeEventListener("focus", fetchCategories);
+  }, [initialCategories]);
+
+  const collectionsData: CollectionItem[] = categories.map((cat, idx) => mapDbCategoryToItem(cat, idx));
 
   const openPopup = (collection: CollectionItem) => {
     setActivePopup(collection);

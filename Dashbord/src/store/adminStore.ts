@@ -636,13 +636,12 @@ export const useAdminStore = create<AdminState>()(
     {
       name: 'atelier-admin-storage-v2',
       partialize: (state) => ({
+        // SECURITY: Only persist non-sensitive UI state
+        // customers, orders, securityLogs, inventoryLogs intentionally excluded
+        // to avoid storing PII in browser localStorage
         products: state.products,
-        orders: state.orders,
-        customers: state.customers,
         contactForms: state.contactForms,
         cms: state.cms,
-        securityLogs: state.securityLogs,
-        inventoryLogs: state.inventoryLogs,
         role: state.role,
         currentAdmin: state.currentAdmin,
         coupons: state.coupons

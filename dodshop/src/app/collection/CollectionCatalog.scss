@@ -163,6 +163,282 @@ $font-accent: var(--font-marcellus), 'Marcellus', serif;
   }
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.price-filter-box {
+  position: relative;
+}
+
+.price-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba($brand-black, 0.1);
+  background-color: $brand-white;
+  color: $brand-black;
+  font-family: $font-body;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: rgba($brand-orange, 0.5);
+    color: $brand-orange;
+  }
+
+  &.is-active {
+    background-color: $brand-black;
+    border-color: $brand-black;
+    color: $brand-white;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+
+    &:hover {
+      background-color: rgba($brand-black, 0.9);
+      color: $brand-white;
+    }
+  }
+}
+
+.price-dropdown-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  width: 320px;
+  max-width: calc(100vw - 40px);
+  background: $brand-white;
+  border-radius: 16px;
+  border: 1px solid rgba($brand-black, 0.08);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 20px;
+  animation: fadeInDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  @media (max-width: 640px) {
+    left: auto;
+    right: 0;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  &__title {
+    font-family: $font-display;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $brand-black;
+  }
+
+  &__reset {
+    background: none;
+    border: none;
+    font-family: $font-body;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $brand-orange;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.75;
+      text-decoration: underline;
+    }
+  }
+}
+
+.price-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.price-preset-pill {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba($brand-black, 0.1);
+  background: rgba($brand-black, 0.02);
+  font-family: $font-body;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba($brand-black, 0.75);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: $brand-orange;
+    color: $brand-orange;
+    background: rgba($brand-orange, 0.04);
+  }
+
+  &.is-active {
+    background: $brand-orange;
+    border-color: $brand-orange;
+    color: $brand-white;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba($brand-orange, 0.25);
+  }
+}
+
+.price-slider-wrap {
+  margin-bottom: 18px;
+
+  .price-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: $font-body;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba($brand-black, 0.6);
+    margin-bottom: 8px;
+
+    .price-slider-max {
+      color: $brand-orange;
+      font-weight: 700;
+    }
+  }
+
+  .price-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e7eb;
+    outline: none;
+
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: $brand-orange;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba($brand-orange, 0.4);
+      border: 2px solid $brand-white;
+      transition: transform 0.15s ease;
+
+      &:hover {
+        transform: scale(1.15);
+      }
+    }
+
+    &::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: $brand-orange;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba($brand-orange, 0.4);
+      border: 2px solid $brand-white;
+    }
+  }
+}
+
+.price-inputs-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  .price-input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .price-input-label {
+    font-family: $font-body;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba($brand-black, 0.5);
+  }
+
+  .price-input-box {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba($brand-black, 0.12);
+    border-radius: 10px;
+    padding: 6px 10px;
+    background: rgba($brand-black, 0.01);
+    transition: border-color 0.2s ease;
+
+    &:focus-within {
+      border-color: $brand-orange;
+      background: $brand-white;
+    }
+
+    span {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: rgba($brand-black, 0.5);
+      margin-right: 4px;
+    }
+
+    input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-family: $font-body;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: $brand-black;
+
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    }
+  }
+
+  .price-inputs-dash {
+    font-size: 0.9rem;
+    color: rgba($brand-black, 0.4);
+    padding-bottom: 8px;
+  }
+}
+
+.price-apply-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background: $brand-black;
+  color: $brand-white;
+  border: none;
+  font-family: $font-body;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  &:hover {
+    background: $brand-orange;
+    box-shadow: 0 4px 14px rgba($brand-orange, 0.25);
+  }
+}
+
 .sort-box {
   display: flex;
   align-items: center;
@@ -193,6 +469,52 @@ $font-accent: var(--font-marcellus), 'Marcellus', serif;
 
     &:focus {
       border-color: $brand-orange;
+    }
+  }
+}
+
+// Active Filters Bar
+.active-filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.active-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba($brand-orange, 0.06);
+  border: 1px solid rgba($brand-orange, 0.2);
+  border-radius: 30px;
+  font-family: $font-body;
+  font-size: 0.8rem;
+  color: $brand-black;
+
+  strong {
+    font-weight: 600;
+    color: $brand-orange;
+  }
+
+  &__clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba($brand-black, 0.1);
+    border: none;
+    cursor: pointer;
+    color: $brand-black;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: $brand-black;
+      color: $brand-white;
     }
   }
 }

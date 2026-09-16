@@ -1,3 +1,16 @@
+/**
+ * HTML entity escaping to prevent XSS in invoice templates
+ */
+function escapeHtml(str: any): string {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function printInvoice(order: any) {
   const invoiceDate = new Date(order.createdAt || Date.now()).toLocaleDateString('en-IN', {
     day: 'numeric',
@@ -8,14 +21,14 @@ export function printInvoice(order: any) {
   const itemsHTML = (order.items || []).map((item: any) => `
     <tr>
       <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;font-size:13px;color:#1a1a1a;font-weight:600;">
-        ${item.name || item.title || 'Item'}
+        ${escapeHtml(item.name || item.title || 'Item')}
         <div style="font-size:11px;color:#888;font-weight:400;margin-top:2px;">
-          Size: ${item.size || 'Standard'} ${item.sku ? `| SKU: ${item.sku}` : ''}
+          Size: ${escapeHtml(item.size || 'Standard')} ${item.sku ? `| SKU: ${escapeHtml(item.sku)}` : ''}
         </div>
       </td>
-      <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:center;font-size:13px;color:#444;">${item.quantity || 1}</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#444;">₹${(item.price || 0).toLocaleString("en-IN")}</td>
-      <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#1a1a1a;font-weight:700;">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString("en-IN")}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:center;font-size:13px;color:#444;">${Number(item.quantity) || 1}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#444;">₹${(Number(item.price) || 0).toLocaleString("en-IN")}</td>
+      <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#1a1a1a;font-weight:700;">₹${((Number(item.price) || 0) * (Number(item.quantity) || 1)).toLocaleString("en-IN")}</td>
     </tr>
   `).join("");
 
@@ -38,7 +51,7 @@ export function printInvoice(order: any) {
     <html lang="en">
     <head>
       <meta charset="UTF-8" />
-      <title>Invoice - ${order.id}</title>
+      <title>Invoice - ${escapeHtml(order.id)}</title>
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;700&display=swap');
         
@@ -101,11 +114,11 @@ export function printInvoice(order: any) {
         <div style="display:flex;justify-content:space-between;padding:20px 40px;border-bottom:1px solid #f0ece6;background:#faf9f6;">
           <div>
             <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:4px;">INVOICE NO.</div>
-            <div style="font-size:15px;font-weight:700;color:#FF6A00;letter-spacing:0.02em;">INV-${order.id}</div>
+            <div style="font-size:15px;font-weight:700;color:#FF6A00;letter-spacing:0.02em;">INV-${escapeHtml(order.id)}</div>
           </div>
           <div>
             <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:4px;">ORDER ID</div>
-            <div style="font-size:15px;font-weight:700;color:#1a1a1a;">${order.id}</div>
+            <div style="font-size:15px;font-weight:700;color:#1a1a1a;">${escapeHtml(order.id)}</div>
           </div>
           <div style="text-align:right;">
             <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:4px;">DATE</div>
@@ -117,10 +130,10 @@ export function printInvoice(order: any) {
         <div style="display:flex;gap:40px;padding:24px 40px;border-bottom:1px solid #f0ece6;">
           <div style="flex:1;">
             <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:10px;">BILLED TO</div>
-            <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${order.customerName || 'Valued Customer'}</div>
-            ${order.customerEmail ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">${order.customerEmail}</div>` : ''}
-            ${addressObj.phone ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">+91 ${addressObj.phone}</div>` : ''}
-            <div style="font-size:12px;color:#666;line-height:1.5;margin-top:4px;max-width:280px;">${addressStr}</div>
+            <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${escapeHtml(order.customerName || 'Valued Customer')}</div>
+            ${order.customerEmail ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escapeHtml(order.customerEmail)}</div>` : ''}
+            ${addressObj.phone ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">+91 ${escapeHtml(addressObj.phone)}</div>` : ''}
+            <div style="font-size:12px;color:#666;line-height:1.5;margin-top:4px;max-width:280px;">${escapeHtml(addressStr)}</div>
           </div>
           <div style="flex:1;">
             <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:10px;">SOLD BY</div>
@@ -177,7 +190,7 @@ export function printInvoice(order: any) {
         <div style="margin:0 40px;padding:14px 20px;background:#faf8f4;border-radius:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #f0ece6;">
           <div>
             <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;">PAYMENT METHOD</span>
-            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-top:3px;">${order.paymentMethod === 'COD' ? 'Cash On Delivery (COD)' : order.paymentMethod || 'COD'}</div>
+            <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-top:3px;">${escapeHtml(order.paymentMethod === 'COD' ? 'Cash On Delivery (COD)' : order.paymentMethod || 'COD')}</div>
           </div>
           <div style="text-align:right;">
             <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;">PAYMENT STATUS</span>

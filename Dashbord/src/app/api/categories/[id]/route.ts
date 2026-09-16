@@ -3,15 +3,19 @@ import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { categorySchema } from '@/lib/validators';
 import { randomUUID } from 'crypto';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const { id } = await params;
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const userRole = session!.role;
+    const userId = session!.id;
 
     const body = await req.json();
     const validation = categorySchema.partial().safeParse(body);
@@ -114,9 +118,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const { id } = await params;
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const userRole = session!.role;
+    const userId = session!.id;
 
     let databaseConnected = true;
     let deletedCategory = null;

@@ -25,6 +25,9 @@ export interface Product {
   origin?: string;
   weaveType?: string;
   occasion?: string;
+  videoUrl?: string;
+  fabric?: string;
+  customizationConfig?: any;
 }
 
 export interface CartItem {

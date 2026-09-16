@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search');

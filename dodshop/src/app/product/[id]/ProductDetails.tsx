@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useStore, Product } from "@/store/useStore";
 import { motion } from "framer-motion";
 import {
-  Star,
   Heart,
   ShoppingBag,
   Share2,
@@ -22,8 +21,13 @@ import {
   Check,
   MessageCircle,
   Play,
-  X,
-  Copy
+  Copy,
+  AlertCircle,
+  Scissors,
+  Palette,
+  Clock,
+  Send,
+  X
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import "./ProductDetail.scss";
@@ -50,13 +54,7 @@ const galleryImagesMap: Record<string, string[]> = {
   ]
 };
 
-// Mock 360 Rotating Frames
-const mock360Frames = [
-  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?q=80&w=800&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=800&auto=format&fit=crop"
-];
+
 
 // FBT Bundle Accessories
 const bundleAccessories = [
@@ -105,11 +103,6 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   const [isZoomed, setIsZoomed] = useState(false);
   const mainImageRef = useRef<HTMLDivElement>(null);
 
-  // 360 Preview
-  const [show360, setShow360] = useState(false);
-  const [active360Index, setActive360Index] = useState(0);
-  const isDragging360 = useRef(false);
-  const dragStartX = useRef(0);
 
   // Video Modal
   const [showVideoModal, setShowVideoModal] = useState(false);
@@ -121,9 +114,92 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   // Share dropdown
   const [showShareTooltip, setShowShareTooltip] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [whatsappShareUrl, setWhatsappShareUrl] = useState<string>("#");
 
-  // Helpful review vote
+  // Bespoke Customization Form States (6 Sections)
+  const [selectedCustomFabric, setSelectedCustomFabric] = useState<string>("");
+  const [customColor, setCustomColor] = useState<string>("");
+  const [selectedCustomBudget, setSelectedCustomBudget] = useState<string>("");
+  const [customBudgetValue, setCustomBudgetValue] = useState<string>("");
+  const [selectedAemroduri, setSelectedAemroduri] = useState<string>("");
+  const [selectedTassels, setSelectedTassels] = useState<string>("Yes");
+  const [timeEstimate, setTimeEstimate] = useState<number>(12);
+  const [timeEstimateError, setTimeEstimateError] = useState<string | null>(null);
+  const [customizerName, setCustomizerName] = useState<string>("");
+  const [customizerEmail, setCustomizerEmail] = useState<string>("");
+  const [customizerPhone, setCustomizerPhone] = useState<string>("");
+  const [customizerNotes, setCustomizerNotes] = useState<string>("");
+  const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
+  const [customSubmitSuccess, setCustomSubmitSuccess] = useState(false);
+  const [customSubmitError, setCustomSubmitError] = useState<string | null>(null);
+  const [customRequestId, setCustomRequestId] = useState<string | null>(null);
+  const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
+  const customizationPanelRef = useRef<HTMLElement | null>(null);
 
+  // Time estimate validation handler (cap <= 60 months)
+  const handleTimeEstimateChange = (val: string | number) => {
+    const num = Number(val);
+    setTimeEstimate(num);
+    if (isNaN(num) || num <= 0) {
+      setTimeEstimateError("Please enter a valid timeline (minimum 1 month).");
+    } else if (num > 60) {
+      setTimeEstimateError("Time estimate cannot exceed 60 months.");
+    } else {
+      setTimeEstimateError(null);
+    }
+  };
+
+  useEffect(() => {
+    if (isCustomizationOpen && customizationPanelRef.current) {
+      customizationPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isCustomizationOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const origin = window.location.origin;
+    const href = window.location.href;
+    const fabricsText = (activeProduct.fabrics || []).join(", ");
+    const featuresText = (activeProduct.features || []).join(" | ");
+    const priceFormatted = activeProduct.price ? activeProduct.price.toLocaleString("en-IN") : "0";
+    const mrpFormatted = activeProduct.price ? (activeProduct.price / 0.6).toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "0";
+
+    const text = `✨ *Designs of Dreams (DOD)* ✨
+Premium Handcrafted Indian Ethnic Wear — Direct from Artisans to You.
+
+━━━━━━━━━━━━━━━━━━
+
+🛍️ *${activeProduct.title}*
+${activeProduct.subtitle || ""}
+
+${activeProduct.desc || ""}
+
+💰 *Price:* ₹${priceFormatted} (MRP ₹${mrpFormatted} — *40% OFF*)
+🏷️ *Category:* ${activeProduct.category || "Saree"} — ${activeProduct.subcategory || ""}
+🧵 *Fabric:* ${fabricsText}
+⭐ *Rating:* ${activeProduct.rating || 5}/5 (142 reviews)
+✅ *Features:* ${featuresText}
+
+👉 *View Product:* ${href}
+
+━━━━━━━━━━━━━━━━━━
+
+📂 *Browse Our Collections:*
+🔹 Sarees → ${origin}/collection?category=Saree
+🔹 Kurtis → ${origin}/collection?category=Kurti
+🔹 Blouses → ${origin}/collection?category=Blouse
+🔹 Dupattas → ${origin}/collection?category=Dupatta
+🔹 Full Catalog → ${origin}/collection
+
+━━━━━━━━━━━━━━━━━━
+
+🏠 *About DOD Shop:*
+Designs of Dreams is a premium Indian ethnic wear brand specializing in authentic handloom Banarasi sarees, Lucknow Chikankari kurtis, and designer blouses. Every piece is handcrafted by master artisans from Varanasi, Lucknow, and Jaipur — preserving centuries-old weaving traditions. We offer Silk Mark certified products, free express shipping, and 7-day easy returns.
+
+🌐 *Visit:* ${origin}
+`;
+    setWhatsappShareUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`);
+  }, [activeProduct]);
 
   // FBT checkbox states
   const [includeBlouse, setIncludeBlouse] = useState(true);
@@ -183,11 +259,37 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
         : (galleryImagesMap[matchedProduct.id] || galleryImagesMap["1"]);
       setActiveImage(images[0]);
       setActiveThumbIndex(0);
-      setActiveFabric((matchedProduct.fabrics[0] || "Premium Katan Silk").trim());
+      setActiveFabric(((matchedProduct as any).fabric || matchedProduct.fabrics?.[0] || "Premium Katan Silk").trim());
       if (matchedProduct.category === "Saree") {
         setActiveSize("Standard Drape (5.5m + Blouse)");
       } else {
         setActiveSize(matchedProduct.sizes[0] || "M");
+      }
+
+      // Initialize Bespoke Customization selections from product config
+      const cfg = (matchedProduct as any).customizationConfig;
+      if (cfg) {
+        if (Array.isArray(cfg.fabrics) && cfg.fabrics.length > 0) {
+          setSelectedCustomFabric(cfg.fabrics[0]);
+        } else {
+          setSelectedCustomFabric("Pure Mulberry Silk");
+        }
+        if (Array.isArray(cfg.budgetRanges) && cfg.budgetRanges.length > 0) {
+          setSelectedCustomBudget(cfg.budgetRanges[0]);
+        } else {
+          setSelectedCustomBudget("₹10,000 – ₹20,000");
+        }
+        const activeTypes = Array.isArray(cfg.aemroduriTypes)
+          ? cfg.aemroduriTypes.filter((a: any) => a.active !== false)
+          : [];
+        if (activeTypes.length > 0) {
+          setSelectedAemroduri(activeTypes[0].name);
+        } else {
+          setSelectedAemroduri("Zardozi Handwork");
+        }
+        setSelectedTassels(cfg.allowTassels !== false ? "Yes" : "No");
+        setTimeEstimate(12);
+        setTimeEstimateError(null);
       }
     }
   }, [productId, matchedProduct]);
@@ -243,6 +345,91 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
     toggleWishlist(activeProduct);
   }, [toggleWishlist, activeProduct]);
 
+  // Bespoke Customization Form Submit Handler
+  const handleCustomizationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCustomSubmitError(null);
+
+    const cfg = (activeProduct as any).customizationConfig;
+    const availableFabrics = cfg?.fabrics || ["Silk", "Cotton", "Linen", "Organza", "Georgette"];
+    const effectiveFabric = selectedCustomFabric || availableFabrics[0];
+
+    if (!effectiveFabric) {
+      setCustomSubmitError("Please select a fabric option.");
+      return;
+    }
+
+    if (!customColor.trim()) {
+      setCustomSubmitError("Please enter your desired color (e.g. Royal Blue).");
+      return;
+    }
+
+    const effectiveBudgetRange = selectedCustomBudget || "₹10,000 – ₹20,000";
+    const finalBudget = effectiveBudgetRange === "Custom Budget" && customBudgetValue.trim()
+      ? customBudgetValue.trim()
+      : effectiveBudgetRange;
+
+    if (!finalBudget) {
+      setCustomSubmitError("Please select or enter your preferred budget.");
+      return;
+    }
+
+    const availableEmbs = cfg?.aemroduriTypes
+      ? cfg.aemroduriTypes.filter((a: any) => a.active !== false).map((a: any) => a.name)
+      : ["Zardozi Handwork", "Aari Needlework", "Gota Patti Motifs", "Lucknowi Chikankari"];
+    const effectiveAemroduri = selectedAemroduri || availableEmbs[0];
+
+    if (!effectiveAemroduri) {
+      setCustomSubmitError("Please select an Aemroduri (embroidery) type.");
+      return;
+    }
+
+    if (selectedTassels !== "Yes" && selectedTassels !== "No") {
+      setCustomSubmitError("Please select Yes or No for tassels.");
+      return;
+    }
+
+    const months = Number(timeEstimate);
+    if (isNaN(months) || months < 1 || months > 60) {
+      setTimeEstimateError("Time estimate cannot exceed 60 months.");
+      setCustomSubmitError("Time estimate must be between 1 and 60 months.");
+      return;
+    }
+
+    setIsSubmittingCustom(true);
+    try {
+      const res = await fetch("/api/customizations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: activeProduct.id,
+          fabric: effectiveFabric,
+          color: customColor.trim(),
+          budget: finalBudget,
+          aemroduriType: effectiveAemroduri,
+          tassels: selectedTassels,
+          timeEstimateMonths: months,
+          customerName: customizerName.trim() || "Valued Patron",
+          customerEmail: customizerEmail.trim() || "",
+          customerPhone: customizerPhone.trim() || "",
+          notes: customizerNotes.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCustomSubmitSuccess(true);
+        setCustomRequestId(data.request?.id ? String(data.request.id).slice(0, 8).toUpperCase() : `REQ-${Date.now().toString().slice(-6)}`);
+      } else {
+        setCustomSubmitError(data.error || "Failed to submit customization request. Please check inputs.");
+      }
+    } catch {
+      setCustomSubmitError("Network connection error. Please try again.");
+    } finally {
+      setIsSubmittingCustom(false);
+    }
+  };
+
 
 
   // Copy product URL link
@@ -256,25 +443,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   }, []);
 
 
-  // 360 degree drag rotation simulator
-  const handle360MouseDown = useCallback((e: React.MouseEvent) => {
-    isDragging360.current = true;
-    dragStartX.current = e.clientX;
-  }, []);
 
-  const handle360MouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging360.current) return;
-    const deltaX = e.clientX - dragStartX.current;
-    if (Math.abs(deltaX) > 20) {
-      const direction = deltaX > 0 ? 1 : -1;
-      setActive360Index((prev) => (prev + direction + mock360Frames.length) % mock360Frames.length);
-      dragStartX.current = e.clientX;
-    }
-  }, []);
-
-  const handle360MouseUpOrLeave = useCallback(() => {
-    isDragging360.current = false;
-  }, []);
 
   // Math totals for Frequently Bought Together
   const fbtTotalPrice = useMemo(() => activeProduct.price + (includeBlouse ? 2499 : 0) + (includeDupatta ? 1499 : 0), [activeProduct.price, includeBlouse, includeDupatta]);
@@ -326,106 +495,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
     router.push("/cart");
   };
 
-  // Related products: Ensure 3 unique similar products with unique images
-  const relatedProducts = useMemo(() => {
-    // Standard list of distinct saree products
-    const distinctSarees: Product[] = [
-      {
-        id: "2",
-        title: "Gilded Crimson Organza Saree",
-        subtitle: "Lightweight Contemporary Silk",
-        category: "Saree",
-        subcategory: "Silk",
-        desc: "Translucent pastel organza saree featuring hand-woven floral motifs and gold borders.",
-        longDesc: "A delicate weave combining the lightweight translucency of premium organza.",
-        price: 8499,
-        image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=800&auto=format&fit=crop",
-        badge: "Limited Edition",
-        fabrics: ["Organza Silk"],
-        features: ["Scalloped embroidery"],
-        sizes: ["One Size"],
-        rating: 4.7
-      },
-      {
-        id: "3",
-        title: "Emerald Green Banarasi Silk Saree",
-        subtitle: "Traditional Zari Handloom",
-        category: "Saree",
-        subcategory: "Chanderi",
-        desc: "Fine handloom Emerald Banarasi silk saree with hand-stitched zardozi gold borders.",
-        longDesc: "A classical ensemble directly from Chanderi weavers.",
-        price: 10999,
-        image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=800&auto=format&fit=crop",
-        badge: "Artisanal Craft",
-        fabrics: ["Banarasi Silk"],
-        features: ["Hand zardozi work"],
-        sizes: ["One Size"],
-        rating: 4.8
-      },
-      {
-        id: "3b",
-        title: "Royal Blue Paithani Silk Saree",
-        subtitle: "Maharashtrian Heritage Drape",
-        category: "Saree",
-        subcategory: "Paithani",
-        desc: "Lustrous royal blue silk saree featuring handcrafted peacock zari pallu.",
-        longDesc: "Traditional Paithani weave with hand-crafted peacock pallu motifs.",
-        price: 14499,
-        image: "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?q=80&w=800&auto=format&fit=crop",
-        badge: "Heritage Weave",
-        fabrics: ["Pure Silk"],
-        features: ["Peacock zari pallu"],
-        sizes: ["One Size"],
-        rating: 4.9
-      },
-      {
-        id: "3c",
-        title: "Ivory Gold Chikankari Saree",
-        subtitle: "Lucknowi Handwork Weave",
-        category: "Saree",
-        subcategory: "Chikankari",
-        desc: "Ethereal ivory saree adorned with fine chikankari embroidery and gold Mukaish work.",
-        longDesc: "Classic Lucknow chikankari on pure georgette silk.",
-        price: 11299,
-        image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?q=80&w=800&auto=format&fit=crop",
-        badge: "Atelier Signature",
-        fabrics: ["Georgette Silk"],
-        features: ["Mukaish work"],
-        sizes: ["One Size"],
-        rating: 4.8
-      }
-    ];
 
-    // Filter store products matching category & not active product
-    const storeFiltered = products.filter(
-      (p) => p.category === activeProduct.category && String(p.id) !== String(activeProduct.id)
-    );
-
-    // Merge store items and distinct items
-    const candidates = [...storeFiltered, ...distinctSarees];
-
-    // Deduplicate strictly by title and image URL
-    const seenTitles = new Set<string>([activeProduct.title.toLowerCase()]);
-    const seenImages = new Set<string>();
-    if (activeProduct.image) {
-      seenImages.add(activeProduct.image.split('?')[0]);
-    }
-
-    const uniqueList: Product[] = [];
-    for (const item of candidates) {
-      const baseImg = item.image ? item.image.split('?')[0] : '';
-      const titleLower = item.title.toLowerCase();
-
-      if (!seenTitles.has(titleLower) && !seenImages.has(baseImg)) {
-        seenTitles.add(titleLower);
-        seenImages.add(baseImg);
-        uniqueList.push(item);
-      }
-      if (uniqueList.length >= 3) break;
-    }
-
-    return uniqueList;
-  }, [products, activeProduct]);
 
   // FAQ data
   const faqData = useMemo(() => [
@@ -479,11 +549,10 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
             {productImages.map((img: string, idx: number) => (
               <div
                 key={idx}
-                className={`thumb-card ${activeThumbIndex === idx && !show360 ? "is-active" : ""}`}
+                className={`thumb-card ${activeThumbIndex === idx ? "is-active" : ""}`}
                 onClick={() => {
                   setActiveThumbIndex(idx);
                   setActiveImage(img);
-                  setShow360(false);
                 }}
               >
                 <Image src={img} alt={`${activeProduct.title} detail ${idx + 1}`} fill style={{ objectFit: "cover" }} />
@@ -495,14 +564,6 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
               <Image src={productImages[0]} alt="Video Thumbnail" fill style={{ objectFit: "cover" }} />
               <div className="thumb-icon-overlay">
                 <Play size={20} fill="white" />
-              </div>
-            </div>
-
-            {/* 360 Thumbnail Trigger */}
-            <div className={`thumb-card ${show360 ? "is-active" : ""}`} onClick={() => setShow360(true)}>
-              <Image src={productImages[1] || productImages[0]} alt="360 Thumbnail" fill style={{ objectFit: "cover" }} />
-              <div className="thumb-icon-overlay">
-                <RotateCcw size={20} />
               </div>
             </div>
           </div>
@@ -519,52 +580,22 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
           >
             <span className="gallery-overlay-badge">{activeProduct.badge}</span>
 
-            {show360 ? (
-              // 360 Interactive Viewer Screen
-              <div className="viewer-360-screen">
-                <button className="close-360" onClick={() => setShow360(false)}>
-                  <X size={18} />
-                </button>
-                <div
-                  className="viewer-360-image-holder"
-                  onMouseDown={handle360MouseDown}
-                  onMouseMove={handle360MouseMove}
-                  onMouseUp={handle360MouseUpOrLeave}
-                  onMouseLeave={handle360MouseUpOrLeave}
-                >
-                  <Image
-                    src={mock360Frames[active360Index]}
-                    alt="360 rotation Saree frame"
-                    fill
-                    style={{ objectFit: "contain" }}
-                    draggable={false}
-                  />
-                </div>
-                <div className="viewer-360-instruction">
-                  Drag horizontal to rotate 360° preview
-                </div>
-              </div>
-            ) : (
-              // Standard Zoomable Main Viewport
-              <div className="main-image-container">
-                <Image
-                  src={activeImage || productImages[0]}
-                  alt={activeProduct.title}
-                  fill
-                  style={{
-                    objectFit: "cover",
-                    transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                    transform: isZoomed && !isTouchDevice ? "scale(1.8)" : "scale(1)"
-                  }}
-                  priority
-                />
-              </div>
-            )}
+            {/* Standard Zoomable Main Viewport */}
+            <div className="main-image-container">
+              <Image
+                src={activeImage || productImages[0]}
+                alt={activeProduct.title}
+                fill
+                style={{
+                  objectFit: "cover",
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transform: isZoomed && !isTouchDevice ? "scale(1.8)" : "scale(1)"
+                }}
+                priority
+              />
+            </div>
 
             <div className="gallery-controls-360">
-              <button className="control-btn" onClick={() => setShow360(!show360)} title="Toggle 360 Rotation">
-                <RotateCcw size={18} />
-              </button>
               <button className="control-btn" onClick={() => setShowVideoModal(true)} title="Watch Craftsmanship Video">
                 <Play size={18} />
               </button>
@@ -598,33 +629,6 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
 
           {/* 3. Variant Selection */}
           <div className="variant-section">
-            <div>
-              <div className="variant-title">
-                {activeProduct.category === "Saree" ? "Select Length & Size" : "Select Size"}
-              </div>
-              <div className="size-options">
-                {activeProduct.category === "Saree"
-                  ? ["Standard Drape (5.5m + Blouse)", "Custom Tailored Blouse (+₹1,500)"].map((sz) => (
-                    <button
-                      key={sz}
-                      className={`option-btn ${activeSize === sz ? "is-active" : ""}`}
-                      onClick={() => setActiveSize(sz)}
-                    >
-                      {sz}
-                    </button>
-                  ))
-                  : activeProduct.sizes.map((sz) => (
-                    <button
-                      key={sz}
-                      className={`option-btn size-circle ${activeSize === sz ? "is-active" : ""}`}
-                      onClick={() => setActiveSize(sz)}
-                    >
-                      {sz}
-                    </button>
-                  ))}
-              </div>
-            </div>
-
             <div>
               <div className="variant-title">Weave / Fabric Type</div>
               <div className="fabric-options">
@@ -715,12 +719,311 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
                 )}
               </div>
             </div>
+
+            {/* Bespoke Customization Accordion */}
+            {Boolean(
+              (activeProduct as any).customizationConfig?.enabled ||
+              (activeProduct as any).customizationConfig?.fabrics?.length > 0
+            ) && (
+              <div className="bespoke-customization-accordion">
+                <button
+                  type="button"
+                  className={`bespoke-accordion-header ${isCustomizationOpen ? "is-open" : ""}`}
+                  onClick={() => setIsCustomizationOpen((open) => !open)}
+                  aria-expanded={isCustomizationOpen}
+                >
+                  <div className="bespoke-accordion-left">
+                    <Sparkles size={18} className="bespoke-accordion-icon" />
+                    <div>
+                      <strong>Bespoke Couture Customization</strong>
+                      <span>Choose Fabric, Custom Color, Budget, Aemroduri & Timeline</span>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    size={18}
+                    className={`bespoke-accordion-chevron ${isCustomizationOpen ? "is-open" : ""}`}
+                  />
+                </button>
+              </div>
+            )}
           </div>
-
-
-
         </div>
       </div>
+
+      {Boolean(
+        (activeProduct as any).customizationConfig?.enabled ||
+        (activeProduct as any).customizationConfig?.fabrics?.length > 0
+      ) && isCustomizationOpen && (
+        <section
+          ref={customizationPanelRef}
+          className="bespoke-customization-section is-accordion is-fullwidth"
+        >
+          <div className="customization-container">
+                    {customSubmitSuccess ? (
+                      <div className="customization-success-card">
+                        <div className="success-icon">
+                          <CheckCircle size={44} />
+                        </div>
+                        <h3>Bespoke Request Confirmed</h3>
+                        <p>
+                          Thank you! Your artisanal customization request has been placed in our atelier queue
+                          {customRequestId ? <> with reference ID: <strong>{customRequestId}</strong></> : null}.
+                        </p>
+                        <div className="summary-tags">
+                          <div className="tag-row"><span>Fabric:</span> <strong>{selectedCustomFabric || ((activeProduct as any).customizationConfig?.fabrics?.[0] || "Pure Silk")}</strong></div>
+                          <div className="tag-row"><span>Color:</span> <strong>{customColor || "—"}</strong></div>
+                          <div className="tag-row"><span>Budget:</span> <strong>{selectedCustomBudget === "Custom Budget" && customBudgetValue ? customBudgetValue : (selectedCustomBudget || "₹10,000 – ₹20,000")}</strong></div>
+                          <div className="tag-row"><span>Aemroduri:</span> <strong>{selectedAemroduri || "Zardozi Handwork"}</strong></div>
+                          <div className="tag-row"><span>Tassels:</span> <strong>{selectedTassels}</strong></div>
+                          <div className="tag-row"><span>Timeline:</span> <strong>{timeEstimate} Months</strong></div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-reset"
+                          onClick={() => {
+                            setCustomSubmitSuccess(false);
+                            setCustomColor("");
+                            setCustomBudgetValue("");
+                            setCustomizerNotes("");
+                          }}
+                        >
+                          Customize Another Piece
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleCustomizationSubmit} className="customization-form">
+                        <div className="customization-header accordion-form-intro">
+                          <div className="badge-wrapper">
+                            <Sparkles size={14} />
+                            <span>Haute Couture Atelier</span>
+                          </div>
+                          <h2 className="serif-font">Customize Your Weave</h2>
+                          <p className="customization-subtitle">
+                            Create a one-of-a-kind masterpiece tailored to your fabric, color, embroidery, and budget. Handcrafted by Varanasi and Lucknow artisans.
+                          </p>
+                        </div>
+
+                        <div className="customization-grid">
+                          <div className="custom-card">
+                            <div className="card-heading">
+                              <span className="step-badge">1</span>
+                              <div>
+                                <h4>Select Fabric</h4>
+                                <span className="card-sub">Artisanal handloom textiles</span>
+                              </div>
+                            </div>
+                            <div className="options-chip-group">
+                              {((activeProduct as any).customizationConfig?.fabrics || [
+                                "Pure Silk", "Chanderi Silk", "Organza", "Linen", "Georgette"
+                              ]).map((fab: string) => {
+                                const isSel = (selectedCustomFabric === fab) || (!selectedCustomFabric && fab === ((activeProduct as any).customizationConfig?.fabrics?.[0] || "Pure Silk"));
+                                return (
+                                  <button
+                                    key={fab}
+                                    type="button"
+                                    onClick={() => setSelectedCustomFabric(fab)}
+                                    className={`chip-btn ${isSel ? "is-selected" : ""}`}
+                                  >
+                                    {fab}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="custom-card">
+                            <div className="card-heading">
+                              <span className="step-badge">2</span>
+                              <div>
+                                <h4>Color Preference</h4>
+                                <span className="card-sub">Enter your desired shade</span>
+                              </div>
+                            </div>
+                            <div className="color-input-wrapper">
+                              <input
+                                type="text"
+                                value={customColor}
+                                onChange={(e) => setCustomColor(e.target.value)}
+                                placeholder={(activeProduct as any).customizationConfig?.colorPlaceholder || "e.g. Royal Blue, Rani Pink, Emerald"}
+                                className="custom-text-input"
+                                required
+                              />
+                              <span className="hint-text">You can also mention Pantones or traditional hues like Gulabi, Jamuni, Firozi.</span>
+                            </div>
+                          </div>
+
+                          <div className="custom-card">
+                            <div className="card-heading">
+                              <span className="step-badge">3</span>
+                              <div>
+                                <h4>Price / Budget Range</h4>
+                                <span className="card-sub">Select or define allocation</span>
+                              </div>
+                            </div>
+                            <div className="options-chip-group">
+                              {((activeProduct as any).customizationConfig?.budgetRanges || [
+                                "₹5,000 – ₹10,000", "₹10,000 – ₹20,000", "₹20,000 – ₹50,000", "Custom Budget"
+                              ]).map((b: string) => {
+                                const isSel = (selectedCustomBudget === b) || (!selectedCustomBudget && b === ((activeProduct as any).customizationConfig?.budgetRanges?.[0] || "₹10,000 – ₹20,000"));
+                                return (
+                                  <button
+                                    key={b}
+                                    type="button"
+                                    onClick={() => setSelectedCustomBudget(b)}
+                                    className={`chip-btn ${isSel ? "is-selected" : ""}`}
+                                  >
+                                    {b}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            {selectedCustomBudget === "Custom Budget" && (
+                              <div className="custom-budget-input-wrapper">
+                                <input
+                                  type="text"
+                                  value={customBudgetValue}
+                                  onChange={(e) => setCustomBudgetValue(e.target.value)}
+                                  placeholder="Specify budget (e.g. ₹75,000)"
+                                  className="custom-text-input"
+                                  required
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="custom-card">
+                            <div className="card-heading">
+                              <span className="step-badge">4</span>
+                              <div>
+                                <h4>Types of Aemroduri</h4>
+                                <span className="card-sub">Handcrafted embellishment</span>
+                              </div>
+                            </div>
+                            <div className="options-chip-group">
+                              {(((activeProduct as any).customizationConfig?.aemroduriTypes?.filter((a: any) => a.active !== false).map((a: any) => a.name)) || [
+                                "Zardozi Handwork", "Aari Needlework", "Gota Patti Motifs", "Lucknowi Chikankari"
+                              ]).map((emb: string) => {
+                                const isSel = (selectedAemroduri === emb) || (!selectedAemroduri && emb === (((activeProduct as any).customizationConfig?.aemroduriTypes?.[0]?.name) || "Zardozi Handwork"));
+                                return (
+                                  <button
+                                    key={emb}
+                                    type="button"
+                                    onClick={() => setSelectedAemroduri(emb)}
+                                    className={`chip-btn ${isSel ? "is-selected" : ""}`}
+                                  >
+                                    {emb}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="custom-card">
+                            <div className="card-heading">
+                              <span className="step-badge">5</span>
+                              <div>
+                                <h4>Tassels / Latkans</h4>
+                                <span className="card-sub">Pallu edge ornamentation</span>
+                              </div>
+                            </div>
+                            <div className="tassels-selector">
+                              <button type="button" onClick={() => setSelectedTassels("Yes")} className={`tassel-pill ${selectedTassels === "Yes" ? "is-selected" : ""}`}>
+                                <span className="dot" />
+                                <span>Include Handcrafted Tassels (Yes)</span>
+                              </button>
+                              <button type="button" onClick={() => setSelectedTassels("No")} className={`tassel-pill ${selectedTassels === "No" ? "is-selected" : ""}`}>
+                                <span className="dot" />
+                                <span>Standard Hemming (No)</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="custom-card">
+                            <div className="card-heading">
+                              <span className="step-badge">6</span>
+                              <div>
+                                <h4>Time Estimate</h4>
+                                <span className="card-sub">Required weaving & craft timeline</span>
+                              </div>
+                            </div>
+                            <div className="time-input-block">
+                              <div className="time-display-row">
+                                <label>Required Time Estimate (in months)</label>
+                                <div className="number-stepper">
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    max={60}
+                                    value={timeEstimate}
+                                    onChange={(e) => handleTimeEstimateChange(e.target.value)}
+                                    className={`time-input ${timeEstimate > 60 ? "input-error" : ""}`}
+                                  />
+                                  <span className="unit-label">Months</span>
+                                </div>
+                              </div>
+                              <input
+                                type="range"
+                                min={1}
+                                max={60}
+                                value={Math.min(60, Math.max(1, timeEstimate))}
+                                onChange={(e) => handleTimeEstimateChange(e.target.value)}
+                                className="time-slider"
+                              />
+                              <div className="slider-labels">
+                                <span>1 Month (Express)</span>
+                                <span className="max-tag">Max: 60 Months</span>
+                              </div>
+                              {timeEstimateError && (
+                                <div className="validation-alert">
+                                  <AlertCircle size={14} />
+                                  <span>{timeEstimateError}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="custom-contact-block">
+                          <div className="contact-heading">
+                            <h4>Patron & Delivery Information</h4>
+                            <p>Our senior atelier stylist will reach out to review swatches and confirm your weave draft.</p>
+                          </div>
+                          <div className="contact-inputs-grid">
+                            <input type="text" placeholder="Your Full Name *" value={customizerName} onChange={(e) => setCustomizerName(e.target.value)} className="custom-text-input" required />
+                            <input type="email" placeholder="Your Email Address *" value={customizerEmail} onChange={(e) => setCustomizerEmail(e.target.value)} className="custom-text-input" required />
+                            <input type="tel" placeholder="Phone / WhatsApp Number *" value={customizerPhone} onChange={(e) => setCustomizerPhone(e.target.value)} className="custom-text-input" required />
+                          </div>
+                          <div className="notes-wrapper">
+                            <label className="input-label">Special Requests / Weave Customization Notes</label>
+                            <textarea
+                              rows={3}
+                              placeholder="Add motif details, blouse measurements, zari density, or wedding date deadlines..."
+                              value={customizerNotes}
+                              onChange={(e) => setCustomizerNotes(e.target.value)}
+                              className="custom-textarea"
+                            />
+                          </div>
+                          {customSubmitError && (
+                            <div className="submission-error-alert">
+                              <AlertCircle size={16} />
+                              <span>{customSubmitError}</span>
+                            </div>
+                          )}
+                          <div className="submit-row">
+                            <button type="submit" disabled={isSubmittingCustom || timeEstimate > 60 || timeEstimate < 1} className="btn-submit-custom">
+                              {isSubmittingCustom ? "Submitting Request..." : "Request Bespoke Customization"}
+                            </button>
+                            <p className="guarantee-text">
+                              <ShieldCheck size={16} />
+                              <span>100% Authentic Handloom Certification & Dedicated Stylist Guarantee</span>
+                            </p>
+                          </div>
+                        </div>
+                      </form>
+                    )}
+          </div>
+        </section>
+      )}
 
       {/* ── 5. Trust Badge Strip ── */}
       <section className="trust-strip">
@@ -752,6 +1055,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
           </div>
         </div>
       </section>
+
 
       {/* ── 7, 8, 9. Highlights & Spec Section ── */}
       <section className="details-tab-section">
@@ -830,7 +1134,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
             <tbody>
               <tr>
                 <td className="spec-label">Fabric</td>
-                <td className="spec-value">{activeFabric}</td>
+                <td className="spec-value">{(activeProduct as any).fabric || activeProduct.fabrics?.[0] || activeFabric || "Pure Mulberry Silk"}</td>
               </tr>
               <tr>
                 <td className="spec-label">Saree Length</td>
@@ -862,15 +1166,13 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
       </section>
 
 
-
-
-
       {/* ── Related Products from Database ── */}
+      {dbRelatedProducts.length > 0 && (
       <section className="related-section" style={{ padding: "40px 0 20px" }}>
         <h2 className="related-title text-center text-3xl mb-8 serif-font">Related Products</h2>
         <div className="slider-container">
           <div className="slider-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "24px" }}>
-            {(dbRelatedProducts.length > 0 ? dbRelatedProducts : relatedProducts).slice(0, 4).map((item) => (
+            {dbRelatedProducts.slice(0, 4).map((item) => (
               <div key={item.id} className="product-card" style={{ display: "flex", flexDirection: "column", background: "var(--card-bg, #ffffff)", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 4px 15px rgba(0,0,0,0.04)" }}>
                 <Link href={`/product/${item.id}`} className="product-card__image-box" style={{ flex: 1, aspectRatio: "4/5", position: "relative", display: "block" }}>
                   <Image src={item.image} alt={item.title} fill style={{ objectFit: "cover" }} />
@@ -891,10 +1193,6 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
                     <span className="price" style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-main, #1a1a1a)" }}>
                       ₹{item.price.toLocaleString("en-IN")}
                     </span>
-                    <div className="rating" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", fontWeight: 600, color: "#d97706" }}>
-                      <Star size={14} fill="currentColor" />
-                      <span>{item.rating}</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -902,6 +1200,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
           </div>
         </div>
       </section>
+      )}
 
       {/* ── 13. FAQ Accordions Section ── */}
       <section className="product-faq-section">
@@ -949,42 +1248,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
 
       {/* WhatsApp Share Button */}
       <a
-        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
-          `✨ *Designs of Dreams (DOD)* ✨
-Premium Handcrafted Indian Ethnic Wear — Direct from Artisans to You.
-
-━━━━━━━━━━━━━━━━━━
-
-🛍️ *${activeProduct.title}*
-${activeProduct.subtitle}
-
-${activeProduct.desc}
-
-💰 *Price:* ₹${activeProduct.price.toLocaleString("en-IN")} (MRP ₹${(activeProduct.price / 0.6).toLocaleString("en-IN", { maximumFractionDigits: 0 })} — *40% OFF*)
-🏷️ *Category:* ${activeProduct.category} — ${activeProduct.subcategory}
-🧵 *Fabric:* ${activeProduct.fabrics.join(", ")}
-⭐ *Rating:* ${activeProduct.rating}/5 (142 reviews)
-✅ *Features:* ${activeProduct.features.join(" | ")}
-
-👉 *View Product:* ${typeof window !== "undefined" ? window.location.href : ""}
-
-━━━━━━━━━━━━━━━━━━
-
-📂 *Browse Our Collections:*
-🔹 Sarees → ${typeof window !== "undefined" ? window.location.origin : ""}/collection?category=Saree
-🔹 Kurtis → ${typeof window !== "undefined" ? window.location.origin : ""}/collection?category=Kurti
-🔹 Blouses → ${typeof window !== "undefined" ? window.location.origin : ""}/collection?category=Blouse
-🔹 Dupattas → ${typeof window !== "undefined" ? window.location.origin : ""}/collection?category=Dupatta
-🔹 Full Catalog → ${typeof window !== "undefined" ? window.location.origin : ""}/collection
-
-━━━━━━━━━━━━━━━━━━
-
-🏠 *About DOD Shop:*
-Designs of Dreams is a premium Indian ethnic wear brand specializing in authentic handloom Banarasi sarees, Lucknow Chikankari kurtis, and designer blouses. Every piece is handcrafted by master artisans from Varanasi, Lucknow, and Jaipur — preserving centuries-old weaving traditions. We offer Silk Mark certified products, free express shipping, and 7-day easy returns.
-
-🌐 *Visit:* ${typeof window !== "undefined" ? window.location.origin : ""}
-`
-        )}`}
+        href={whatsappShareUrl}
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-float-btn"
@@ -1012,15 +1276,24 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
             >
               <X size={18} />
             </button>
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-              title="Varanasi Loom Craftsmanship Video"
-              style={{ border: "none" }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {activeProduct.videoUrl && (activeProduct.videoUrl.endsWith('.mp4') || activeProduct.videoUrl.endsWith('.webm') || activeProduct.videoUrl.endsWith('.mov') || activeProduct.videoUrl.startsWith('/uploads/')) ? (
+              <video
+                src={activeProduct.videoUrl}
+                controls
+                autoPlay
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
+            ) : (
+              <iframe
+                width="100%"
+                height="100%"
+                src={activeProduct.videoUrl ? (activeProduct.videoUrl.includes('youtube.com/watch?v=') ? activeProduct.videoUrl.replace('watch?v=', 'embed/') + '?autoplay=1' : activeProduct.videoUrl.includes('youtu.be/') ? activeProduct.videoUrl.replace('youtu.be/', 'www.youtube.com/embed/') + '?autoplay=1' : activeProduct.videoUrl) : "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"}
+                title={`${activeProduct.title} Presentation Video`}
+                style={{ border: "none" }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )}
           </div>
         </div>
       )}

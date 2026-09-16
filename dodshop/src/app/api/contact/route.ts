@@ -5,8 +5,13 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
+  // Rate limit: max 5 contact submissions per 15 minutes per IP
+  const rateLimitRes = checkRateLimit(getClientIp(request), 5, 15 * 60 * 1000);
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const body = await request.json();
     const { name, email, phone, interest, date, message } = body;

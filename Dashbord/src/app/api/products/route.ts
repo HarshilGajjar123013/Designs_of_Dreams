@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { productSchema } from '@/lib/validators';
 import { randomUUID } from 'crypto';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
@@ -25,9 +26,9 @@ export async function GET(req: Request) {
       // 1. Try querying the database
       const where: any = {};
       if (categoryId) where.categoryId = categoryId;
-      if (status) {
+      if (status && status !== 'ALL') {
         where.status = status;
-      } else {
+      } else if (!status) {
         where.status = { not: 'ARCHIVED' };
       }
       if (search) {
@@ -67,14 +68,14 @@ export async function GET(req: Request) {
       if (categoryId) {
         allProducts = allProducts.filter(p => p.categoryId === categoryId);
       }
-      if (status) {
+      if (status && status !== 'ALL') {
         allProducts = allProducts.filter(p => p.status === status);
-      } else {
+      } else if (!status) {
         allProducts = allProducts.filter(p => p.status !== 'ARCHIVED');
       }
       if (search) {
         const query = search.toLowerCase();
-        allProducts = allProducts.filter(p => 
+        allProducts = allProducts.filter(p =>
           p.name.toLowerCase().includes(query) ||
           p.sku.toLowerCase().includes(query) ||
           p.description.toLowerCase().includes(query)
@@ -91,12 +92,12 @@ export async function GET(req: Request) {
         if (valB === undefined) valB = '';
 
         if (typeof valA === 'string') {
-          return sortOrder === 'asc' 
-            ? valA.localeCompare(valB) 
+          return sortOrder === 'asc'
+            ? valA.localeCompare(valB)
             : valB.localeCompare(valA);
         } else {
-          return sortOrder === 'asc' 
-            ? (valA as number) - (valB as number) 
+          return sortOrder === 'asc'
+            ? (valA as number) - (valB as number)
             : (valB as number) - (valA as number);
         }
       });
@@ -140,11 +141,13 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+    const userRole = session!.role;
+    const userId = session!.id;
 
     const body = await req.json();
-    
+
     // Validate inputs with Zod schema
     const validation = productSchema.safeParse(body);
     if (!validation.success) {
@@ -155,7 +158,7 @@ export async function POST(req: Request) {
     }
 
     const data = validation.data;
-    
+
     // Generate slug from product name if not provided
     const slug = data.name
       .toLowerCase()
@@ -195,14 +198,20 @@ export async function POST(req: Request) {
         }
 
         // Write to security audit log
-        await tx.securityLog.create({
-          data: {
-            action: `Product Created: ${product.name} (SKU: ${product.sku})`,
-            adminName: `Admin ID: ${userId}`,
-            role: userRole,
-            status: 'SUCCESS',
-          }
-        });
+        try {
+          await tx.securityLog.create({
+            data: {
+              action: `Product Created: ${product.name} (SKU: ${product.sku})`,
+              adminName: `Admin ID: ${userId}`,
+              role: userRole,
+              ip: req.headers.get('x-forwarded-for') || '127.0.0.1',
+              device: req.headers.get('user-agent') || 'Unknown Browser',
+              status: 'SUCCESS',
+            }
+          });
+        } catch (secErr) {
+          console.warn('Security log write failed:', secErr);
+        }
 
         return product;
       });

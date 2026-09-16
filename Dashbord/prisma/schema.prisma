@@ -113,9 +113,11 @@ model Product {
   newArrival    Boolean       @default(false)
   images        String[]      // Cloudinary image URL arrays
   videoUrl      String?
+  customizationConfig Json?
 
   inventoryLogs InventoryLog[]
   orderItems    OrderItem[]
+  customizationRequests CustomizationRequest[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 }
@@ -229,3 +231,27 @@ model SecurityLog {
   device    String
   status    LogStatus
 }
+
+// Customization Request Model
+model CustomizationRequest {
+  id                 String    @id @default(uuid())
+  productId          String
+  product            Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerId         String?
+  customerName       String?
+  customerEmail      String?
+  customerPhone      String?
+  fabric             String
+  color              String
+  budget             String
+  aemroduriType      String
+  tassels            String    // "Yes" | "No"
+  timeEstimateMonths Int       // 1 - 60
+  notes              String?   @db.Text
+  status             String    @default("PENDING")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@map("customization_requests")
+}
+

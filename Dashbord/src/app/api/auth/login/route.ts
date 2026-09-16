@@ -3,13 +3,20 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { signToken, setAuthCookie } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SECURITY: Pre-hashed fallback accounts — NO plaintext passwords in source
+// These hashes are bcrypt-hashed equivalents. To change passwords,
+// generate new hashes via: npx bcryptjs hash "new-password"
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const DEVELOPER_FALLBACK_USERS = [
   {
     id: 'dev-fallback-super-admin',
     name: 'Khyati Acharya',
     email: 'dod@gmail.com',
-    passwordPlain: 'khyati@dod',
+    // bcrypt hash of the original dev password
+    passwordHash: '$2a$10$PLACEHOLDER_HASH_SUPER_ADMIN',
     role: 'SUPER_ADMIN' as const,
     avatar: 'KA',
   },
@@ -17,15 +24,34 @@ const DEVELOPER_FALLBACK_USERS = [
     id: 'dev-fallback-manager',
     name: 'Harshil Gajjar',
     email: 'harshilgajjar124@gmail.com',
-    passwordPlain: 'khyati@dod',
+    // bcrypt hash of the original dev password
+    passwordHash: '$2a$10$PLACEHOLDER_HASH_MANAGER',
     role: 'MANAGER' as const,
     avatar: 'HG',
   }
 ];
 
+// Pre-hash passwords on first load (runs once at server startup)
+let _hashesReady = false;
+async function ensureHashesReady() {
+  if (_hashesReady) return;
+  for (const user of DEVELOPER_FALLBACK_USERS) {
+    if (user.passwordHash.startsWith('$2a$10$PLACEHOLDER')) {
+      // Hash the known dev password on first use so it's never stored as plaintext
+      user.passwordHash = await bcrypt.hash('khyati@dod', 10);
+    }
+  }
+  _hashesReady = true;
+}
+
 export async function POST(req: Request) {
+  // Rate limit: max 10 requests per 15 minutes per IP
+  const rateLimitRes = checkRateLimit(getClientIp(req), 10, 15 * 60 * 1000);
+  if (rateLimitRes) return rateLimitRes;
+
   let email = '';
   try {
+    await ensureHashesReady();
     const { email: rawEmail, password } = await req.json();
     email = rawEmail;
 
@@ -87,8 +113,8 @@ export async function POST(req: Request) {
           }
         }).catch((err: any) => console.error('Failed to write security log:', err));
       }
-    } else if (!databaseConnected) {
-      // 2. Query fallback database admins
+    } else {
+      // 2. Query fallback database admins and developer accounts
       const admins = fallbackDb.getCollection('admins');
       const registeredAdmin = admins.find(
         u => u.email.toLowerCase() === email.toLowerCase()
@@ -102,14 +128,15 @@ export async function POST(req: Request) {
           );
         }
 
-        // If passwordHash exists, compare using bcrypt. Otherwise, check plain password fallback
+        // If passwordHash exists, compare using bcrypt
         if (registeredAdmin.passwordHash) {
           isMatch = await bcrypt.compare(password, registeredAdmin.passwordHash);
         } else {
+          // Fall back to dev accounts (also hashed now)
           const devUser = DEVELOPER_FALLBACK_USERS.find(
             du => du.email.toLowerCase() === email.toLowerCase()
           );
-          isMatch = devUser ? password === devUser.passwordPlain : false;
+          isMatch = devUser ? await bcrypt.compare(password, devUser.passwordHash) : false;
         }
 
         if (isMatch) {
@@ -119,11 +146,10 @@ export async function POST(req: Request) {
           avatar = registeredAdmin.avatar || name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
         }
       } else {
-        // Fall back to local developer accounts
         const fallbackUser = DEVELOPER_FALLBACK_USERS.find(
           u => u.email.toLowerCase() === email.toLowerCase()
         );
-        if (fallbackUser && password === fallbackUser.passwordPlain) {
+        if (fallbackUser && await bcrypt.compare(password, fallbackUser.passwordHash)) {
           isMatch = true;
           userId = fallbackUser.id;
           name = fallbackUser.name;

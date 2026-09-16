@@ -3,8 +3,13 @@ import bcrypt from 'bcryptjs';
 import { prisma, fallbackDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { signToken, setAuthCookie } from '@/lib/auth';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
+  // Rate limit: max 5 signup attempts per 15 minutes per IP
+  const rateLimitRes = checkRateLimit(getClientIp(req), 5, 15 * 60 * 1000);
+  if (rateLimitRes) return rateLimitRes;
+
   try {
     const { firstName, lastName, email, mobileNumber, password } = await req.json();
 
@@ -44,6 +49,7 @@ export async function POST(req: Request) {
           phone: mobileNumber || null,
           avatar: avatar,
           isVerified: true, // Default to true as per UI mockup
+          customerType: 'NEW',
         }
       });
     } catch (dbError) {
@@ -73,6 +79,7 @@ export async function POST(req: Request) {
         phone: mobileNumber || null,
         avatar: avatar,
         notes: '',
+        customerType: 'NEW',
         isVerified: true,
         joinedDate: new Date().toISOString().split('T')[0],
         wishlist: [],

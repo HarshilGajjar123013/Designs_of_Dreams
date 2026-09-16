@@ -20,8 +20,8 @@ export default function PwaInstallPrompt() {
 
   useEffect(() => {
     // 1. Detect if app is already running in standalone mode (installed)
-    const isStandalone = 
-      window.matchMedia("(display-mode: standalone)").matches || 
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone === true;
 
     if (isStandalone) return;
@@ -58,14 +58,14 @@ export default function PwaInstallPrompt() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    
+
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === "accepted") {
       console.log("User accepted install");
     }
-    
+
     setDeferredPrompt(null);
     setIsVisible(false);
   };

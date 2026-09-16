@@ -187,7 +187,7 @@ async function main() {
         status: 'ACTIVE',
         bestSeller: true,
         newArrival: true,
-        images: ['https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=600'],
+        images: ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600'],
         rating: 4.8,
         reviewCount: 36,
       },
@@ -404,7 +404,7 @@ async function main() {
       items: {
         create: [
           { productId: PROD_2, name: 'Zardozi Hand-Embellished Velvet Blouse', sku: 'DOD-BLU-102', price: 15500, quantity: 1, size: 'M', color: '#4E0707', image: 'https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?q=80&w=600' },
-          { productId: PROD_3, name: 'Lucknowi Chikankari Georgette Anarkali Set', sku: 'DOD-KUR-204', price: 26000, quantity: 1, size: 'M', color: '#E6F2F7', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=600' },
+          { productId: PROD_3, name: 'Lucknowi Chikankari Georgette Anarkali Set', sku: 'DOD-KUR-204', price: 26000, quantity: 1, size: 'M', color: '#E6F2F7', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600' },
         ],
       },
     },
@@ -501,7 +501,7 @@ async function main() {
       featuredCollections: [
         { id: COLL_BRIDAL, name: 'Bridal Collections', image: 'https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?q=80&w=300', count: 18 },
         { id: COLL_HERITAGE, name: 'Heritage Weaves', image: 'https://images.unsplash.com/photo-1610030469668-93535c17b6b3?q=80&w=300', count: 24 },
-        { id: COLL_SUMMER, name: 'Premium Kurtis & Sets', image: 'https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=300', count: 12 },
+        { id: COLL_SUMMER, name: 'Premium Kurtis & Sets', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=300', count: 12 },
       ],
       bannerMiddle: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=1200',
       footerBio: 'Designs of Dreams is a curated marketplace celebrating premium Indian heritage textiles. We bridge master artisans and modern collectors.',

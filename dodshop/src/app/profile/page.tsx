@@ -24,7 +24,7 @@ import {
   Edit
 } from "lucide-react";
 import "./Profile.scss";
- 
+
 type TabType = "info" | "edit" | "password" | "photo" | "addresses";
 
 export default function ProfilePage() {
@@ -609,14 +609,14 @@ export default function ProfilePage() {
                       transition={{ duration: 0.25 }}
                     >
                       <h3>Profile Photo</h3>
-                      
+
                       {/* Hidden File Input */}
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        style={{ display: 'none' }} 
-                        accept="image/*" 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        style={{ display: 'none' }}
+                        accept="image/*"
                       />
 
                       <div className="photo-upload-section">
@@ -763,7 +763,7 @@ export default function ProfilePage() {
                               />
                             </div>
                           </div>
-                          
+
                           <div className="profile-form-group mb-6">
                             <label className="checkbox-label" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               <input
@@ -853,7 +853,7 @@ export default function ProfilePage() {
                                   {addr.line2 && <p className="text-zinc-700 text-sm mb-1">{addr.line2}</p>}
                                   <p className="text-zinc-700 text-sm mb-2">{addr.city}, {addr.state} - {addr.postalCode}</p>
                                   <p className="text-zinc-500 text-xs mb-4">Phone: +91 {addr.phone}</p>
-                                  
+
                                   <div style={{ display: "flex", gap: "10px" }}>
                                     <button
                                       type="button"

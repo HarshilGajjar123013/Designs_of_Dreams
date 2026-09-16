@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    // This is a monorepo. Explicitly pin the root so Next does not walk up to
+    // an unrelated lockfile in the user profile and fail on restricted paths.
+    root: path.resolve(__dirname, '..'),
+  },
   async headers() {
     return [
       {
@@ -33,7 +38,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://images.unsplash.com https://res.cloudinary.com; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self';"
+            value: `default-src 'self'; script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' blob: data: https://images.unsplash.com https://res.cloudinary.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ${process.env.NODE_ENV === 'development' ? "ws: http: https:" : ""}; frame-ancestors 'self';`
           }
         ]
       }

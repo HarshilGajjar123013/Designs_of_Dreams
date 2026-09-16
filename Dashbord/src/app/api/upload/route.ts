@@ -7,9 +7,52 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir, copyFile } from 'fs/promises';
 import path from 'path';
 import { uploadToCloudinary } from '@/lib/cloudinary';
+import { verifyAdminSession } from '@/lib/auth';
+import { randomUUID } from 'crypto';
 
-const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+const ALLOWED_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/avif',
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'
+];
+
+// Magic byte signatures for file type validation
+const MAGIC_BYTES: Record<string, { bytes: number[]; offset: number; ext: string }[]> = {
+  'image/jpeg': [{ bytes: [0xFF, 0xD8, 0xFF], offset: 0, ext: '.jpg' }],
+  'image/png': [{ bytes: [0x89, 0x50, 0x4E, 0x47], offset: 0, ext: '.png' }],
+  'image/webp': [{ bytes: [0x52, 0x49, 0x46, 0x46], offset: 0, ext: '.webp' }], // RIFF
+  'image/avif': [{ bytes: [0x00, 0x00, 0x00], offset: 0, ext: '.avif' }], // ftyp box
+  'video/mp4': [{ bytes: [0x66, 0x74, 0x79, 0x70], offset: 4, ext: '.mp4' }], // ftyp
+  'video/webm': [{ bytes: [0x1A, 0x45, 0xDF, 0xA3], offset: 0, ext: '.webm' }], // EBML
+  'video/quicktime': [
+    { bytes: [0x66, 0x74, 0x79, 0x70], offset: 4, ext: '.mov' },
+    { bytes: [0x6D, 0x6F, 0x6F, 0x76], offset: 4, ext: '.mov' },
+  ],
+  'video/ogg': [{ bytes: [0x4F, 0x67, 0x67, 0x53], offset: 0, ext: '.ogv' }],
+};
+
+function validateMagicBytes(buffer: Buffer, declaredType: string): { valid: boolean; ext: string } {
+  const signatures = MAGIC_BYTES[declaredType];
+  if (signatures) {
+    for (const sig of signatures) {
+      if (buffer.length >= sig.offset + sig.bytes.length) {
+        const slice = buffer.slice(sig.offset, sig.offset + sig.bytes.length);
+        if (sig.bytes.every((byte, i) => slice[i] === byte)) {
+          return { valid: true, ext: sig.ext };
+        }
+      }
+    }
+  }
+
+  // Fallback extension resolution for video types
+  if (declaredType === 'video/mp4') return { valid: true, ext: '.mp4' };
+  if (declaredType === 'video/webm') return { valid: true, ext: '.webm' };
+  if (declaredType === 'video/quicktime') return { valid: true, ext: '.mov' };
+  if (declaredType === 'video/ogg') return { valid: true, ext: '.ogv' };
+
+  return { valid: false, ext: '' };
+}
 
 const isReadOnlyEnv = !!(process.env.VERCEL || process.env.NODE_ENV === 'production');
 
@@ -21,6 +64,10 @@ const STOREFRONT_UPLOAD_DIR = path.resolve(process.cwd(), '..', 'dodshop', 'publ
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Require authenticated admin session
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const formData = await request.formData();
     const files = formData.getAll('files') as File[];
 
@@ -35,13 +82,15 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       if (!ALLOWED_TYPES.includes(file.type)) {
         return NextResponse.json(
-          { success: false, error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WEBP, AVIF` },
+          { success: false, error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, WEBP, AVIF, MP4, WEBM, MOV` },
           { status: 400 }
         );
       }
-      if (file.size > MAX_FILE_SIZE) {
+      const isVideo = file.type.startsWith('video/');
+      const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      if (file.size > maxSize) {
         return NextResponse.json(
-          { success: false, error: `File "${file.name}" exceeds 4MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)` },
+          { success: false, error: `File "${file.name}" exceeds ${isVideo ? '100MB' : '10MB'} limit (${(file.size / 1024 / 1024).toFixed(1)}MB)` },
           { status: 400 }
         );
       }
@@ -68,22 +117,29 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(arrayBuffer);
 
         if (isCloudinaryConfigured) {
-          const uploadRes = await uploadToCloudinary(buffer, 'dod_products');
+          const isVideo = file.type.startsWith('video/');
+          const uploadRes = await uploadToCloudinary(buffer, 'dod_products', isVideo ? 'video' : 'image');
           return {
             url: uploadRes.url,
             originalName: file.name,
           };
         } else {
+          // SECURITY: Validate binary magic bytes, don't trust Content-Type
+          const { valid, ext } = validateMagicBytes(buffer, file.type);
+          if (!valid) {
+            return {
+              url: '',
+              originalName: file.name,
+              error: `File "${file.name}" failed binary signature validation for type ${file.type}`,
+            };
+          }
+
           // Ensure upload directories exist
           await mkdir(DASHBOARD_UPLOAD_DIR, { recursive: true });
           await mkdir(STOREFRONT_UPLOAD_DIR, { recursive: true });
 
-          // Generate unique filename
-          const ext = path.extname(file.name) || '.jpg';
-          const safeName = file.name
-            .replace(/[^a-zA-Z0-9.-]/g, '_')
-            .replace(ext, '');
-          const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}${ext}`;
+          // SECURITY: Generate server-side UUID filename to prevent path traversal
+          const uniqueName = `${randomUUID()}${ext}`;
 
           // Save to Dashboard public folder
           const dashboardPath = path.join(DASHBOARD_UPLOAD_DIR, uniqueName);

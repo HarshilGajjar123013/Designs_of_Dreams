@@ -25,6 +25,7 @@ export interface InvoiceData {
   gst: number;
   shipping: number;
   grandTotal: number;
+  customizationDetails?: string[];
 }
 
 interface InvoiceGeneratorProps {
@@ -32,6 +33,16 @@ interface InvoiceGeneratorProps {
   buttonClassName?: string;
   buttonStyle?: React.CSSProperties;
   compact?: boolean;
+}
+
+function escapeHtml(str: any): string {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, compact }: InvoiceGeneratorProps) {
@@ -45,23 +56,30 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
     const itemsHTML = data.items.map((item) => `
       <tr>
         <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;font-size:13px;color:#1a1a1a;font-weight:600;">
-          ${item.title}
+          ${escapeHtml(item.title)}
           <div style="font-size:11px;color:#888;font-weight:400;margin-top:2px;">
-            Size: ${item.size} ${item.sku ? `| SKU: ${item.sku}` : ''}
+            Size: ${escapeHtml(item.size)} ${item.sku ? `| SKU: ${escapeHtml(item.sku)}` : ''}
           </div>
         </td>
-        <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:center;font-size:13px;color:#444;">${item.quantity}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#444;">₹${item.price.toLocaleString("en-IN")}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#1a1a1a;font-weight:700;">₹${(item.price * item.quantity).toLocaleString("en-IN")}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:center;font-size:13px;color:#444;">${Number(item.quantity)}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#444;">₹${Number(item.price).toLocaleString("en-IN")}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0ece6;text-align:right;font-size:13px;color:#1a1a1a;font-weight:700;">₹${(Number(item.price) * Number(item.quantity)).toLocaleString("en-IN")}</td>
       </tr>
     `).join("");
+
+    const customizationHTML = data.customizationDetails?.length ? `
+      <div style="margin:0 40px 24px;padding:16px 20px;background:#fdf7ef;border:1px solid #f4d7b9;border-radius:12px;">
+        <div style="font-size:10px;color:#b45309;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:8px;">Bespoke customization details</div>
+        ${data.customizationDetails.map((detail) => `<div style="font-size:12px;color:#5b4636;line-height:1.6;">${escapeHtml(detail)}</div>`).join('')}
+      </div>
+    ` : '';
 
     const html = `
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8" />
-        <title>Invoice - ${data.orderId}</title>
+        <title>Invoice - ${escapeHtml(data.orderId)}</title>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;700&display=swap');
           
@@ -124,11 +142,11 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
           <div style="display:flex;justify-content:space-between;padding:24px 40px;border-bottom:1px solid #f0ece6;background:#fdfcfa;">
             <div>
               <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:4px;">Invoice Number</div>
-              <div style="font-size:16px;font-weight:700;color:#FF6A00;letter-spacing:0.02em;">INV-${data.orderId}</div>
+              <div style="font-size:16px;font-weight:700;color:#FF6A00;letter-spacing:0.02em;">INV-${escapeHtml(data.orderId)}</div>
             </div>
             <div>
               <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:4px;">Order ID</div>
-              <div style="font-size:16px;font-weight:700;color:#1a1a1a;">${data.orderId}</div>
+              <div style="font-size:16px;font-weight:700;color:#1a1a1a;">${escapeHtml(data.orderId)}</div>
             </div>
             <div style="text-align:right;">
               <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:4px;">Invoice Date</div>
@@ -140,10 +158,10 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
           <div style="display:flex;gap:40px;padding:24px 40px;border-bottom:1px solid #f0ece6;">
             <div style="flex:1;">
               <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:10px;">Billed To</div>
-              <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${data.customerName || 'Valued Customer'}</div>
-              ${data.customerEmail ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">${data.customerEmail}</div>` : ''}
-              ${data.customerPhone ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">+91 ${data.customerPhone}</div>` : ''}
-              <div style="font-size:12px;color:#666;line-height:1.5;margin-top:4px;max-width:280px;">${data.address || 'N/A'}</div>
+              <div style="font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:4px;">${escapeHtml(data.customerName || 'Valued Customer')}</div>
+              ${data.customerEmail ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escapeHtml(data.customerEmail)}</div>` : ''}
+              ${data.customerPhone ? `<div style="font-size:12px;color:#666;margin-bottom:2px;">+91 ${escapeHtml(data.customerPhone)}</div>` : ''}
+              <div style="font-size:12px;color:#666;line-height:1.5;margin-top:4px;max-width:280px;">${escapeHtml(data.address || 'N/A')}</div>
             </div>
             <div style="flex:1;">
               <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;margin-bottom:10px;">Sold By</div>
@@ -173,6 +191,8 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
             </table>
           </div>
 
+          ${customizationHTML}
+
           <!-- Totals -->
           <div style="padding:0 40px 24px;display:flex;justify-content:flex-end;">
             <div style="width:300px;">
@@ -200,7 +220,7 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
           <div style="margin:0 40px;padding:14px 20px;background:#faf8f4;border-radius:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #f0ece6;">
             <div>
               <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;">Payment Method</span>
-              <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-top:3px;">${data.paymentMode || 'Cash On Delivery (COD)'}</div>
+              <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-top:3px;">${escapeHtml(data.paymentMode || 'Cash On Delivery (COD)')}</div>
             </div>
             <div style="text-align:right;">
               <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;">Payment Status</span>

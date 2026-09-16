@@ -7,16 +7,16 @@
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma db push"
   },
   "dependencies": {
-    "@prisma/client": "^6.4.1"
+    "@prisma/client": "6.19.3"
   },
   "devDependencies": {
-    "prisma": "^6.4.1",
+    "prisma": "6.19.3",
     "tsx": "^4.19.0"
   }
 }

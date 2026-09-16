@@ -2,19 +2,23 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { randomUUID } from 'crypto';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const body = await req.json();
     const { status, carrier, trackingId, estimatedDelivery } = body;
 
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const userRole = session!.role;
+    const userId = session!.id;
 
     let updatedOrder = null;
     let databaseConnected = true;

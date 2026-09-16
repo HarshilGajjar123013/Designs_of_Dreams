@@ -52,7 +52,7 @@ See `.env.example` in the repo root and each app folder.
 
 - **Next.js 16** (App Router)
 - **React 19**
-- **Prisma** + PostgreSQL
+- **Prisma** + MongoDB
 - **Tailwind CSS 4**
 - **Zustand** (state)
 - **Cloudinary** (image uploads — admin)
@@ -75,7 +75,7 @@ Each app has its own `vercel.json` with monorepo install settings (`cd .. && npm
    - **Build Command:** `npm run build` (default)
    - **Install Command:** `cd .. && npm install` (from `vercel.json`)
 4. Add **Environment Variables** (Production):
-   - `DATABASE_URL` — PostgreSQL connection string
+   - `DATABASE_URL` — MongoDB Atlas/replica-set connection string
    - `JWT_SECRET` — strong secret (32+ chars)
    - `NEXT_PUBLIC_SITE_URL` — e.g. `https://your-dodshop.vercel.app`
 5. Click **Deploy**

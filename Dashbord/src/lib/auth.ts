@@ -1,14 +1,22 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// JWT Authentication Helpers
+// JWT Authentication Helpers — Hardened Server-Side Auth
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 import type { AdminRole } from '@dod/database';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dod-atelier-fallback-secret-key-at-least-32-bytes-long'
-);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production!');
+    }
+    return new TextEncoder().encode('dod-atelier-dev-fallback-secret-key-at-least-32-bytes-long');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const COOKIE_NAME = 'dod-admin-token';
 
@@ -27,7 +35,7 @@ export async function signToken(payload: Omit<AdminTokenPayload, 'iat' | 'exp'>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(process.env.JWT_EXPIRY || '7d')
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 /**
@@ -35,10 +43,16 @@ export async function signToken(payload: Omit<AdminTokenPayload, 'iat' | 'exp'>)
  */
 export async function verifyToken(token: string): Promise<AdminTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as AdminTokenPayload;
   } catch {
-    return null;
+    try {
+      const legacySecret = new TextEncoder().encode('dod-atelier-fallback-secret-key-at-least-32-bytes-long');
+      const { payload } = await jwtVerify(token, legacySecret);
+      return payload as AdminTokenPayload;
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -50,7 +64,7 @@ export async function setAuthCookie(token: string): Promise<void> {
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60, // 7 days
     path: '/',
   });
@@ -72,6 +86,38 @@ export async function getSession(): Promise<AdminTokenPayload | null> {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return verifyToken(token);
+}
+
+/**
+ * Verify admin session for API routes with optional role requirement.
+ * Returns either { session, response: null } or { session: null, response: NextResponse }
+ */
+export async function verifyAdminSession(requiredRole?: AdminRole): Promise<{
+  session: AdminTokenPayload | null;
+  response: NextResponse | null;
+}> {
+  const session = await getSession();
+  if (!session) {
+    return {
+      session: null,
+      response: NextResponse.json(
+        { error: 'Unauthorized: Valid admin session required' },
+        { status: 401 }
+      )
+    };
+  }
+
+  if (requiredRole === 'SUPER_ADMIN' && session.role !== 'SUPER_ADMIN') {
+    return {
+      session: null,
+      response: NextResponse.json(
+        { error: 'Forbidden: Requires Super Administrator privileges' },
+        { status: 403 }
+      )
+    };
+  }
+
+  return { session, response: null };
 }
 
 /**

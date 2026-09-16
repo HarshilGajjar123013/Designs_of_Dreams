@@ -3,11 +3,15 @@ import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { inventoryAdjustSchema } from '@/lib/validators';
 import { randomUUID } from 'crypto';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
+    const userRole = session!.role;
+    const userId = session!.id;
 
     const body = await req.json();
     const validation = inventoryAdjustSchema.safeParse(body);

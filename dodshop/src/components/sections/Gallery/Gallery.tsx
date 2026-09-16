@@ -62,7 +62,7 @@ const galleryData: GalleryItem[] = [
     id: 6,
     title: "Indigo Dye Vat",
     category: "Organic Coloring",
-    image: "https://images.unsplash.com/photo-1524295988555-44ade8b4034f?q=80&w=600&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
     desc: "Traditional hand-dyeing processes using pure botanical indigo.",
     gridClass: "collage-6"
   },
@@ -96,8 +96,16 @@ const Gallery: React.FC = () => {
       try {
         const res = await fetch("/api/cms");
         const data = await res.json();
-        if (data.success && data.cms && data.cms.gallery && data.cms.gallery.length > 0) {
-          setCmsGallery(data.cms.gallery);
+        if (data.success && data.cms) {
+          const rawGallery = data.cms.gallery;
+          const cmsItems: GalleryItem[] = Array.isArray(rawGallery)
+            ? rawGallery
+            : (rawGallery && Array.isArray(rawGallery.items) ? rawGallery.items : []);
+          if (cmsItems.length > 0) {
+            setCmsGallery(cmsItems);
+          } else {
+            setCmsGallery(galleryData);
+          }
         }
       } catch (err) {
         console.error("Failed to load storefront CMS gallery preview:", err);

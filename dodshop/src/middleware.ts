@@ -2,9 +2,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dod-atelier-fallback-secret-key-at-least-32-bytes-long'
-);
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is missing in production!');
+    }
+    return new TextEncoder().encode('dod-atelier-dev-fallback-secret-key-at-least-32-bytes-long');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 const COOKIE_NAME = 'dod-customer-token';
 
@@ -14,7 +21,7 @@ const PROTECTED_ROUTES = [
   '/settings',
 ];
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 1. Bypass public files, sitemaps, robots, favicon
@@ -23,8 +30,10 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname === '/favicon.ico' ||
     pathname.startsWith('/images') ||
+    pathname.startsWith('/assets') ||
     pathname === '/sitemap.xml' ||
-    pathname === '/robots.txt'
+    pathname === '/robots.txt' ||
+    pathname === '/~offline'
   ) {
     return NextResponse.next();
   }
@@ -36,7 +45,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/login') {
     if (token) {
       try {
-        await jwtVerify(token, JWT_SECRET);
+        await jwtVerify(token, getJwtSecret());
         // If already logged in, redirect to profile
         return NextResponse.redirect(new URL('/profile', request.url));
       } catch {
@@ -57,8 +66,8 @@ export async function proxy(request: NextRequest) {
     }
 
     try {
-      const { payload } = await jwtVerify(token, JWT_SECRET);
-      
+      const { payload } = await jwtVerify(token, getJwtSecret());
+
       // Allow access, pass down user details in headers
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set('x-customer-id', payload.id as string);
@@ -71,7 +80,7 @@ export async function proxy(request: NextRequest) {
       });
 
     } catch (error) {
-      console.error('Customer proxy token validation failed:', error);
+      console.error('Customer middleware token validation failed:', error);
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete(COOKIE_NAME);
       return response;
@@ -83,13 +92,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

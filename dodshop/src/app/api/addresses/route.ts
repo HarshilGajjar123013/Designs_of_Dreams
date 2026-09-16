@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
+import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const queryUserId = searchParams.get('userId');
+    const customer = await resolveCustomer(req, queryUserId);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
+    if (!customer) {
+      return NextResponse.json({
+        success: true,
+        addresses: []
+      });
     }
+
+    const userId = customer.userId;
 
     let addresses: any[] = [];
     let databaseConnected = true;
@@ -81,11 +85,22 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { userId, address } = await req.json();
+    const body = await req.json();
+    const { address, userId: bodyUserId } = body;
+    const customer = await resolveCustomer(req, bodyUserId);
 
-    if (!userId || !address) {
+    if (!customer) {
       return NextResponse.json(
-        { error: 'User ID and address details are required' },
+        { error: 'Customer session or user ID required' },
+        { status: 401 }
+      );
+    }
+
+    const userId = customer.userId;
+
+    if (!address) {
+      return NextResponse.json(
+        { error: 'Address details are required' },
         { status: 400 }
       );
     }
@@ -245,12 +260,22 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
     const addressId = searchParams.get('addressId');
+    const queryUserId = searchParams.get('userId');
+    const customer = await resolveCustomer(req, queryUserId);
 
-    if (!userId || !addressId) {
+    if (!customer || !addressId) {
       return NextResponse.json(
-        { error: 'User ID and address ID are required' },
+        { error: 'Customer session and address ID are required' },
+        { status: 400 }
+      );
+    }
+
+    const userId = customer.userId;
+
+    if (!addressId) {
+      return NextResponse.json(
+        { error: 'Address ID is required' },
         { status: 400 }
       );
     }

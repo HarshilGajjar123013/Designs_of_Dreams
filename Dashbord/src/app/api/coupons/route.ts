@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { randomUUID } from 'crypto';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function GET() {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
     let coupons: any[] = [];
     let databaseConnected = true;
 
@@ -38,6 +41,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const body = await req.json();
     const { code, discountPercent, minOrder } = body;
 

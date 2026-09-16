@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useStore, Product } from "@/store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ShoppingBag, ArrowLeft, Star, Trash2 } from "lucide-react";
+import { Heart, ShoppingBag, ArrowLeft, Trash2 } from "lucide-react";
 import "../collection/CollectionCatalog.scss"; // Reuse catalog styles for consistent UI grids
 
 export default function WishlistPage() {
@@ -118,10 +118,6 @@ export default function WishlistPage() {
                     
                     <div className="product-card__meta">
                       <span className="price">₹{product.price.toLocaleString("en-IN")}</span>
-                      <div className="rating">
-                        <Star size={12} fill="currentColor" />
-                        <span>{product.rating}</span>
-                      </div>
                     </div>
                   </div>
                 </motion.div>

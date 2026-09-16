@@ -32,57 +32,101 @@ const taglines = [
   "New Festive Collection Out Now!"
 ];
 
-const megaMenuData: any = {
+const DEFAULT_INITIAL_CATEGORIES = [
+  { id: 'cat-sarees', name: 'Sarees', slug: 'sarees', description: "Timeless drapes from India's finest looms." },
+  { id: 'cat-kurtis', name: 'Kurtis', slug: 'kurtis', description: "Elegant ethnic tops." },
+  { id: 'cat-blouses', name: 'Blouses', slug: 'blouses', description: "Designer blouses." },
+  { id: 'cat-dupattas', name: 'Dupattas', slug: 'dupattas', description: "Handwoven accessories." },
+  { id: 'cat-heritage', name: 'Heritage Weaves', slug: 'heritage-weaves', description: "Rare handloom treasures." },
+  { id: 'cat-bridal', name: 'Bridal', slug: 'bridal', description: "Curated bridal couture." },
+];
+
+const legacyCategoryPresets: Record<string, { fabrics?: string[]; subcategories?: string[] }> = {
   Kurti: {
-    title: "Kurti",
-    image: "/mobile/kurti.jpg",
-    description: "Stylish Kurtis for Every Occasion",
+    fabrics: ["Cotton", "Rayon", "Silk", "Georgette", "Chiffon", "Linen"],
+    subcategories: ["Anarkali Kurti", "A-Line Kurti", "Straight Kurti", "Short Kurti", "Party Wear Kurti"]
+  },
+  Kurtis: {
+    fabrics: ["Cotton", "Rayon", "Silk", "Georgette", "Chiffon", "Linen"],
+    subcategories: ["Anarkali Kurti", "A-Line Kurti", "Straight Kurti", "Short Kurti", "Party Wear Kurti"]
+  },
+  Saree: {
+    fabrics: ["Katan Silk", "Organza", "Chanderi", "Georgette", "Mulberry Silk"],
+    subcategories: ["Banarasi", "Silk", "Chiffon", "Net", "Cotton", "Zari Handloom"]
+  },
+  Sarees: {
+    fabrics: ["Katan Silk", "Organza", "Chanderi", "Georgette", "Mulberry Silk"],
+    subcategories: ["Banarasi", "Silk", "Chiffon", "Net", "Cotton", "Zari Handloom"]
+  },
+  Blouse: {
+    fabrics: ["Raw Silk", "Velvet", "Brocade", "Tissue", "Satin"],
+    subcategories: ["Ready Made", "Custom", "Designer", "Bridal Blouses"]
+  },
+  Blouses: {
+    fabrics: ["Raw Silk", "Velvet", "Brocade", "Tissue", "Satin"],
+    subcategories: ["Ready Made", "Custom", "Designer", "Bridal Blouses"]
+  },
+  Dupatta: {
+    fabrics: ["Pure Silk", "Chiffon", "Net", "Organza", "Georgette"],
+    subcategories: ["Heavy Zari", "Light Drapes", "Floral Prints", "Banarasi Borders"]
+  },
+  Dupattas: {
+    fabrics: ["Pure Silk", "Chiffon", "Net", "Organza", "Georgette"],
+    subcategories: ["Heavy Zari", "Light Drapes", "Floral Prints", "Banarasi Borders"]
+  }
+};
+
+function formatMegaCategory(cat: any) {
+  const preset = legacyCategoryPresets[cat.name] || {};
+
+  const dbSubs = Array.isArray(cat.subcategories) ? cat.subcategories : [];
+  const presetSubs = preset.subcategories || [];
+  const combinedSubs = Array.from(new Set([...dbSubs, ...presetSubs]));
+  const subLinks = combinedSubs.length > 0
+    ? combinedSubs.slice(0, 8)
+    : [`${cat.name} Collection`, "New Arrivals", "Best Sellers", "Featured Styles"];
+
+  const dbFabrics = Array.isArray(cat.fabrics) ? cat.fabrics : [];
+  const presetFabrics = preset.fabrics || [];
+  const combinedFabrics = Array.from(new Set([...dbFabrics, ...presetFabrics]));
+  const fabricLinks = combinedFabrics.length > 0
+    ? combinedFabrics.slice(0, 8)
+    : ["Pure Silk", "Georgette", "Mulberry Cotton", "Artisanal Weave"];
+
+  const designLinks = [
+    "Hand Embroidered",
+    "Zari Work",
+    "Heritage Weave",
+    "Festive Special",
+    "Bridal Couture"
+  ];
+
+  return {
+    title: cat.name,
+    image: cat.image || "/mobile/saree.jpg",
+    description: cat.description || `Exquisite ${cat.name} handcrafted for royal celebrations.`,
     sections: [
       {
         id: "categories",
-        title: "Kurti Categories",
-        links: ["Anarkali Kurti", "A-Line Kurti", "Straight Kurti", "Short Kurti", "Long Kurti", "Party Wear Kurti", "Printed Kurti", "Embroidered Kurti"],
-        viewAll: "View All Kurtis"
+        title: `${cat.name} Styles`,
+        links: subLinks,
+        viewAll: `View All ${cat.name}`
       },
       {
         id: "fabrics",
-        title: "Kurti Fabrics",
-        links: ["Cotton", "Rayon", "Silk", "Georgette", "Chiffon", "Linen", "Khadi", "Crepe"],
+        title: `${cat.name} Fabrics`,
+        links: fabricLinks,
         viewAll: "View All Fabrics"
       },
       {
-        id: "designs",
-        title: "Kurti Designs",
-        links: ["Embroidered", "Printed", "Plain", "Floral", "Mirror Work", "Aari Work", "Handwork", "Block Print"],
+        id: "crafts",
+        title: "Artisanal Craft",
+        links: designLinks,
         viewAll: "View All Designs"
       }
     ]
-  },
-  Saree: {
-    title: "Saree",
-    image: "/mobile/saree.jpg",
-    description: "Elegant Sarees for Every You",
-    sections: [
-      { id: "types", title: "Saree Types", links: ["Banarasi", "Silk", "Chiffon", "Net", "Cotton"], viewAll: "View All" }
-    ]
-  },
-  Blouse: {
-    title: "Blouse",
-    image: "/mobile/blouse.jpg",
-    description: "Trendy Blouses in Latest Designs",
-    sections: [
-      { id: "styles", title: "Blouse Styles", links: ["Ready Made", "Custom", "Designer"], viewAll: "View All" }
-    ]
-  },
-  Dupatta: {
-    title: "Dupatta",
-    image: "/mobile/dupatta.jpg",
-    description: "Beautiful Dupattas to Complete Your Look",
-    sections: [
-      { id: "styles", title: "Styles", links: ["Heavy", "Light", "Floral"], viewAll: "View All" }
-    ]
-  }
-};
+  };
+}
 
 const Navbar: React.FC = () => {
   const pathname = usePathname();
@@ -91,8 +135,25 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [isMegaOpen, setIsMegaOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<keyof typeof megaMenuData>("Kurti");
+  const [categories, setCategories] = useState<any[]>(DEFAULT_INITIAL_CATEGORIES);
+  const [activeTab, setActiveTab] = useState<string>("Sarees");
   const [mounted, setMounted] = useState(false);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/categories", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+        setCategories(data.categories);
+        setActiveTab((prev) => {
+          if (prev && data.categories.some((c: any) => c.name === prev)) return prev;
+          return data.categories[0].name;
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to fetch categories in Navbar", e);
+    }
+  };
 
   // Profile dropdown states
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -136,10 +197,16 @@ const Navbar: React.FC = () => {
 
   useEffect(() => {
     setMounted(true);
+    fetchCategories();
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
+    window.addEventListener("focus", fetchCategories);
     const interval = setInterval(() => setTaglineIndex((p) => (p + 1) % taglines.length), 4000);
-    return () => { window.removeEventListener("scroll", handleScroll); clearInterval(interval); };
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("focus", fetchCategories);
+      clearInterval(interval);
+    };
   }, []);
 
   if (pathname === "/login") return null;
@@ -201,69 +268,92 @@ const Navbar: React.FC = () => {
               {/* MEGA MENU ITEM */}
               <li
                 className="navbar-nav__item has-mega"
-                onMouseEnter={() => setIsMegaOpen(true)}
+                onMouseEnter={() => {
+                  fetchCategories();
+                  setIsMegaOpen(true);
+                }}
                 onMouseLeave={() => setIsMegaOpen(false)}
               >
                 <div
                   className="navbar-nav__link"
                   style={{ cursor: 'pointer' }}
-                  onClick={() => setIsMegaOpen(!isMegaOpen)}
+                  onClick={() => {
+                    if (!isMegaOpen) fetchCategories();
+                    setIsMegaOpen(!isMegaOpen);
+                  }}
                 >
                   Collection <ChevronRight size={14} style={{ transform: isMegaOpen ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.3s' }} />
                 </div>
 
                 <AnimatePresence>
-                  {isMegaOpen && (
-                    <motion.div
-                      className="mega-menu"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 20 }}
-                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      <div className="mega-menu__container" onClick={(e) => e.stopPropagation()}>
-                        {/* Sidebar Tabs */}
-                        <div className="mega-menu__sidebar">
-                          {Object.keys(megaMenuData).map((key) => (
-                            <button
-                              key={key}
-                              className={`mega-menu__tab ${activeTab === key ? "is-active" : ""}`}
-                              onMouseEnter={() => setActiveTab(key as any)}
-                            >
-                              {key}
-                              <ChevronRight size={16} />
-                            </button>
-                          ))}
-                        </div>
+                  {isMegaOpen && (() => {
+                    const currentCategory = categories.find((c) => c.name === activeTab) || categories[0];
+                    const activeMenuData = currentCategory ? formatMegaCategory(currentCategory) : null;
 
-                        {/* Content Grid */}
-                        <div className="mega-menu__content">
-                          <div className="mega-menu__grid">
-                            {megaMenuData[activeTab].sections.map((section: any) => (
-                              <div key={section.id} className="mega-menu__column">
-                                <div className="mega-menu__icon-circle">
-                                  <Layers size={24} />
-                                </div>
-                                <h4 className="mega-menu__column-title">{section.title}</h4>
-                                <ul className="mega-menu__links">
-                                  {section.links.map((link: string) => (
-                                    <li key={link}>
-                                      <Link href={`/collection?category=${activeTab as string}&sub=${encodeURIComponent(link)}`} className="mega-menu__link" onClick={() => setIsMegaOpen(false)}>
-                                        {link}
-                                      </Link>
-                                    </li>
-                                  ))}
-                                </ul>
-                                <Link href={`/collection?category=${activeTab as string}`} className="mega-menu__view-all" onClick={() => setIsMegaOpen(false)}>
-                                  {section.viewAll} <ChevronRight size={14} />
-                                </Link>
-                              </div>
+                    return (
+                      <motion.div
+                        className="mega-menu"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        <div className="mega-menu__container" onClick={(e) => e.stopPropagation()}>
+                          {/* Sidebar Tabs */}
+                          <div className="mega-menu__sidebar">
+                            {categories.map((cat) => (
+                              <button
+                                key={cat.id || cat.name}
+                                className={`mega-menu__tab ${activeTab === cat.name ? "is-active" : ""}`}
+                                onMouseEnter={() => setActiveTab(cat.name)}
+                                onClick={() => {
+                                  setIsMegaOpen(false);
+                                  router.push(`/collection?category=${encodeURIComponent(cat.name)}`);
+                                }}
+                              >
+                                {cat.name}
+                                <ChevronRight size={16} />
+                              </button>
                             ))}
                           </div>
+
+                          {/* Content Grid */}
+                          <div className="mega-menu__content">
+                            <div className="mega-menu__grid">
+                              {activeMenuData?.sections.map((section: any) => (
+                                <div key={section.id} className="mega-menu__column">
+                                  <div className="mega-menu__icon-circle">
+                                    <Layers size={24} />
+                                  </div>
+                                  <h4 className="mega-menu__column-title">{section.title}</h4>
+                                  <ul className="mega-menu__links">
+                                    {section.links.map((link: string) => (
+                                      <li key={link}>
+                                        <Link
+                                          href={`/collection?category=${encodeURIComponent(activeTab)}&sub=${encodeURIComponent(link)}`}
+                                          className="mega-menu__link"
+                                          onClick={() => setIsMegaOpen(false)}
+                                        >
+                                          {link}
+                                        </Link>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  <Link
+                                    href={`/collection?category=${encodeURIComponent(activeTab)}`}
+                                    className="mega-menu__view-all"
+                                    onClick={() => setIsMegaOpen(false)}
+                                  >
+                                    {section.viewAll} <ChevronRight size={14} />
+                                  </Link>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  )}
+                      </motion.div>
+                    );
+                  })()}
                 </AnimatePresence>
               </li>
               <li className="navbar-nav__item"><Link href="/contact" className="navbar-nav__link">Contact</Link></li>
@@ -298,10 +388,10 @@ const Navbar: React.FC = () => {
                   aria-expanded={isProfileDropdownOpen}
                 >
                   {user?.avatar ? (
-                    <img 
-                      src={user.avatar} 
-                      alt={user.name} 
-                      style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid #FF6A00" }} 
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      style={{ width: "24px", height: "24px", borderRadius: "50%", objectFit: "cover", border: "1.5px solid #FF6A00" }}
                     />
                   ) : (
                     <User size={22} style={{ stroke: '#FF6A00' }} />
@@ -324,10 +414,10 @@ const Navbar: React.FC = () => {
                         <span className="user-email">{user?.email}</span>
                       </div>
                       <div className="profile-dropdown__menu-items">
-                        
+
                         {/* Profile Link */}
                         <div className="dropdown-section">
-                          <Link 
+                          <Link
                             href="/profile"
                             className="section-trigger"
                             onClick={() => setIsProfileDropdownOpen(false)}
@@ -338,7 +428,7 @@ const Navbar: React.FC = () => {
 
                         {/* Order Link */}
                         <div className="dropdown-section">
-                          <Link 
+                          <Link
                             href="/order"
                             className="section-trigger"
                             onClick={() => setIsProfileDropdownOpen(false)}
@@ -349,7 +439,7 @@ const Navbar: React.FC = () => {
 
                         {/* Settings Link */}
                         <div className="dropdown-section">
-                          <Link 
+                          <Link
                             href="/settings"
                             className="section-trigger"
                             onClick={() => setIsProfileDropdownOpen(false)}
@@ -360,7 +450,7 @@ const Navbar: React.FC = () => {
 
                         {/* Logout */}
                         <div className="dropdown-section dropdown-section--logout">
-                          <button 
+                          <button
                             type="button"
                             className="section-trigger"
                             onClick={() => {

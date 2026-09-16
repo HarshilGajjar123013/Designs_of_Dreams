@@ -7,23 +7,24 @@ import { useRouter } from "next/navigation";
 import { useStore } from "@/store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Package, 
-  MapPin, 
-  Trash2, 
-  RotateCcw, 
-  ChevronRight, 
-  CheckCircle2, 
-  Clock, 
+  Package,
+  MapPin,
+  Trash2,
+  RotateCcw,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
   ShieldAlert,
   LogIn,
   Truck,
   ArrowLeft,
-  Eye
+  Eye,
+  Sparkles
 } from "lucide-react";
 import InvoiceGenerator from "@/components/common/InvoiceGenerator/InvoiceGenerator";
 import "./Order.scss";
 
-type TabType = "list" | "details" | "track" | "cancel" | "returns";
+type TabType = "list" | "details" | "track" | "cancel" | "returns" | "customizations";
 
 export default function OrderPage() {
   const router = useRouter();
@@ -32,10 +33,11 @@ export default function OrderPage() {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [orders, setOrders] = useState<any[]>([]);
+  const [customizations, setCustomizations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [orderFilter, setOrderFilter] = useState<"all" | "present" | "previous">("all");
-  
+
   // Form input states
   const [cancelReason, setCancelReason] = useState("");
   const [returnOrderId, setReturnOrderId] = useState("");
@@ -61,27 +63,34 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (mounted && user?.isLoggedIn && user?.id) {
-      const fetchOrders = async () => {
+      const fetchOrderData = async () => {
         try {
           setIsLoading(true);
-          const res = await fetch(`/api/orders?userId=${user.id}`);
-          if (res.ok) {
-            const data = await res.json();
+          const [ordersRes, customizationsRes] = await Promise.all([
+            fetch(`/api/orders?userId=${user.id}`),
+            fetch(`/api/customizations?userId=${user.id}`),
+          ]);
+          if (ordersRes.ok) {
+            const data = await ordersRes.json();
             if (data.success) {
               setOrders(data.orders || []);
-              if (data.orders && data.orders.length > 0) {
+              if (data.orders?.length > 0) {
                 setSelectedOrderId(data.orders[0].id);
                 setReturnOrderId(data.orders[0].id);
               }
             }
           }
+          if (customizationsRes.ok) {
+            const data = await customizationsRes.json();
+            if (data.success) setCustomizations(data.requests || []);
+          }
         } catch (err) {
-          console.error("Failed to fetch orders:", err);
+          console.error("Failed to fetch order data:", err);
         } finally {
           setIsLoading(false);
         }
       };
-      fetchOrders();
+      fetchOrderData();
     } else if (mounted) {
       setIsLoading(false);
     }
@@ -95,6 +104,7 @@ export default function OrderPage() {
       else if (hash === "#track") setActiveTab("track");
       else if (hash === "#cancel") setActiveTab("cancel");
       else if (hash === "#returns") setActiveTab("returns");
+      else if (hash === "#customizations") setActiveTab("customizations");
       else setActiveTab("list");
     }
   }, [mounted]);
@@ -136,12 +146,16 @@ export default function OrderPage() {
     }, 2000);
   };
 
+  const customizationSummary = (order: any) => customizations
+    .filter((request) => order.items.some((item: any) => item.productId === request.productId))
+    .map((request) => `Fabric: ${request.fabric} · Colour: ${request.color} · Embroidery: ${request.aemroduriType} · Tassels: ${request.tassels}`);
+
   return (
     <main className="relative pt-[120px] pb-[100px] bg-white min-h-screen">
       {/* Decorative background jali */}
-      <div 
-        className="absolute inset-0 opacity-5 pointer-events-none" 
-        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='38' fill='none' stroke='%23000000' stroke-width='0.5'/%3E%3C/svg%3E\")" }} 
+      <div
+        className="absolute inset-0 opacity-5 pointer-events-none"
+        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40' cy='40' r='38' fill='none' stroke='%23000000' stroke-width='0.5'/%3E%3C/svg%3E\")" }}
       />
 
       <div className="order-page-container">
@@ -169,7 +183,7 @@ export default function OrderPage() {
             {/* Notification alert */}
             <AnimatePresence>
               {successMsg && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
@@ -186,40 +200,47 @@ export default function OrderPage() {
               {/* Sidebar Navigation */}
               <aside className="order-sidebar">
                 <div className="sidebar-nav-links">
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "list" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("list")}
                   >
                     <Package size={16} />
                     My Orders List
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "details" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("details")}
                   >
                     <Clock size={16} />
                     Order Details
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "track" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("track")}
                   >
                     <Truck size={16} />
                     Track Order
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "cancel" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("cancel")}
                   >
                     <Trash2 size={16} />
                     Cancel Order
                   </button>
-                  <button 
+                  <button
                     className={`sidebar-btn ${activeTab === "returns" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("returns")}
                   >
                     <RotateCcw size={16} />
                     Return Requests
+                  </button>
+                  <button
+                    className={`sidebar-btn ${activeTab === "customizations" ? "is-active" : ""}`}
+                    onClick={() => handleTabChange("customizations")}
+                  >
+                    <Sparkles size={16} />
+                    Customization Details
                   </button>
                 </div>
               </aside>
@@ -228,7 +249,7 @@ export default function OrderPage() {
               <div className="order-content-area">
                 <AnimatePresence mode="wait">
                   {activeTab === "list" && (
-                    <motion.div 
+                    <motion.div
                       key="list-card"
                       className="order-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -317,7 +338,7 @@ export default function OrderPage() {
                                       <span className="total-amount">₹{ord.amount.toLocaleString("en-IN")}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2.5 mt-4 items-center">
-                                      <button 
+                                      <button
                                         className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#FF6A00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider"
                                         onClick={() => {
                                           setSelectedOrderId(ord.id);
@@ -326,8 +347,8 @@ export default function OrderPage() {
                                       >
                                         <Eye size={13} /> View Details
                                       </button>
-                                      
-                                      <button 
+
+                                      <button
                                         className="px-4 py-2 border border-[#FF6A00] text-[#FF6A00] hover:bg-[#FF6A00] hover:text-white rounded-full text-xs font-bold transition-all flex items-center gap-1.5 uppercase tracking-wider"
                                         onClick={() => {
                                           setSelectedOrderId(ord.id);
@@ -353,8 +374,9 @@ export default function OrderPage() {
                                           })),
                                           subtotal: ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0),
                                           gst: Math.round(ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) * 0.05),
-                                          shipping: ord.amount > 1999 ? 0 : 150,
-                                          grandTotal: ord.amount,
+                                        shipping: ord.amount > 1999 ? 0 : 150,
+                                        grandTotal: ord.amount,
+                                        customizationDetails: customizationSummary(ord),
                                         }}
                                         compact
                                         buttonClassName="px-4 py-2 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider cursor-pointer border-0"
@@ -403,7 +425,7 @@ export default function OrderPage() {
                                       <span className="total-amount">₹{ord.amount.toLocaleString("en-IN")}</span>
                                     </div>
                                     <div className="flex flex-wrap gap-2.5 mt-4 items-center">
-                                      <button 
+                                      <button
                                         className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#FF6A00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider"
                                         onClick={() => {
                                           setSelectedOrderId(ord.id);
@@ -429,14 +451,15 @@ export default function OrderPage() {
                                           })),
                                           subtotal: ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0),
                                           gst: Math.round(ord.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) * 0.05),
-                                          shipping: ord.amount > 1999 ? 0 : 150,
-                                          grandTotal: ord.amount,
+                                        shipping: ord.amount > 1999 ? 0 : 150,
+                                        grandTotal: ord.amount,
+                                        customizationDetails: customizationSummary(ord),
                                         }}
                                         compact
                                         buttonClassName="px-4 py-2 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider cursor-pointer border-0"
                                       />
 
-                                      <button 
+                                      <button
                                         className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-full text-xs font-bold transition-all border-0 flex items-center gap-1.5 uppercase tracking-wider"
                                         onClick={() => {
                                           setReturnOrderId(ord.id);
@@ -457,7 +480,7 @@ export default function OrderPage() {
                   )}
 
                   {activeTab === "details" && (
-                    <motion.div 
+                    <motion.div
                       key="details-card"
                       className="order-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -467,7 +490,7 @@ export default function OrderPage() {
                     >
                       <div className="flex justify-between items-center mb-6">
                         <h3>Order Specifications</h3>
-                        <button 
+                        <button
                           className="flex items-center gap-1.5 text-xs text-zinc-500 font-semibold uppercase hover:text-[#FF6A00] transition-colors"
                           onClick={() => handleTabChange("list")}
                         >
@@ -544,6 +567,7 @@ export default function OrderPage() {
                                 gst: Math.round(selectedOrder.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) * 0.05),
                                 shipping: selectedOrder.items.reduce((acc: number, item: any) => acc + item.price * item.quantity, 0) > 1999 ? 0 : 150,
                                 grandTotal: selectedOrder.amount,
+                                customizationDetails: customizationSummary(selectedOrder),
                               }}
                               buttonClassName="px-6 py-3 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold tracking-wider uppercase transition-all shadow-md hover:shadow-lg border-0 inline-flex items-center gap-2 cursor-pointer"
                             />
@@ -555,8 +579,64 @@ export default function OrderPage() {
                     </motion.div>
                   )}
 
+                  {activeTab === "customizations" && (
+                    <motion.div
+                      key="customizations-card"
+                      className="order-card"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-6 border-b border-dashed border-zinc-200 pb-4">
+                        <div>
+                          <h3 style={{ border: "none", padding: 0, margin: 0 }}>Your Customization Requests</h3>
+                          <p style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)", margin: "4px 0 0" }}>
+                            Review the bespoke specifications shared with our atelier.
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-[#FF6A00] bg-orange-50 px-3 py-1.5 rounded-full whitespace-nowrap">
+                          {customizations.length} request{customizations.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
+
+                      {customizations.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center">
+                          <Sparkles className="text-[#C5A059] opacity-40 mb-4" size={48} />
+                          <h4 className="text-lg font-bold text-zinc-900 mb-1">No Customizations Yet</h4>
+                          <p className="text-zinc-500 text-sm max-w-xs">Your submitted bespoke requests will appear here.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {customizations.map((request) => (
+                            <div key={request.id} className="order-item-block border-l-4 border-l-[#C5A059]">
+                              <div className="item-header">
+                                <div>
+                                  <span className="order-id">Customization: {request.id}</span>
+                                  <div className="order-date">Submitted: {new Date(request.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}</div>
+                                </div>
+                                <span className={`status-badge ${String(request.status || "pending").toLowerCase()}`}>
+                                  {String(request.status || "pending").replaceAll("_", " ")}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm text-zinc-700">
+                                <p><span className="font-bold text-zinc-900">Fabric:</span> {request.fabric}</p>
+                                <p><span className="font-bold text-zinc-900">Colour:</span> {request.color}</p>
+                                <p><span className="font-bold text-zinc-900">Embroidery:</span> {request.aemroduriType}</p>
+                                <p><span className="font-bold text-zinc-900">Tassels:</span> {request.tassels}</p>
+                                <p><span className="font-bold text-zinc-900">Preferred budget:</span> {request.budget}</p>
+                                <p><span className="font-bold text-zinc-900">Estimated timeline:</span> {request.timeEstimateMonths} month{request.timeEstimateMonths === 1 ? "" : "s"}</p>
+                              </div>
+                              {request.notes && <p className="mt-4 pt-4 border-t border-dashed border-zinc-200 text-sm text-zinc-600"><span className="font-bold text-zinc-900">Notes:</span> {request.notes}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
                   {activeTab === "track" && (
-                    <motion.div 
+                    <motion.div
                       key="track-card"
                       className="order-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -595,7 +675,7 @@ export default function OrderPage() {
                   )}
 
                   {activeTab === "cancel" && (
-                    <motion.div 
+                    <motion.div
                       key="cancel-card"
                       className="order-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -605,12 +685,12 @@ export default function OrderPage() {
                     >
                       <h3>Request Cancellation</h3>
                       <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Only pending orders that have not been dispatched can be cancelled.</p>
-                      
+
                       {orders.length > 0 ? (
                         <form onSubmit={handleCancelSubmit} className="order-cancel-form space-y-5">
                           <div className="profile-form-group">
                             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Select Order ID</label>
-                            <select 
+                            <select
                               value={selectedOrderId}
                               onChange={(e) => setSelectedOrderId(e.target.value)}
                               className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 bg-white font-semibold text-sm outline-none transition-all"
@@ -622,16 +702,16 @@ export default function OrderPage() {
                           </div>
                           <div className="profile-form-group">
                             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Reason for Cancellation</label>
-                            <textarea 
-                              required 
+                            <textarea
+                              required
                               placeholder="Please tell us why you wish to cancel this order..."
                               value={cancelReason}
                               onChange={(e) => setCancelReason(e.target.value)}
                               className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
                             />
                           </div>
-                          <button 
-                            type="submit" 
+                          <button
+                            type="submit"
                             className="w-full py-3.5 px-8 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
                           >
                             Submit Cancellation Request
@@ -644,7 +724,7 @@ export default function OrderPage() {
                   )}
 
                   {activeTab === "returns" && (
-                    <motion.div 
+                    <motion.div
                       key="returns-card"
                       className="order-card"
                       initial={{ opacity: 0, x: 20 }}
@@ -654,12 +734,12 @@ export default function OrderPage() {
                     >
                       <h3>Return / Refund Request</h3>
                       <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Returns are accepted within 7 days of delivery. Motif tags must remain attached.</p>
-                      
+
                       {orders.length > 0 ? (
                         <form onSubmit={handleReturnSubmit} className="order-cancel-form space-y-5">
                           <div className="profile-form-group">
                             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Select Eligible Order</label>
-                            <select 
+                            <select
                               value={returnOrderId}
                               onChange={(e) => setReturnOrderId(e.target.value)}
                               className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 bg-white font-semibold text-sm outline-none transition-all"
@@ -671,16 +751,16 @@ export default function OrderPage() {
                           </div>
                           <div className="profile-form-group">
                             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Briefly Describe Reason for Return</label>
-                            <textarea 
-                              required 
+                            <textarea
+                              required
                               placeholder="Please explain the issue (sizing, pattern discrepancy, defect)..."
                               value={returnReason}
                               onChange={(e) => setReturnReason(e.target.value)}
                               className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
                             />
                           </div>
-                          <button 
-                            type="submit" 
+                          <button
+                            type="submit"
                             className="w-full py-3.5 px-8 bg-[#FF6A00] hover:bg-[#e05d00] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
                           >
                             Submit Return Claim

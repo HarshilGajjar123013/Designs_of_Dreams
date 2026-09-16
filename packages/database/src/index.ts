@@ -15,6 +15,7 @@ export type {
   Collection,
   Product,
   Customer,
+  OldCustomer,
   Address,
   CartItem,
   WishlistItem,
@@ -26,12 +27,32 @@ export type {
   CMSConfig,
   Coupon,
   SecurityLog,
-} from '@prisma/client';
+} from './generated/prisma';
+
+export interface CustomizationRequest {
+  id: string;
+  productId: string;
+  customerId?: string | null;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  fabric: string;
+  color: string;
+  budget: string;
+  aemroduriType: string;
+  tassels: string;
+  timeEstimateMonths: number;
+  notes?: string | null;
+  status: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
 
 // Re-export all enums
 export {
   AdminRole,
   AccountStatus,
+  CustomerType,
   ProductStatus,
   OrderStatus,
   PaymentStatus,
@@ -40,4 +61,4 @@ export {
   ContactStatus,
   ReturnStatus,
   AuditStatus,
-} from '@prisma/client';
+} from './generated/prisma';

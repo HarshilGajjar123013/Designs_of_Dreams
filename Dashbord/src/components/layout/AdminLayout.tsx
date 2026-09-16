@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAdminStore, UserRole } from '@/store/adminStore';
 import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PwaInstallButton, PwaSidebarInstall } from '../common/PwaInstallPrompt';
 import {
   X,
   LayoutDashboard,
@@ -85,7 +86,15 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
   {
     title: 'Orders',
     items: [
-      { name: 'Orders', href: '/orders', icon: Layers, roles: ['SUPER_ADMIN', 'MANAGER'] }
+      {
+        name: 'Orders',
+        icon: Layers,
+        roles: ['SUPER_ADMIN', 'MANAGER'],
+        submenu: [
+          { name: 'All Orders', href: '/orders', roles: ['SUPER_ADMIN', 'MANAGER'] },
+          { name: 'Customizations', href: '/orders/customizations', roles: ['SUPER_ADMIN', 'MANAGER'] }
+        ]
+      }
     ]
   },
   {
@@ -136,7 +145,7 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  
+
   // Call useAuth to synchronize backend session with Zustand store
   useAuth();
 
@@ -354,8 +363,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           <button
                             onClick={() => toggleSubmenu(item.name)}
                             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[16px] text-sm transition-all ${active
-                                ? 'bg-[rgba(255,106,0,0.08)] text-[#FF6A00] font-medium'
-                                : 'text-[#6E6E6E] hover:text-[#1A1A1A] hover:bg-[#FAF9F6]'
+                              ? 'bg-[rgba(255,106,0,0.08)] text-[#FF6A00] font-medium'
+                              : 'text-[#6E6E6E] hover:text-[#1A1A1A] hover:bg-[#FAF9F6]'
                               }`}
                           >
                             <div className="flex items-center gap-3">
@@ -390,8 +399,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         key={subIdx}
                                         href={sub.href}
                                         className={`block py-2 text-xs rounded-lg transition-all ${subActive
-                                            ? 'text-[#FF6A00] font-semibold'
-                                            : 'text-[#6E6E6E] hover:text-[#1A1A1A]'
+                                          ? 'text-[#FF6A00] font-semibold'
+                                          : 'text-[#6E6E6E] hover:text-[#1A1A1A]'
                                           }`}
                                       >
                                         <div className="flex items-center justify-between">
@@ -418,8 +427,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         key={itemIdx}
                         href={item.href || '#'}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-[16px] text-sm transition-all ${active
-                            ? 'bg-[rgba(255,106,0,0.08)] text-[#FF6A00] font-medium border-l-2 border-[#FF6A00]'
-                            : 'text-[#6E6E6E] hover:text-[#1A1A1A] hover:bg-[#FAF9F6]'
+                          ? 'bg-[rgba(255,106,0,0.08)] text-[#FF6A00] font-medium border-l-2 border-[#FF6A00]'
+                          : 'text-[#6E6E6E] hover:text-[#1A1A1A] hover:bg-[#FAF9F6]'
                           }`}
                       >
                         <Icon size={18} className={active ? 'text-[#FF6A00]' : 'text-[#6E6E6E]'} />
@@ -432,6 +441,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </div>
+
+        {/* Sidebar Install App Banner */}
+        {!collapsed && <PwaSidebarInstall className="mx-4 mb-3" />}
 
         {/* Footer Admin Card */}
         <div className="p-4 border-t border-[rgba(0,0,0,0.06)]">
@@ -476,6 +488,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
+            {/* PWA INSTALL BUTTON (DESKTOP & MOBILE) */}
+            <PwaInstallButton />
+
             {/* ROLE TOGGLE CONTROL */}
             <div className="hidden sm:flex items-center gap-2 bg-[#FAF9F6] border border-[rgba(0,0,0,0.06)] p-1 rounded-full">
               <button

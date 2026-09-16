@@ -10,7 +10,7 @@ interface GalleryItem {
   id: number;
   title: string;
   category: string;
-  filterTag: "weaving" | "embroidery" | "coloring" | "finishing";
+  filterTag: string;
   image: string;
   desc: string;
 }
@@ -61,7 +61,7 @@ const galleryData: GalleryItem[] = [
     title: "Indigo Dye Vat",
     category: "Organic Coloring",
     filterTag: "coloring",
-    image: "https://images.unsplash.com/photo-1524295988555-44ade8b4034f?q=80&w=600&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
     desc: "Traditional hand-dyeing processes using pure organic botanical indigo vats."
   },
   {
@@ -114,7 +114,7 @@ const galleryData: GalleryItem[] = [
   }
 ];
 
-const categories = [
+const defaultCategories = [
   { id: "all", label: "All Masterpieces" },
   { id: "weaving", label: "Weaving Studio" },
   { id: "embroidery", label: "Intricate Embroidery" },
@@ -126,6 +126,7 @@ const GalleryDetails: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [cmsGallery, setCmsGallery] = useState<GalleryItem[]>(galleryData);
+  const [categories, setCategories] = useState<{ id: string; label: string }[]>(defaultCategories);
   const [loading, setLoading] = useState<boolean>(true);
 
   React.useEffect(() => {
@@ -133,8 +134,32 @@ const GalleryDetails: React.FC = () => {
       try {
         const res = await fetch("/api/cms");
         const data = await res.json();
-        if (data.success && data.cms && data.cms.gallery && data.cms.gallery.length > 0) {
-          setCmsGallery(data.cms.gallery);
+        if (data.success && data.cms) {
+          // Robustly parse items and tags whether returned flat or nested
+          const rawGallery = data.cms.gallery;
+          const cmsItems: GalleryItem[] = Array.isArray(rawGallery)
+            ? rawGallery
+            : (rawGallery && Array.isArray(rawGallery.items) ? rawGallery.items : []);
+          
+          const rawTags = data.cms.galleryFilterTags || (rawGallery && rawGallery.filterTags);
+          const cmsTags: { id: string; label: string }[] = Array.isArray(rawTags) ? rawTags : [];
+
+          if (cmsItems.length > 0) {
+            setCmsGallery(cmsItems);
+          } else {
+            setCmsGallery(galleryData);
+          }
+
+          if (Array.isArray(rawTags) && rawTags.length > 0) {
+            setCategories([
+              { id: "all", label: "All Masterpieces" },
+              ...rawTags
+            ]);
+          } else if (Array.isArray(rawTags) && rawTags.length === 0) {
+            setCategories([{ id: "all", label: "All Masterpieces" }]);
+          } else {
+            setCategories(defaultCategories);
+          }
         }
       } catch (err) {
         console.error("Failed to load storefront CMS gallery:", err);

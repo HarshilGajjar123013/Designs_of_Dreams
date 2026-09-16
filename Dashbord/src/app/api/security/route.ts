@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    if (userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { session, response } = await verifyAdminSession('SUPER_ADMIN');
+    if (response) return response;
 
     let securityLogs: any[] = [];
     let databaseConnected = true;

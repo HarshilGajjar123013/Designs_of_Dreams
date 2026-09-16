@@ -10,6 +10,7 @@ build/
 
 # Env files (do not commit secrets)
 .env*
+packages/database/src/generated/
 !.env.example
 
 # misc
@@ -28,9 +29,7 @@ next-env.d.ts
 # user uploads (store in cloud storage in production)
 **/public/uploads/
 
-# PWA generated assets
-**/public/sw.js
-**/public/sw.js.map
+# PWA generated assets (workbox bundles)
 **/public/workbox-*.js
 **/public/workbox-*.js.map
 **/public/fallback-*.js

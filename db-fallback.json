@@ -12,7 +12,7 @@
       "sellingPrice": 85000,
       "discount": 10,
       "gst": 5,
-      "stock": 7,
+      "stock": 8,
       "lowStockAlert": 3,
       "description": "A timeless heirloom woven with pure gold and silver zari. Crafted over 45 days in Kanchipuram.",
       "fabric": "Pure Mulberry Silk",
@@ -35,7 +35,7 @@
         "Heritage Saree",
         "Luxury Bridal"
       ],
-      "status": "ACTIVE",
+      "status": "ARCHIVED",
       "featured": true,
       "bestSeller": true,
       "premium": true,
@@ -44,7 +44,8 @@
         "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600"
       ],
       "rating": 4.9,
-      "reviewCount": 47
+      "reviewCount": 47,
+      "updatedAt": "2026-09-16T16:15:24.595Z"
     },
     {
       "id": "prod-2",
@@ -83,7 +84,7 @@
         "Bridal Blouse",
         "Designer Velvet"
       ],
-      "status": "ACTIVE",
+      "status": "ARCHIVED",
       "featured": true,
       "bestSeller": false,
       "premium": true,
@@ -92,7 +93,8 @@
         "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?q=80&w=600"
       ],
       "rating": 4.7,
-      "reviewCount": 23
+      "reviewCount": 23,
+      "updatedAt": "2026-09-16T16:15:27.343Z"
     },
     {
       "id": "prod-3",
@@ -129,16 +131,17 @@
         "Anarkali",
         "Pastel Ethnic"
       ],
-      "status": "ACTIVE",
+      "status": "ARCHIVED",
       "featured": false,
       "bestSeller": true,
       "premium": false,
       "newArrival": true,
       "images": [
-        "https://images.unsplash.com/photo-1609357518652-6cf0416f0cbe?q=80&w=600"
+        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?q=80&w=600"
       ],
       "rating": 4.8,
-      "reviewCount": 36
+      "reviewCount": 36,
+      "updatedAt": "2026-09-16T16:15:31.617Z"
     }
   ],
   "categories": [
@@ -265,8 +268,8 @@
           }
         ]
       },
-      "createdAt": "2026-08-19T07:53:12.542Z",
-      "updatedAt": "2026-08-19T07:53:12.542Z",
+      "createdAt": "2026-09-16T03:55:50.706Z",
+      "updatedAt": "2026-09-16T03:55:50.706Z",
       "items": [
         {
           "productId": "prod-1",
@@ -276,57 +279,6 @@
           "quantity": 1,
           "size": "Free Size",
           "color": "#800020",
-          "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600"
-        }
-      ]
-    },
-    {
-      "id": "DOD-318068",
-      "customerId": "cust-9845fc6d-6ae8-429e-8c40-25a00e869697",
-      "customerName": "Harshil Gajjar",
-      "customerEmail": "harshilgajjar124@gmail.com",
-      "totalAmount": 85000,
-      "discountAmount": 0,
-      "gstAmount": 4250,
-      "shippingAmount": 0,
-      "grandTotal": 89250,
-      "status": "PENDING",
-      "paymentStatus": "UNPAID",
-      "paymentMethod": "COD",
-      "shippingAddress": {
-        "line1": "lkhjghvgcf",
-        "line2": "",
-        "city": "l/jkhkvg",
-        "state": "'l;kljkhjh",
-        "postalCode": "236541",
-        "country": "India",
-        "phone": "9313507356"
-      },
-      "trackingDetails": {
-        "carrier": "DHL Express Luxury Cargo",
-        "trackingId": "DHL-DOD-318068",
-        "estimatedDelivery": "2026-08-23",
-        "logs": [
-          {
-            "status": "Order accepted at Atelier",
-            "timestamp": "2026-08-19T07:54:05.980Z",
-            "location": "Atelier Head Office"
-          }
-        ]
-      },
-      "createdAt": "2026-08-19T07:54:05.980Z",
-      "updatedAt": "2026-08-19T07:54:05.980Z",
-      "items": [
-        {
-          "id": "82afd0bb-fa89-4a38-b127-1c4cf92a62af",
-          "orderId": "DOD-318068",
-          "productId": "prod-1",
-          "name": "Kanjeevaram Brocade Silk Saree",
-          "sku": "DOD-SKU-prod-1",
-          "price": 85000,
-          "quantity": 1,
-          "size": "Free Size",
-          "color": "#C5A059",
           "image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=600"
         }
       ]
@@ -376,18 +328,8 @@
       "sku": "DOD-SAR-001",
       "change": 8,
       "type": "STOCK_IN",
-      "timestamp": "2026-08-19T07:53:12.542Z",
+      "timestamp": "2026-09-16T03:55:50.706Z",
       "user": "Harsh Vardhan (SUPER_ADMIN)"
-    },
-    {
-      "id": "2cb5acd6-3387-4687-849c-f2b95625c1a7",
-      "productId": "prod-1",
-      "productName": "Kanjeevaram Brocade Silk Saree",
-      "sku": "DOD-SKU-prod-1",
-      "change": -1,
-      "type": "SALE",
-      "timestamp": "2026-08-19T07:54:05.982Z",
-      "user": "Harshil Gajjar (Customer)"
     }
   ],
   "contactForms": [
@@ -396,51 +338,45 @@
       "name": "Kareena Kapoor",
       "email": "kareena.k@bollywood.com",
       "phone": "+91 90000 11111",
-      "address": "Bandra West, Carter Road",
-      "city": "Mumbai",
-      "state": "Maharashtra",
-      "pincode": "400050",
       "subject": "Bridal Couture Inquiry",
       "message": "Hello, I am interested in viewing your archival bridal collection for an upcoming wedding in London. Do you offer virtual bridal consultation with design customization?",
       "status": "UNREAD",
-      "createdAt": "2026-08-19T07:53:12.542Z"
-    },
-    {
-      "id": "80258d6d-cde0-4c90-b9f0-931ac3150f62",
-      "name": "Harshil Gajjar",
-      "email": "harshilgajjar0731@gmail.com",
-      "phone": "931356214",
-      "address": ";klj;khlgkjf",
-      "city": "jo;ihguyfh",
-      "state": "l;jhghgc",
-      "pincode": "232145",
-      "subject": "Blouse Inquiry — Preferred Date: 2026-08-20",
-      "message": ";kjolhiguhjcg",
-      "status": "REPLIED",
-      "createdAt": "2026-08-19T07:57:19.547Z",
-      "reply": "nkhjbgvg",
-      "repliedAt": "2026-08-19T07:58:03.779Z"
-    },
-    {
-      "id": "88539743-d14a-47e8-b3bb-f7e56269f891",
-      "name": "Harshil Gajjar",
-      "email": "harshilgajjar124@gmail.com",
-      "phone": "9313507346",
-      "subject": "Kurti Inquiry — Preferred Date: 2026-08-24",
-      "message": "nkjbhvgcfdgxgfhcvjk",
-      "status": "UNREAD",
-      "createdAt": "2026-08-19T16:07:34.109Z"
+      "createdAt": "2026-09-16T03:55:50.706Z"
     }
   ],
   "securityLogs": [
     {
       "id": "sec-1",
-      "timestamp": "2026-08-19T07:53:12.542Z",
+      "timestamp": "2026-09-16T03:55:50.706Z",
       "action": "Dev Server Initialized fallback DB",
       "adminName": "System",
       "role": "SUPER_ADMIN",
       "ip": "127.0.0.1",
       "device": "Node Server",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "3b7dcd3c-53ab-478f-acb4-57c3e5b79ec6",
+      "timestamp": "2026-09-16T16:15:24.600Z",
+      "action": "Product Archived (Fallback): Kanjeevaram Brocade Silk Saree (SKU: DOD-SAR-001)",
+      "adminName": "Admin ID: dev-fallback-super-admin",
+      "role": "SUPER_ADMIN",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "e0007cae-dc85-4c1d-b6f2-8bc150aff10d",
+      "timestamp": "2026-09-16T16:15:27.345Z",
+      "action": "Product Archived (Fallback): Zardozi Hand-Embellished Velvet Blouse (SKU: DOD-BLU-102)",
+      "adminName": "Admin ID: dev-fallback-super-admin",
+      "role": "SUPER_ADMIN",
+      "status": "SUCCESS"
+    },
+    {
+      "id": "8fc8bc66-9fdf-469a-b205-6cc513082907",
+      "timestamp": "2026-09-16T16:15:31.620Z",
+      "action": "Product Archived (Fallback): Lucknowi Chikankari Georgette Anarkali Set (SKU: DOD-KUR-204)",
+      "adminName": "Admin ID: dev-fallback-super-admin",
+      "role": "SUPER_ADMIN",
       "status": "SUCCESS"
     }
   ],
@@ -452,7 +388,7 @@
       "maxDiscount": 10000,
       "minOrderValue": 50000,
       "isActive": true,
-      "validFrom": "2026-08-19T07:53:12.542Z"
+      "validFrom": "2026-09-16T03:55:50.706Z"
     }
   ],
   "cmsConfig": {
@@ -516,7 +452,7 @@
         "title": "Indigo Dye Vat",
         "category": "Organic Coloring",
         "filterTag": "coloring",
-        "image": "https://images.unsplash.com/photo-1524295988555-44ade8b4034f?q=80&w=600&auto=format&fit=crop",
+        "image": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?q=80&w=600&auto=format&fit=crop",
         "desc": "Traditional hand-dyeing processes using pure organic botanical indigo vats."
       },
       {
@@ -572,5 +508,6 @@
     "footerBio": "Designs of Dreams is a curated marketplace celebrating premium Indian heritage textiles.",
     "seoTitle": "Designs of Dreams — Luxury Indian Ethnic Wear",
     "seoDescription": "Discover hand-woven Kanjeevarams, Patan Patolas, and zardozi blouses."
-  }
+  },
+  "customizationRequests": []
 }

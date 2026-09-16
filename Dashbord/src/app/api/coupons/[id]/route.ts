@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
     const body = await req.json();
@@ -58,6 +62,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 

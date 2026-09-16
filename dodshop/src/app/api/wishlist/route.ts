@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
+import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const queryUserId = searchParams.get('userId');
+    const customer = await resolveCustomer(req, queryUserId);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
+    if (!customer) {
+      return NextResponse.json({
+        success: true,
+        wishlist: []
+      });
     }
+
+    const userId = customer.userId;
 
     let wishlistItems: any[] = [];
     let databaseConnected = true;
@@ -112,14 +116,25 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { userId, wishlist } = await req.json();
+    const body = await req.json();
+    const { wishlist, userId: bodyUserId } = body;
+    const customer = await resolveCustomer(req, bodyUserId);
 
-    if (!userId || !Array.isArray(wishlist)) {
+    if (!Array.isArray(wishlist)) {
       return NextResponse.json(
-        { error: 'User ID and wishlist array are required' },
+        { error: 'Wishlist array is required' },
         { status: 400 }
       );
     }
+
+    if (!customer) {
+      return NextResponse.json({
+        success: true,
+        message: 'Guest wishlist acknowledged'
+      });
+    }
+
+    const userId = customer.userId;
 
     let databaseConnected = true;
 

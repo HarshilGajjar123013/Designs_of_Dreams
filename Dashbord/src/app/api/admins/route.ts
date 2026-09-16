@@ -26,12 +26,12 @@ const FALLBACK_DEFAULT_ADMINS = [
   }
 ];
 
+import { verifyAdminSession } from '@/lib/auth';
+
 export async function GET(req: Request) {
   try {
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    if (userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { session, response } = await verifyAdminSession('SUPER_ADMIN');
+    if (response) return response;
 
     let admins: any[] = [];
     let databaseConnected = true;
@@ -84,12 +84,10 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
-
-    if (userRole !== 'SUPER_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { session, response } = await verifyAdminSession('SUPER_ADMIN');
+    if (response) return response;
+    const userRole = session!.role;
+    const userId = session!.id;
 
     const body = await req.json();
     const parsed = createAdminSchema.safeParse(body);

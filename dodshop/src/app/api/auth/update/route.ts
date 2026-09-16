@@ -1,24 +1,28 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
+import { resolveCustomer } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
-    const { userId, email, name, newEmail, phone, avatar } = await req.json();
+    const body = await req.json();
+    const { name, newEmail, phone, avatar, userId: bodyUserId } = body;
+    const customer = await resolveCustomer(req, bodyUserId);
 
-    if (!userId && !email) {
+    if (!customer) {
       return NextResponse.json(
-        { error: 'User ID or email is required to identify the user' },
-        { status: 400 }
+        { error: 'Unauthorized: Valid customer session or user ID required' },
+        { status: 401 }
       );
     }
+
+    const userId = customer.userId;
 
     let updatedCustomer: any = null;
     let databaseConnected = true;
 
     try {
-      // Find the customer first
       const existing = await prisma.customer.findUnique({
-        where: userId ? { id: userId } : { email },
+        where: { id: userId },
       });
 
       if (existing) {
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
         if (avatar !== undefined) updateData.avatar = avatar;
 
         updatedCustomer = await prisma.customer.update({
-          where: userId ? { id: userId } : { email },
+          where: { id: userId },
           data: updateData
         });
       }
@@ -40,7 +44,7 @@ export async function POST(req: Request) {
 
     if (!databaseConnected) {
       const customers = fallbackDb.getCollection('customers');
-      const index = customers.findIndex(c => userId ? c.id === userId : c.email.toLowerCase() === email.toLowerCase());
+      const index = customers.findIndex(c => c.id === userId);
 
       if (index > -1) {
         const current = customers[index];

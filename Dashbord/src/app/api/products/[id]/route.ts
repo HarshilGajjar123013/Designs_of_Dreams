@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { productSchema } from '@/lib/validators';
 import { randomUUID } from 'crypto';
+import { verifyAdminSession } from '@/lib/auth';
 
 export async function GET(
   req: Request,
@@ -66,9 +67,12 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const { id } = await params;
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const userRole = session!.role;
+    const userId = session!.id;
 
     const body = await req.json();
 
@@ -132,14 +136,20 @@ export async function PATCH(
         }
 
         // Security Log
-        await tx.securityLog.create({
-          data: {
-            action: `Product Updated: ${product.name} (SKU: ${product.sku})`,
-            adminName: `Admin ID: ${userId}`,
-            role: userRole,
-            status: 'SUCCESS',
-          }
-        });
+        try {
+          await tx.securityLog.create({
+            data: {
+              action: `Product Updated: ${product.name} (SKU: ${product.sku})`,
+              adminName: `Admin ID: ${userId}`,
+              role: userRole,
+              ip: req.headers.get('x-forwarded-for') || '127.0.0.1',
+              device: req.headers.get('user-agent') || 'Unknown Browser',
+              status: 'SUCCESS',
+            }
+          });
+        } catch (secErr) {
+          console.warn('Security log write failed:', secErr);
+        }
 
         return product;
       });
@@ -240,9 +250,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
     const { id } = await params;
-    const userRole = req.headers.get('x-user-role') || 'SUPER_ADMIN';
-    const userId = req.headers.get('x-user-id') || 'system';
+    const userRole = session!.role;
+    const userId = session!.id;
 
     let databaseConnected = true;
     let archivedProduct = null;
@@ -256,14 +269,20 @@ export async function DELETE(
         });
 
         // Security Log
-        await tx.securityLog.create({
-          data: {
-            action: `Product Archived: ${product.name} (SKU: ${product.sku})`,
-            adminName: `Admin ID: ${userId}`,
-            role: userRole,
-            status: 'SUCCESS',
-          }
-        });
+        try {
+          await tx.securityLog.create({
+            data: {
+              action: `Product Archived: ${product.name} (SKU: ${product.sku})`,
+              adminName: `Admin ID: ${userId}`,
+              role: userRole,
+              ip: req.headers.get('x-forwarded-for') || '127.0.0.1',
+              device: req.headers.get('user-agent') || 'Unknown Browser',
+              status: 'SUCCESS',
+            }
+          });
+        } catch (secErr) {
+          console.warn('Security log write failed:', secErr);
+        }
 
         return product;
       });
