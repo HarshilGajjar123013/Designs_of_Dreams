@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 import type { AdminRole } from '@dod/database';
 
 function getJwtSecret(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
+  const secret = process.env.JWT_SECRET?.trim();
   if (!secret) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('FATAL: JWT_SECRET environment variable is missing in production!');

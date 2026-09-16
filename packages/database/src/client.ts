@@ -4,6 +4,10 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+if (process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL.trim();
+}
+
 const rawPrisma =
   globalForPrisma.prisma ??
   new PrismaClient({
