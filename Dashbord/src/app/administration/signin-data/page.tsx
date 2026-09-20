@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { KeyRound, ShieldAlert, ShieldCheck, Globe, Smartphone, Calendar, Search } from 'lucide-react';
+import { KeyRound, ShieldAlert, ShieldCheck, Globe, Smartphone, Calendar, Search, Image as ImageIcon } from 'lucide-react';
 
 export default function SignInDataPanel() {
   const [mounted, setMounted] = useState(false);
@@ -58,9 +59,18 @@ export default function SignInDataPanel() {
     <AdminLayout>
       <div className="space-y-8 animate-fade-in font-poppins">
         {/* Header */}
-        <div className="border-b border-gray-100 pb-5">
-          <h1 className="font-marcellus text-3xl font-light text-[#1A1A1A]">Sign In Database</h1>
-          <p className="text-xs text-[#6E6E6E] font-poppins uppercase tracking-wider mt-1">Permanent record of administrator logins, sessions, and blocked entry attempts</p>
+        <div className="border-b border-gray-100 pb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-marcellus text-3xl font-light text-[#1A1A1A]">Sign In Database</h1>
+            <p className="text-xs text-[#6E6E6E] font-poppins uppercase tracking-wider mt-1">Permanent record of administrator logins, sessions, and blocked entry attempts</p>
+          </div>
+          <Link
+            href="/administration/auth-images"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1A1A1A] hover:bg-[#FF6A00] text-white rounded-xl text-xs font-medium uppercase tracking-wider transition-all shadow-sm self-start sm:self-auto"
+          >
+            <ImageIcon size={15} />
+            <span>Manage Auth Page Images</span>
+          </Link>
         </div>
 
         {/* Telemetry Widgets */}

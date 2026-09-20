@@ -13,7 +13,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  output   = "../src/generated/prisma_client"
 }
 
 // ────────────────────────────────────────────────────────────
@@ -339,6 +339,7 @@ model Order {
   paymentMethod   PaymentMethod
   shippingAddress Json          // { line1, line2, city, state, postalCode, country, phone }
   trackingDetails Json?         // { carrier, trackingId, estimatedDelivery, logs[] }
+  whatsappDetails Json?         // { adminStatus, adminSentAt, adminError, customerStatus, customerSentAt, customerError }
   cancelReason    String?
   returnReason    String?
   couponCode      String?
@@ -517,4 +518,24 @@ model CustomizationRequest {
   updatedAt          DateTime  @updatedAt
 
   @@map("customization_requests")
+}
+
+// ────────────────────────────────────────────────────────────
+// 18. AUTH PAGE IMAGES — Dynamic Login/Sign Up Collage Images
+// ────────────────────────────────────────────────────────────
+
+model AuthPageImage {
+  id           String   @id @default(uuid()) @map("_id")
+  pageType     String   // "login" | "signup"
+  slotNumber   Int      // 1 to 12
+  imageUrl     String
+  storagePath  String?
+  isActive     Boolean  @default(true)
+  displayOrder Int      // 1 to 12
+  title        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([pageType, slotNumber])
+  @@map("auth_page_images")
 }

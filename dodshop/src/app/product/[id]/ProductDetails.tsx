@@ -27,7 +27,9 @@ import {
   Palette,
   Clock,
   Send,
-  X
+  X,
+  Crown,
+  ArrowRight
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import "./ProductDetail.scss";
@@ -75,6 +77,7 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   const wishlist = useStore((state) => state.wishlist);
   const addToCart = useStore((state) => state.addToCart);
   const toggleWishlist = useStore((state) => state.toggleWishlist);
+  const user = useStore((state) => state.user);
 
   // Get active product based on ID (fallback to first product if not found)
   const matchedProduct = initialProduct || products.find((p) => String(p.id) === String(productId)) || products[0];
@@ -134,7 +137,29 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
   const [customSubmitError, setCustomSubmitError] = useState<string | null>(null);
   const [customRequestId, setCustomRequestId] = useState<string | null>(null);
   const [isCustomizationOpen, setIsCustomizationOpen] = useState(false);
+  const [showCustomPrompt, setShowCustomPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"cart" | "buy">("cart");
+  const [customizationTargetAction, setCustomizationTargetAction] = useState<"cart" | "buy">("cart");
+  const [customActionType, setCustomActionType] = useState<"cart" | "buy">("buy");
   const customizationPanelRef = useRef<HTMLElement | null>(null);
+
+  // Prefill patron contact info if logged in or stored in browser
+  useEffect(() => {
+    if (user?.isLoggedIn) {
+      if (!customizerName && user.name) setCustomizerName(user.name);
+      if (!customizerEmail && user.email) setCustomizerEmail(user.email);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        const savedPhone = localStorage.getItem("dod_customer_phone");
+        if (savedPhone && !customizerPhone) setCustomizerPhone(savedPhone);
+        const savedName = localStorage.getItem("dod_customer_name");
+        if (savedName && !customizerName) setCustomizerName(savedName);
+        const savedEmail = localStorage.getItem("dod_customer_email");
+        if (savedEmail && !customizerEmail) setCustomizerEmail(savedEmail);
+      } catch {}
+    }
+  }, [user]);
 
   // Time estimate validation handler (cap <= 60 months)
   const handleTimeEstimateChange = (val: string | number) => {
@@ -154,6 +179,20 @@ export default function ProductDetails({ initialProduct }: { initialProduct?: Pr
       customizationPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [isCustomizationOpen]);
+
+  // Auto-open customization when arriving with ?customize=true (e.g. from Wishlist)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("customize=true")) {
+      setIsCustomizationOpen(true);
+      setCustomizationTargetAction("buy");
+      setCustomActionType("buy");
+      setTimeout(() => {
+        if (customizationPanelRef.current) {
+          customizationPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 300);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -326,18 +365,42 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
     setZoomPos({ x, y });
   }, []);
 
-  // Add to Cart handler
-  const handleAddCart = useCallback(() => {
-    addToCart(activeProduct, qty, activeSize);
-    setAddSuccess(true);
-    setTimeout(() => setAddSuccess(false), 2000);
-  }, [addToCart, activeProduct, qty, activeSize]);
+  // Trigger from Add to Bag button
+  const handleCartClick = useCallback(() => {
+    setPendingAction("cart");
+    setShowCustomPrompt(true);
+  }, []);
 
-  // Buy Now handler
-  const handleBuyNow = useCallback(() => {
+  // Trigger from Buy Now button
+  const handleBuyClick = useCallback(() => {
+    setPendingAction("buy");
+    setShowCustomPrompt(true);
+  }, []);
+
+  // Action if user chooses "No Customization" (Proceed standard)
+  const handleProceedWithoutCustomization = useCallback(() => {
+    setShowCustomPrompt(false);
     addToCart(activeProduct, qty, activeSize);
-    router.push("/cart");
-  }, [addToCart, activeProduct, qty, activeSize, router]);
+    if (pendingAction === "buy") {
+      router.push("/checkout");
+    } else {
+      setAddSuccess(true);
+      setTimeout(() => setAddSuccess(false), 2000);
+    }
+  }, [addToCart, activeProduct, qty, activeSize, pendingAction, router]);
+
+  // Action if user chooses "Yes, Customize" (Opens bespoke weave section)
+  const handleProceedWithCustomization = useCallback(() => {
+    setShowCustomPrompt(false);
+    setCustomizationTargetAction(pendingAction);
+    setCustomActionType(pendingAction === "cart" ? "cart" : "buy");
+    setIsCustomizationOpen(true);
+    setTimeout(() => {
+      if (customizationPanelRef.current) {
+        customizationPanelRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
+  }, [pendingAction]);
 
   // Wishlist handler
   const isFavorited = useMemo(() => wishlist.some((item) => item.id === activeProduct.id), [wishlist, activeProduct.id]);
@@ -420,6 +483,27 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
       if (res.ok && data.success) {
         setCustomSubmitSuccess(true);
         setCustomRequestId(data.request?.id ? String(data.request.id).slice(0, 8).toUpperCase() : `REQ-${Date.now().toString().slice(-6)}`);
+        
+        // Add to bag with customization
+        addToCart(activeProduct, qty, activeSize);
+
+        // Store patron info so checkout can autofill if needed
+        if (typeof window !== "undefined") {
+          try {
+            if (customizerName.trim()) localStorage.setItem("dod_customer_name", customizerName.trim());
+            if (customizerEmail.trim()) localStorage.setItem("dod_customer_email", customizerEmail.trim());
+            if (customizerPhone.trim()) localStorage.setItem("dod_customer_phone", customizerPhone.trim());
+          } catch {}
+        }
+
+        const isBuyNow = customActionType === "buy" || customizationTargetAction === "buy";
+        if (isBuyNow) {
+          router.push("/checkout");
+          return;
+        } else {
+          setAddSuccess(true);
+          setTimeout(() => setAddSuccess(false), 2500);
+        }
       } else {
         setCustomSubmitError(data.error || "Failed to submit customization request. Please check inputs.");
       }
@@ -530,10 +614,10 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
             </div>
           </div>
           <div className="sticky-actions">
-            <button className="btn-luxury btn-cart" onClick={handleAddCart} style={{ padding: "10px 20px", fontSize: "0.85rem" }}>
+            <button className="btn-luxury btn-cart" onClick={handleCartClick} style={{ padding: "10px 20px", fontSize: "0.85rem" }}>
               Add to Bag
             </button>
-            <button className="btn-luxury btn-buy" onClick={handleBuyNow} style={{ padding: "10px 20px", fontSize: "0.85rem" }}>
+            <button className="btn-luxury btn-buy" onClick={handleBuyClick} style={{ padding: "10px 20px", fontSize: "0.85rem" }}>
               Buy Now
             </button>
           </div>
@@ -662,7 +746,7 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
             <div className="cta-buttons">
               <button
                 className="btn-luxury btn-cart"
-                onClick={handleAddCart}
+                onClick={handleCartClick}
                 disabled={addSuccess}
               >
                 {addSuccess ? (
@@ -675,7 +759,7 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
                   </>
                 )}
               </button>
-              <button className="btn-luxury btn-buy" onClick={handleBuyNow}>
+              <button className="btn-luxury btn-buy" onClick={handleBuyClick}>
                 Buy Now
               </button>
             </div>
@@ -750,10 +834,7 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
         </div>
       </div>
 
-      {Boolean(
-        (activeProduct as any).customizationConfig?.enabled ||
-        (activeProduct as any).customizationConfig?.fabrics?.length > 0
-      ) && isCustomizationOpen && (
+      {isCustomizationOpen && (
         <section
           ref={customizationPanelRef}
           className="bespoke-customization-section is-accordion is-fullwidth"
@@ -777,18 +858,28 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
                           <div className="tag-row"><span>Tassels:</span> <strong>{selectedTassels}</strong></div>
                           <div className="tag-row"><span>Timeline:</span> <strong>{timeEstimate} Months</strong></div>
                         </div>
-                        <button
-                          type="button"
-                          className="btn-reset"
-                          onClick={() => {
-                            setCustomSubmitSuccess(false);
-                            setCustomColor("");
-                            setCustomBudgetValue("");
-                            setCustomizerNotes("");
-                          }}
-                        >
-                          Customize Another Piece
-                        </button>
+                        <div className="success-action-buttons">
+                          <button
+                            type="button"
+                            className="btn-proceed-checkout"
+                            onClick={() => router.push("/checkout")}
+                          >
+                            <span>Proceed to Checkout Now</span>
+                            <ArrowRight size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-reset"
+                            onClick={() => {
+                              setCustomSubmitSuccess(false);
+                              setCustomColor("");
+                              setCustomBudgetValue("");
+                              setCustomizerNotes("");
+                            }}
+                          >
+                            Customize Another Piece
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <form onSubmit={handleCustomizationSubmit} className="customization-form">
@@ -1010,9 +1101,39 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
                             </div>
                           )}
                           <div className="submit-row">
-                            <button type="submit" disabled={isSubmittingCustom || timeEstimate > 60 || timeEstimate < 1} className="btn-submit-custom">
-                              {isSubmittingCustom ? "Submitting Request..." : "Request Bespoke Customization"}
-                            </button>
+                            <div className="custom-submit-actions">
+                              <button
+                                type="submit"
+                                onClick={() => setCustomActionType("buy")}
+                                disabled={isSubmittingCustom || timeEstimate > 60 || timeEstimate < 1}
+                                className="btn-submit-custom btn-submit-buy-now"
+                              >
+                                {isSubmittingCustom && customActionType === "buy" ? (
+                                  "Submitting & Going to Checkout..."
+                                ) : (
+                                  <>
+                                    <span>Buy Now with Customization</span>
+                                    <ArrowRight size={18} />
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="submit"
+                                onClick={() => setCustomActionType("cart")}
+                                disabled={isSubmittingCustom || timeEstimate > 60 || timeEstimate < 1}
+                                className="btn-submit-custom btn-submit-add-bag"
+                              >
+                                {isSubmittingCustom && customActionType === "cart" ? (
+                                  "Adding Custom Piece..."
+                                ) : (
+                                  <>
+                                    <ShoppingBag size={17} />
+                                    <span>Add to Bag with Customization</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                             <p className="guarantee-text">
                               <ShieldCheck size={16} />
                               <span>100% Authentic Handloom Certification & Dedicated Stylist Guarantee</span>
@@ -1237,10 +1358,10 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
           </div>
         </div>
         <div className="mobile-sticky-btns">
-          <button className="mobile-btn-cart" onClick={handleAddCart}>
+          <button className="mobile-btn-cart" onClick={handleCartClick}>
             Add
           </button>
-          <button className="mobile-btn-buy" onClick={handleBuyNow}>
+          <button className="mobile-btn-buy" onClick={handleBuyClick}>
             Buy
           </button>
         </div>
@@ -1294,6 +1415,84 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
                 allowFullScreen
               />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── CUSTOMIZATION CHOICE PROMPT MODAL ── */}
+      {showCustomPrompt && (
+        <div
+          className="custom-prompt-modal-backdrop"
+          onClick={() => setShowCustomPrompt(false)}
+        >
+          <div
+            className="custom-prompt-modal-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-top-accent" />
+            <button
+              className="modal-close-btn"
+              onClick={() => setShowCustomPrompt(false)}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="modal-content-body">
+              <div className="modal-atelier-badge">
+                <Crown size={14} />
+                <span>Haute Couture Atelier</span>
+              </div>
+
+              {/* Product Chip */}
+              <div className="modal-product-chip">
+                <div className="chip-thumb">
+                  <Image
+                    src={activeImage || productImages[0]}
+                    alt={activeProduct.title}
+                    fill
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+                <div className="chip-info">
+                  <p className="chip-title">{activeProduct.title}</p>
+                  <p className="chip-price">₹{activeProduct.price.toLocaleString("en-IN")}</p>
+                </div>
+              </div>
+
+              <h3 className="modal-title">Would you like to customize this piece?</h3>
+              <p className="modal-desc">
+                Our master Varanasi &amp; Lucknow artisans can weave this piece with your preferred pure fabric, bespoke color shade, embroidery, and custom fit.
+              </p>
+
+              <div className="modal-actions-col">
+                <button
+                  type="button"
+                  className="btn-choice-custom"
+                  onClick={handleProceedWithCustomization}
+                >
+                  <div className="choice-text-group">
+                    <span className="choice-primary">✨ Yes, Customize This Piece</span>
+                    <span className="choice-sub">Choose custom fabric, color, embroidery &amp; fit</span>
+                  </div>
+                  <Sparkles size={18} />
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-choice-standard"
+                  onClick={handleProceedWithoutCustomization}
+                >
+                  <div className="choice-text-group">
+                    <span className="choice-primary">No, Order Standard Piece</span>
+                    <span className="choice-sub">
+                      {pendingAction === "buy" ? "Proceed directly to Checkout" : "Add standard piece to Bag"}
+                    </span>
+                  </div>
+                  <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

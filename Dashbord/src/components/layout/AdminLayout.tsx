@@ -129,6 +129,7 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
           { name: 'Admins & Roles', href: '/administration', roles: ['SUPER_ADMIN'] },
           { name: 'Sign Up Data', href: '/administration/signup-data', roles: ['SUPER_ADMIN'] },
           { name: 'Sign In Data', href: '/administration/signin-data', roles: ['SUPER_ADMIN'] },
+          { name: 'Auth Page Images', href: '/administration/auth-images', roles: ['SUPER_ADMIN'] },
           { name: 'Security Panel', href: '/administration/security', roles: ['SUPER_ADMIN'] }
         ]
       }

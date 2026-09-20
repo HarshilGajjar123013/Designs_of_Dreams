@@ -26,6 +26,7 @@ export interface InvoiceData {
   shipping: number;
   grandTotal: number;
   customizationDetails?: string[];
+  customizations?: any[];
 }
 
 interface InvoiceGeneratorProps {
@@ -67,10 +68,27 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
       </tr>
     `).join("");
 
-    const customizationHTML = data.customizationDetails?.length ? `
-      <div style="margin:0 40px 24px;padding:16px 20px;background:#fdf7ef;border:1px solid #f4d7b9;border-radius:12px;">
-        <div style="font-size:10px;color:#b45309;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:8px;">Bespoke customization details</div>
-        ${data.customizationDetails.map((detail) => `<div style="font-size:12px;color:#5b4636;line-height:1.6;">${escapeHtml(detail)}</div>`).join('')}
+    const hasCustomizations = (data.customizations && data.customizations.length > 0) || (data.customizationDetails && data.customizationDetails.length > 0);
+
+    const customizationHTML = hasCustomizations ? `
+      <div style="margin:0 40px 24px;padding:16px 20px;background:#fffdf8;border:1px solid #f4d7b9;border-left:4px solid #D4AF37;border-radius:12px;">
+        <div style="font-size:10px;color:#b45309;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;margin-bottom:8px;">
+          👑 Bespoke Customization Details
+        </div>
+        ${data.customizations && data.customizations.length > 0 ? data.customizations.map((c: any) => `
+          <div style="font-size:12px;color:#451a03;line-height:1.6;margin-bottom:4px;">
+            Fabric: <strong>${escapeHtml(c.fabric)}</strong> &nbsp;·&nbsp; Colour: <strong>${escapeHtml(c.color)}</strong> &nbsp;·&nbsp; Embroidery: <strong>${escapeHtml(c.aemroduriType)}</strong> &nbsp;·&nbsp; Tassels: <strong>${escapeHtml(c.tassels)}</strong>
+            ${(c.notes || c.timeEstimateMonths || c.budget) ? `
+              <div style="font-size:11px;color:#78350f;margin-top:2px;">
+                ${c.notes ? `<span>Note: &ldquo;${escapeHtml(c.notes)}&rdquo; &nbsp;•&nbsp; </span>` : ''}
+                ${c.timeEstimateMonths ? `<span>Timeline: ${escapeHtml(c.timeEstimateMonths)} Months &nbsp;•&nbsp; </span>` : ''}
+                ${c.budget ? `<span>Budget: ${escapeHtml(c.budget)}</span>` : ''}
+              </div>
+            ` : ''}
+          </div>
+        `).join('') : (data.customizationDetails || []).map((detail) => `
+          <div style="font-size:12px;color:#5b4636;line-height:1.6;">${escapeHtml(detail)}</div>
+        `).join('')}
       </div>
     ` : '';
 
@@ -216,21 +234,6 @@ export default function InvoiceGenerator({ data, buttonClassName, buttonStyle, c
             </div>
           </div>
 
-          <!-- Payment Info -->
-          <div style="margin:0 40px;padding:14px 20px;background:#faf8f4;border-radius:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #f0ece6;">
-            <div>
-              <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;">Payment Method</span>
-              <div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-top:3px;">${escapeHtml(data.paymentMode || 'Cash On Delivery (COD)')}</div>
-            </div>
-            <div style="text-align:right;">
-              <span style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;">Payment Status</span>
-              <div style="margin-top:3px;">
-                <span style="display:inline-block;background:rgba(255,106,0,0.1);color:#FF6A00;padding:4px 12px;border-radius:50px;font-size:11px;font-weight:700;letter-spacing:0.05em;">
-                  ${data.paymentMode?.includes('COD') ? 'COLLECT ON DELIVERY' : 'PAID'}
-                </span>
-              </div>
-            </div>
-          </div>
 
           <!-- Footer -->
           <div style="padding:24px 40px;margin-top:20px;border-top:1px solid #f0ece6;text-align:center;">

@@ -177,7 +177,7 @@ $brand-black: #1a1a1a;
 .payment-option {
   cursor: pointer;
   min-width: 0; // Prevent column text overflow
-  
+
   input[type="radio"] {
     display: none;
   }
@@ -197,7 +197,7 @@ $brand-black: #1a1a1a;
     @media (max-width: 480px) {
       padding: 12px 6px;
       gap: 6px;
-      
+
       svg {
         width: 18px;
         height: 18px;
@@ -260,6 +260,79 @@ $brand-black: #1a1a1a;
     cursor: not-allowed;
     box-shadow: none;
   }
+
+  &--login-required {
+    background-color: $brand-orange;
+    box-shadow: 0 10px 25px rgba($brand-orange, 0.2);
+    animation: pulse-glow 2s ease-in-out infinite;
+
+    &:hover:not(:disabled) {
+      background-color: darken($brand-orange, 8%);
+      box-shadow: 0 10px 30px rgba($brand-orange, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 10px 25px rgba($brand-orange, 0.2); }
+  50% { box-shadow: 0 10px 35px rgba($brand-orange, 0.4); }
+}
+
+// ── Auth Banners ─────────────────────────────────────────────────────────────
+.auth-required-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin-bottom: 12px;
+  background-color: rgba($brand-orange, 0.06);
+  border: 1px solid rgba($brand-orange, 0.15);
+  border-radius: 12px;
+
+  svg {
+    color: $brand-orange;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-family: $font-body;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: darken($brand-orange, 10%);
+    letter-spacing: 0.02em;
+  }
+}
+
+.auth-verified-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin-bottom: 12px;
+  background-color: rgba(#10B981, 0.06);
+  border: 1px solid rgba(#10B981, 0.15);
+  border-radius: 12px;
+
+  svg {
+    color: #10B981;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-family: $font-body;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: darken(#10B981, 10%);
+    letter-spacing: 0.02em;
+
+    strong {
+      color: $brand-black;
+      font-weight: 700;
+    }
+  }
 }
 
 // ── Review Column ────────────────────────────────────────────────────────────
@@ -310,6 +383,7 @@ $brand-black: #1a1a1a;
     &::-webkit-scrollbar {
       width: 4px;
     }
+
     &::-webkit-scrollbar-thumb {
       background-color: rgba($brand-black, 0.1);
       border-radius: 4px;
@@ -418,7 +492,7 @@ $brand-black: #1a1a1a;
     border-top: 1px solid rgba($brand-black, 0.08);
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
     z-index: 1000;
-    
+
     .place-order-btn {
       margin-top: 0;
       width: 100%;
@@ -688,6 +762,21 @@ $brand-black: #1a1a1a;
         color: rgba($brand-black, 0.4);
         font-family: $font-body;
       }
+
+      .item-custom-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.68rem;
+        color: #B45309;
+        background: #FFFBEB;
+        border: 1px solid #FDE68A;
+        padding: 2px 8px;
+        border-radius: 6px;
+        margin-top: 4px;
+        font-weight: 600;
+        width: fit-content;
+      }
     }
 
     .col-qty {
@@ -720,6 +809,71 @@ $brand-black: #1a1a1a;
   .col-price,
   .col-total {
     text-align: right;
+  }
+
+  // ── Bespoke Customization Details Box ──────────────────────
+  .invoice-customization-box {
+    margin: 0 32px 24px;
+    padding: 16px 20px;
+    background: #FFFDF8;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-left: 4px solid #D4AF37;
+    border-radius: 12px;
+
+    @media (max-width: 600px) {
+      margin: 0 20px 20px;
+      padding: 14px 16px;
+    }
+
+    .custom-box-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #92400E;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 10px;
+      font-family: $font-body;
+    }
+
+    .custom-box-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px 0;
+      border-top: 1px dashed rgba(212, 175, 55, 0.3);
+
+      &:first-of-type {
+        border-top: none;
+        padding-top: 0;
+      }
+
+      .custom-summary-text {
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: #451A03;
+        line-height: 1.5;
+        font-family: $font-body;
+
+        strong {
+          font-weight: 700;
+          color: #78350F;
+        }
+      }
+
+      .custom-sub-meta {
+        font-size: 0.74rem;
+        color: #78350F;
+        line-height: 1.4;
+        font-family: $font-body;
+
+        strong {
+          color: #92400E;
+        }
+      }
+    }
   }
 
   // ── Totals ──────────────────────────────────
@@ -988,7 +1142,7 @@ $brand-black: #1a1a1a;
   .download-invoice-btn {
     background-color: $brand-orange !important;
     box-shadow: 0 8px 24px rgba($brand-orange, 0.2);
-    
+
     &:hover {
       background-color: darken($brand-orange, 8%) !important;
       box-shadow: 0 8px 30px rgba($brand-orange, 0.35);

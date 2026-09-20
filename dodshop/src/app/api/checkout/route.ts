@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma, fallbackDb } from '@dod/database';
+import { prisma, fallbackDb, sendOrderWhatsAppNotifications, resolveOrderCustomizations } from '@dod/database';
 import { randomUUID } from 'crypto';
 import { getSession } from '@/lib/auth';
 
@@ -214,6 +214,10 @@ export async function POST(req: Request) {
                 estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 logs: [{ status: 'Order accepted at Atelier', timestamp: new Date().toISOString(), location: 'Atelier Head Office' }]
               },
+              whatsappDetails: {
+                adminStatus: 'PENDING',
+                customerStatus: 'PENDING'
+              },
               items: {
                 create: cart.map((item: any) => {
                   const pid = String(item.product.id);
@@ -230,6 +234,9 @@ export async function POST(req: Request) {
                   };
                 })
               }
+            },
+            include: {
+              items: true
             }
           });
 
@@ -333,6 +340,10 @@ export async function POST(req: Request) {
           estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           logs: [{ status: 'Order accepted at Atelier', timestamp: new Date().toISOString(), location: 'Atelier Head Office' }]
         },
+        whatsappDetails: {
+          adminStatus: 'PENDING',
+          customerStatus: 'PENDING'
+        },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         items
@@ -367,7 +378,42 @@ export async function POST(req: Request) {
       newOrder = orderObj;
     }
 
-    return NextResponse.json({ success: true, orderId });
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // AUTOMATIC WHATSAPP NOTIFICATIONS (Admin + Customer)
+    // Runs right upon order completion; never blocks or fails checkout
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    if (newOrder) {
+      newOrder.customerPhone = phone;
+      newOrder.phone = phone;
+      try {
+        await Promise.race([
+          sendOrderWhatsAppNotifications(newOrder, 'all'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('WhatsApp notification timeout')), 4000))
+        ]);
+      } catch (waErr) {
+        console.error('⚠️ WhatsApp notification error on checkout:', waErr);
+      }
+    }
+
+    let customizations: any[] = [];
+    try {
+      if (newOrder) {
+        customizations = (newOrder as any).customizations || await resolveOrderCustomizations(newOrder);
+      }
+    } catch (cErr) {
+      console.error('⚠️ Error resolving customizations for checkout response:', cErr);
+    }
+
+    const customizationDetails = customizations.map((c: any) =>
+      c.summaryLine || `Fabric: ${c.fabric} · Colour: ${c.color} · Embroidery: ${c.aemroduriType} · Tassels: ${c.tassels}`
+    );
+
+    return NextResponse.json({
+      success: true,
+      orderId,
+      customizations,
+      customizationDetails
+    });
 
   } catch (err: any) {
     console.error('Checkout error:', err);

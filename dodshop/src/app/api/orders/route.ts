@@ -40,6 +40,25 @@ export async function GET(req: Request) {
       userOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
+    // Collect product IDs to resolve product images from catalog
+    const productIds = [...new Set(userOrders.flatMap(o => (o.items || []).map((i: any) => i.productId)).filter(Boolean))];
+    const productMap = new Map<string, string>();
+    if (productIds.length > 0) {
+      try {
+        const products = await prisma.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true, images: true }
+        });
+        products.forEach(p => {
+          if (p.images && p.images[0]) {
+            productMap.set(p.id, p.images[0]);
+          }
+        });
+      } catch (e) {
+        console.warn('⚠️ Could not resolve product images for orders:', e);
+      }
+    }
+
     // Format orders for frontend use
     const formattedOrders = userOrders.map(o => {
       // Format date
@@ -79,7 +98,7 @@ export async function GET(req: Request) {
           price: item.price,
           size: item.size,
           quantity: item.quantity,
-          image: item.image
+          image: productMap.get(item.productId) || item.image || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=300"
         })),
         address: addressStr,
         paymentMode

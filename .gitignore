@@ -21,13 +21,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .vercel
+cookies.txt
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# user uploads (store in cloud storage in production)
-**/public/uploads/
+# user uploads (track so product media is available on Vercel)
+!Dashbord/public/uploads/**
+!dodshop/public/uploads/**
 
 # PWA generated assets (workbox bundles)
 **/public/workbox-*.js

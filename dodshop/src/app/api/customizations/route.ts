@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
+import { resolveOrderCustomizations } from '@dod/database';
 import { getSession, resolveCustomer } from '@/lib/auth';
 import { randomUUID } from 'crypto';
 
@@ -166,6 +167,28 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+    const orderId = searchParams.get('orderId');
+
+    if (orderId) {
+      let order: any = null;
+      try {
+        order = await prisma.order.findUnique({
+          where: { id: orderId },
+          include: { items: true },
+        });
+      } catch {}
+
+      if (!order) {
+        const orders = fallbackDb.getCollection('orders');
+        order = orders.find((o: any) => o.id === orderId);
+      }
+
+      if (order) {
+        const requests = await resolveOrderCustomizations(order);
+        return NextResponse.json({ success: true, requests });
+      }
+    }
+
     const productId = searchParams.get('productId');
     const queryUserId = searchParams.get('userId');
     const customer = await resolveCustomer(req, queryUserId);

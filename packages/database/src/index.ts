@@ -27,7 +27,8 @@ export type {
   CMSConfig,
   Coupon,
   SecurityLog,
-} from './generated/prisma';
+  AuthPageImage,
+} from './generated/prisma_client';
 
 export interface CustomizationRequest {
   id: string;
@@ -60,5 +61,20 @@ export {
   InventoryLogType,
   ContactStatus,
   ReturnStatus,
-  AuditStatus,
-} from './generated/prisma';
+} from './generated/prisma_client';
+
+// WhatsApp Notification Service
+export {
+  normalizePhoneNumber,
+  buildAdminWhatsAppMessage,
+  buildCustomerWhatsAppMessage,
+  sendWhatsAppMessage,
+  uploadWhatsAppMedia,
+  sendWhatsAppDocument,
+  sendOrderWhatsAppNotifications,
+} from './whatsapp';
+export type { WhatsAppNotificationDetails } from './whatsapp';
+
+// Invoice PDF Generator
+export { generateInvoicePdfBuffer, generateInvoiceFileName, resolveOrderCustomizations } from './invoicePdf';
+

@@ -26,6 +26,15 @@ import "./Order.scss";
 
 type TabType = "list" | "details" | "track" | "cancel" | "returns" | "customizations";
 
+const FALLBACK_ORDER_IMAGE = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=300";
+
+const getSafeImage = (img: any) => {
+  if (typeof img === "string" && img.trim().length > 0) {
+    return img.trim();
+  }
+  return FALLBACK_ORDER_IMAGE;
+};
+
 export default function OrderPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -323,7 +332,13 @@ export default function OrderPage() {
                                       {ord.items.map((item: any, idx: number) => (
                                         <div key={idx} className="product-row">
                                           <div className="product-img-wrapper">
-                                            <img src={item.image} alt={item.title} />
+                                            <img
+                                              src={getSafeImage(item.image)}
+                                              alt={item.title || "Ordered item"}
+                                              onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).src = FALLBACK_ORDER_IMAGE;
+                                              }}
+                                            />
                                           </div>
                                           <div className="product-details">
                                             <h5>{item.title}</h5>
@@ -410,7 +425,13 @@ export default function OrderPage() {
                                       {ord.items.map((item: any, idx: number) => (
                                         <div key={idx} className="product-row">
                                           <div className="product-img-wrapper">
-                                            <img src={item.image} alt={item.title} />
+                                            <img
+                                              src={getSafeImage(item.image)}
+                                              alt={item.title || "Ordered item"}
+                                              onError={(e) => {
+                                                (e.currentTarget as HTMLImageElement).src = FALLBACK_ORDER_IMAGE;
+                                              }}
+                                            />
                                           </div>
                                           <div className="product-details">
                                             <h5>{item.title}</h5>
@@ -514,7 +535,13 @@ export default function OrderPage() {
                             {selectedOrder.items.map((item: any, idx: number) => (
                               <div key={idx} className="product-row">
                                 <div className="product-img-wrapper">
-                                  <img src={item.image} alt={item.title} />
+                                  <img
+                                    src={getSafeImage(item.image)}
+                                    alt={item.title || "Ordered item"}
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = FALLBACK_ORDER_IMAGE;
+                                    }}
+                                  />
                                 </div>
                                 <div className="product-details">
                                   <h5>{item.title}</h5>

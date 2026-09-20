@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, email, phone, interest, date, message } = body;
+    const { name, email, phone, interest, categoryName, categoryId, productId, productName, date, message } = body;
 
     // Validate required fields
     if (!name || !email || !phone) {
@@ -24,8 +24,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build subject from interest and date
-    const subject = `${interest || 'General'} Inquiry${date ? ` — Preferred Date: ${date}` : ''}`;
+    const selectedCategory = categoryName || interest || 'General';
+    const selectedItem = productName ? ` — Item: ${productName}` : '';
+    // Build subject from category, item and date
+    const subject = `${selectedCategory}${selectedItem} Inquiry${date ? ` — Preferred Date: ${date}` : ''}`;
+
+    // Include category & product metadata if provided
+    const metadataLines = [
+      categoryId ? `Category: ${selectedCategory} (ID: ${categoryId})` : (selectedCategory !== 'General' ? `Category: ${selectedCategory}` : ''),
+      productId ? `Item / Product: ${productName || productId} (ID: ${productId})` : (productName ? `Item: ${productName}` : '')
+    ].filter(Boolean).join(' | ');
+
+    const formattedMessage = metadataLines
+      ? `[${metadataLines}]\n${message || ''}`.trim()
+      : (message || '');
 
     let databaseConnected = true;
     let contactId = '';
@@ -38,7 +50,7 @@ export async function POST(request: Request) {
           email,
           phone: phone || null,
           subject,
-          message: message || '',
+          message: formattedMessage,
           status: 'UNREAD',
         },
       });
@@ -56,8 +68,12 @@ export async function POST(request: Request) {
         name,
         email,
         phone: phone || null,
+        categoryId: categoryId || null,
+        categoryName: selectedCategory,
+        productId: productId || null,
+        productName: productName || null,
         subject,
-        message: message || '',
+        message: formattedMessage,
         status: 'UNREAD',
         createdAt: new Date().toISOString(),
       };

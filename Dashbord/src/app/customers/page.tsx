@@ -87,14 +87,22 @@ export default function CustomerManagement() {
 
   const filteredCustomers = customers.filter((c) => {
     const matchesType = (c.customerType || 'new').toLowerCase() === activeType;
-    const query = search.toLowerCase();
-    return matchesType && (c.name.toLowerCase().includes(query) || 
-           c.email.toLowerCase().includes(query) ||
-           c.phone.toLowerCase().includes(query));
+    const query = search.toLowerCase().trim();
+    if (!matchesType) return false;
+    if (!query) return true;
+    const name = String(c.name || '').toLowerCase();
+    const email = String(c.email || '').toLowerCase();
+    const phone = String(c.phone || '').toLowerCase();
+    return name.includes(query) || email.includes(query) || phone.includes(query);
   });
 
   const getCustomerOrders = (customer: any) => {
-    return orders.filter(o => o.customerId === customer.id || o.customerName === customer.name);
+    if (!customer) return [];
+    return orders.filter(o => 
+      o.customerId === customer.id || 
+      (customer.email && String(o.customerEmail || '').toLowerCase() === String(customer.email).toLowerCase()) ||
+      (customer.name && String(o.customerName || '').toLowerCase() === String(customer.name).toLowerCase())
+    );
   };
 
   const openOldCustomerForm = (customer?: any) => {
@@ -108,25 +116,28 @@ export default function CustomerManagement() {
     const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : '/api/customers';
     const res = await fetch(url, { method: editingCustomer ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...customerForm, force }) });
     const data = await res.json();
-    if (res.status === 409 && data.duplicate) { setDuplicateCustomer(data.duplicate); return; }
-    if (!res.ok || !data.success) { alert(data.error || 'Unable to save customer'); return; }
-    setShowCustomerForm(false); setDuplicateCustomer(null); await loadData();
+    if (data.duplicate) { setDuplicateCustomer(data.duplicate); return; }
+    if (!res.ok || !data.success) { alert(data.error || 'Failed to save old customer'); return; }
+    setShowCustomerForm(false);
+    loadData();
   };
 
   const deleteOldCustomer = async (customer: any) => {
-    if (!window.confirm(`Are you sure you want to delete ${customer.name}?`)) return;
+    if (!confirm(`Delete historical profile for ${customer.name}?`)) return;
     const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
     const data = await res.json();
-    if (!res.ok) { alert(data.error || 'Unable to delete customer'); return; }
-    if (selectedCust?.id === customer.id) setSelectedCust(null);
-    await loadData();
+    if (!res.ok || !data.success) { alert(data.error || 'Failed to delete customer'); return; }
+    loadData();
   };
+
+  const newCustomersCount = customers.filter(c => (c.customerType || 'new').toLowerCase() === 'new').length;
+  const oldCustomersCount = customers.filter(c => (c.customerType || 'new').toLowerCase() === 'old').length;
 
   return (
     <AdminLayout>
-      <div className="space-y-8 animate-fade-in">
+      <div className="space-y-6 max-w-7xl mx-auto pb-12">
         {/* Header */}
-        <div className="border-b border-gray-100 pb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex justify-between items-center">
           <div>
             <h1 className="font-marcellus text-3xl font-light text-[#1A1A1A]">Patron Directory</h1>
             <p className="text-xs text-[#6E6E6E] font-poppins uppercase tracking-wider mt-1">Couture buyers and acquisition profiles</p>
@@ -135,7 +146,15 @@ export default function CustomerManagement() {
         </div>
 
         <div className="inline-flex rounded-xl bg-gray-100 p-1">
-          {(['new', 'old'] as const).map(type => <button key={type} onClick={() => { setActiveType(type); setSearch(''); }} className={`rounded-lg px-5 py-2 text-xs font-semibold transition-all ${activeType === type ? 'bg-white text-[#FF6A00] shadow-sm' : 'text-gray-500'}`}>{type === 'new' ? 'New Customers' : 'Old Customers'}</button>)}
+          {(['new', 'old'] as const).map(type => (
+            <button
+              key={type}
+              onClick={() => { setActiveType(type); setSearch(''); }}
+              className={`rounded-lg px-5 py-2 text-xs font-semibold transition-all ${activeType === type ? 'bg-white text-[#FF6A00] shadow-sm' : 'text-gray-500'}`}
+            >
+              {type === 'new' ? `New Customers (${newCustomersCount})` : `Old Customers (${oldCustomersCount})`}
+            </button>
+          ))}
         </div>
 
         {/* Search */}
@@ -164,40 +183,59 @@ export default function CustomerManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomers.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-bold text-xs overflow-hidden">
-                          {c.avatar && (c.avatar.startsWith('http') || c.avatar.startsWith('data:image')) ? (
-                            <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
-                          ) : (
-                            c.avatar
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold text-gray-900">{c.name}</p>
-                          <p className="text-[10px] text-gray-500">{c.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-xs text-gray-600 font-inter">{c.joinedDate}</td>
-                    <td className="font-semibold text-xs text-gray-800 font-inter">{c.totalOrders} Orders</td>
-                    <td className="font-semibold text-xs text-gray-900 font-inter">
-                      ₹{c.totalSpent.toLocaleString()}
-                    </td>
-                    <td className="text-xs text-gray-600 font-inter">{c.phone}</td>
-                    <td>
-                      <button
-                        onClick={() => setSelectedCust(c)}
-                        className="p-1.5 bg-white border border-gray-200 hover:border-[#FF6A00] rounded-lg text-gray-600 hover:text-[#FF6A00] transition-all flex items-center gap-1.5 text-[10px]"
-                      >
-                        <Eye size={12} /> Inspect Profile
-                      </button>
-                      {activeType === 'old' && <div className="mt-2 flex gap-2"><button onClick={() => openOldCustomerForm(c)} className="text-[10px] text-[#FF6A00] hover:underline"><Edit size={11} className="inline mr-1" />Edit</button><button onClick={() => deleteOldCustomer(c)} className="text-[10px] text-red-500 hover:underline"><Trash2 size={11} className="inline mr-1" />Delete</button></div>}
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-gray-500 text-xs">
+                      Loading patron records from atelier database...
                     </td>
                   </tr>
-                ))}
+                ) : filteredCustomers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-12 text-gray-500 text-xs">
+                      {search ? `No ${activeType} customers found matching "${search}".` : `No ${activeType} customers in the directory.`}
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCustomers.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-bold text-xs overflow-hidden">
+                            {c.avatar && (c.avatar.startsWith('http') || c.avatar.startsWith('data:image')) ? (
+                              <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
+                            ) : (
+                              c.avatar || 'P'
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-900">{c.name}</p>
+                            <p className="text-[10px] text-gray-500">{c.email || 'No email'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="text-xs text-gray-600 font-inter">{c.joinedDate || '—'}</td>
+                      <td className="font-semibold text-xs text-gray-800 font-inter">{c.totalOrders || 0} Orders</td>
+                      <td className="font-semibold text-xs text-gray-900 font-inter">
+                        ₹{Number(c.totalSpent || 0).toLocaleString()}
+                      </td>
+                      <td className="text-xs text-gray-600 font-inter">{c.phone || '—'}</td>
+                      <td>
+                        <button
+                          onClick={() => setSelectedCust(c)}
+                          className="p-1.5 bg-white border border-gray-200 hover:border-[#FF6A00] rounded-lg text-gray-600 hover:text-[#FF6A00] transition-all flex items-center gap-1.5 text-[10px]"
+                        >
+                          <Eye size={12} /> Inspect Profile
+                        </button>
+                        {activeType === 'old' && (
+                          <div className="mt-2 flex gap-2">
+                            <button onClick={() => openOldCustomerForm(c)} className="text-[10px] text-[#FF6A00] hover:underline"><Edit size={11} className="inline mr-1" />Edit</button>
+                            <button onClick={() => deleteOldCustomer(c)} className="text-[10px] text-red-500 hover:underline"><Trash2 size={11} className="inline mr-1" />Delete</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -338,21 +376,21 @@ export default function CustomerManagement() {
                     {/* Wishlist */}
                     <div className="space-y-2">
                       <h4 className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-wider flex items-center gap-1">
-                        <Heart size={10} className="fill-[#FF6A00]" /> Wishlist ({selectedCust.wishlist.length})
+                        <Heart size={10} className="fill-[#FF6A00]" /> Wishlist ({(selectedCust.wishlist || []).length})
                       </h4>
-                      {selectedCust.wishlist.length === 0 ? (
+                      {(selectedCust.wishlist || []).length === 0 ? (
                         <p className="text-[10px] text-gray-400">Wishlist empty.</p>
                       ) : (
                         <div className="space-y-2">
-                          {selectedCust.wishlist.map((w: any, idx: number) => (
+                          {(selectedCust.wishlist || []).map((w: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 p-2 border border-gray-100 rounded-lg text-[10px]">
                               <div className="w-8 h-8 rounded bg-gray-50 overflow-hidden flex-shrink-0">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={w.image} alt={w.name} className="w-full h-full object-cover" />
+                                <img src={w.image || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=150"} alt={w.name} className="w-full h-full object-cover" />
                               </div>
                               <div className="min-w-0">
                                 <p className="font-semibold text-gray-800 truncate">{w.name}</p>
-                                <p className="text-gray-400 font-inter">₹{w.price.toLocaleString()}</p>
+                                <p className="text-gray-400 font-inter">₹{Number(w.price || 0).toLocaleString()}</p>
                               </div>
                             </div>
                           ))}
@@ -363,22 +401,22 @@ export default function CustomerManagement() {
                     {/* Cart */}
                     <div className="space-y-2">
                       <h4 className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-wider flex items-center gap-1">
-                        <ShoppingCart size={10} /> Active Cart ({selectedCust.cart.length})
+                        <ShoppingCart size={10} /> Active Cart ({(selectedCust.cart || []).length})
                       </h4>
-                      {selectedCust.cart.length === 0 ? (
+                      {(selectedCust.cart || []).length === 0 ? (
                         <p className="text-[10px] text-gray-400">Cart empty.</p>
                       ) : (
                         <div className="space-y-2">
-                          {selectedCust.cart.map((c: any, idx: number) => (
+                          {(selectedCust.cart || []).map((c: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 p-2 border border-gray-100 rounded-lg text-[10px]">
                               <div className="w-8 h-8 rounded bg-gray-50 overflow-hidden flex-shrink-0">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                                <img src={c.image || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=150"} alt={c.name} className="w-full h-full object-cover" />
                               </div>
                               <div className="min-w-0">
                                 <p className="font-semibold text-gray-800 truncate">{c.name}</p>
                                 <p className="text-gray-400 font-inter">
-                                  ₹{c.price.toLocaleString()} x {c.quantity}
+                                  ₹{Number(c.price || 0).toLocaleString()} x {c.quantity || 1}
                                 </p>
                               </div>
                             </div>
@@ -394,14 +432,18 @@ export default function CustomerManagement() {
                       <MapPin size={11} /> Saved Addresses
                     </h4>
                     <div className="space-y-2">
-                      {selectedCust.addresses.map((addr: any, idx: number) => (
-                        <div key={idx} className="p-3 border border-gray-100 rounded-xl text-xs">
-                          <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold block mb-1">
-                            {addr.type}
-                          </span>
-                          <p className="text-gray-700 leading-relaxed font-light">{addr.address}</p>
-                        </div>
-                      ))}
+                      {(selectedCust.addresses || []).length === 0 ? (
+                        <p className="text-[10px] text-gray-400">No saved addresses on file.</p>
+                      ) : (
+                        (selectedCust.addresses || []).map((addr: any, idx: number) => (
+                          <div key={idx} className="p-3 border border-gray-100 rounded-xl text-xs">
+                            <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold block mb-1">
+                              {addr.type || 'Address'}
+                            </span>
+                            <p className="text-gray-700 leading-relaxed font-light">{addr.address}</p>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -417,11 +459,11 @@ export default function CustomerManagement() {
                             <div>
                               <p className="font-semibold text-gray-900 font-inter">{order.id}</p>
                               <p className="text-[10px] text-gray-500 font-inter">
-                                {new Date(order.createdAt).toLocaleDateString()} | {order.items.length} item(s)
+                                {new Date(order.createdAt).toLocaleDateString()} | {(order.items || []).length} item(s)
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-gray-900 font-inter">₹{order.grandTotal.toLocaleString()}</p>
+                              <p className="font-bold text-gray-900 font-inter">₹{Number(order.grandTotal || 0).toLocaleString()}</p>
                               <span className="text-[8px] uppercase tracking-wider font-semibold text-[#FF6A00]">
                                 {order.status}
                               </span>

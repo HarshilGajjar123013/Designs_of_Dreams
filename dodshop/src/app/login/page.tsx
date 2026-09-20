@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "@/store/useStore";
 import { useForm } from "react-hook-form";
@@ -47,8 +47,8 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Collage grid images representing Designs of Dreams collection
-const collageImages = [
+// Collage grid default fallback images representing Designs of Dreams collection
+const DEFAULT_LOGIN_IMAGES = [
   "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
   "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=400&q=80",
   "https://images.unsplash.com/photo-1608748010899-18f300247112?auto=format&fit=crop&w=400&q=80",
@@ -63,12 +63,32 @@ const collageImages = [
   "https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?auto=format&fit=crop&w=400&q=80"
 ];
 
+const DEFAULT_SIGNUP_IMAGES = [
+  "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1608748010899-18f300247112?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=400&q=80"
+];
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [mounted, setMounted] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [dynamicLoginImages, setDynamicLoginImages] = useState<string[]>(DEFAULT_LOGIN_IMAGES);
+  const [dynamicSignupImages, setDynamicSignupImages] = useState<string[]>(DEFAULT_SIGNUP_IMAGES);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -86,10 +106,41 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (mounted && user?.isLoggedIn) {
-      router.push("/");
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "signup" || tabParam === "login") {
+      setActiveTab(tabParam);
     }
-  }, [mounted, user, router]);
+  }, [searchParams]);
+
+  // Fetch dynamic auth images from API
+  useEffect(() => {
+    const fetchAuthImages = async () => {
+      try {
+        const [loginRes, signupRes] = await Promise.all([
+          fetch("/api/auth-images?page=login"),
+          fetch("/api/auth-images?page=signup"),
+        ]);
+        const loginData = await loginRes.json();
+        const signupData = await signupRes.json();
+
+        if (loginData.success && Array.isArray(loginData.images) && loginData.images.length > 0) {
+          setDynamicLoginImages(loginData.images);
+        }
+        if (signupData.success && Array.isArray(signupData.images) && signupData.images.length > 0) {
+          setDynamicSignupImages(signupData.images);
+        }
+      } catch (err) {
+        console.warn("Could not fetch dynamic auth images, using defaults:", err);
+      }
+    };
+    fetchAuthImages();
+  }, []);
+
+  useEffect(() => {
+    if (mounted && user?.isLoggedIn) {
+      router.push(redirectTo);
+    }
+  }, [mounted, user, router, redirectTo]);
 
   // React Hook Form for Login
   const {
@@ -153,7 +204,7 @@ export default function LoginPage() {
       loginAction(id, email, name, avatar, phone);
       setSuccessMsg(`Welcome back, ${name}!`);
       resetLoginForm();
-      router.push("/");
+      router.push(redirectTo);
     } catch (err) {
       console.error(err);
       setErrorMsg("An error occurred during login. Please try again.");
@@ -185,7 +236,7 @@ export default function LoginPage() {
       signupAction(id, email, name, avatar, phone);
       setSuccessMsg(`Welcome to Designs of Dreams, ${name}!`);
       resetSignupForm();
-      router.push("/");
+      router.push(redirectTo);
     } catch (err) {
       console.error(err);
       setErrorMsg("An error occurred during registration. Please try again.");
@@ -201,7 +252,7 @@ export default function LoginPage() {
       const mockId = `social-${provider.toLowerCase()}-${Date.now()}`;
       loginAction(mockId, email, name);
       setSuccessMsg(`Welcome back, connected with ${provider}!`);
-      router.push("/");
+      router.push(redirectTo);
     }, 800);
   };
 
@@ -622,9 +673,19 @@ export default function LoginPage() {
       {/* RIGHT COLUMN: 3x4 Grid Collage */}
       <div className="auth-right-panel">
         <div className="auth-collage-grid">
-          {collageImages.map((img, idx) => (
-            <div key={idx} className="collage-grid-item">
-              <img src={img} alt={`Designs of Dreams Heritage Collage ${idx + 1}`} />
+          {(activeTab === 'login' ? dynamicLoginImages : dynamicSignupImages).map((img, idx) => (
+            <div key={`${activeTab}-${idx}`} className="collage-grid-item">
+              <img
+                src={img}
+                alt={`Designs of Dreams Heritage Collage ${idx + 1}`}
+                loading="lazy"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    activeTab === 'login'
+                      ? DEFAULT_LOGIN_IMAGES[idx % DEFAULT_LOGIN_IMAGES.length]
+                      : DEFAULT_SIGNUP_IMAGES[idx % DEFAULT_SIGNUP_IMAGES.length];
+                }}
+              />
             </div>
           ))}
         </div>

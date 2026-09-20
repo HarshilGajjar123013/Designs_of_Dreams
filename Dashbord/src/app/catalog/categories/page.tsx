@@ -23,6 +23,7 @@ export default function CategoryManagement() {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editImageUrl, setEditImageUrl] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
   const [editingSaving, setEditingSaving] = useState(false);
 
   const loadData = async () => {
@@ -58,6 +59,28 @@ export default function CategoryManagement() {
 
   if (!mounted) return null;
 
+  const handleToggleStatus = async (cat: any) => {
+    const nextStatus = cat.isActive === false ? true : false;
+    try {
+      const response = await fetch(`/api/categories/${cat.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isActive: nextStatus
+        })
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        loadData();
+      } else {
+        alert(result.error || 'Failed to update category status');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while updating category status');
+    }
+  };
+
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -71,6 +94,7 @@ export default function CategoryManagement() {
           name: name.trim(),
           description: description.trim() || undefined,
           image: imageUrl.trim() || undefined,
+          isActive: true
         })
       });
 
@@ -96,6 +120,7 @@ export default function CategoryManagement() {
     setEditName(cat.name || '');
     setEditDescription(cat.description || '');
     setEditImageUrl(cat.image || '');
+    setEditIsActive(cat.isActive !== false);
   };
 
   const handleUpdateCategory = async (e: React.FormEvent) => {
@@ -111,6 +136,7 @@ export default function CategoryManagement() {
           name: editName.trim(),
           description: editDescription.trim() || undefined,
           image: editImageUrl.trim() || null,
+          isActive: editIsActive,
         })
       });
 
@@ -214,7 +240,22 @@ export default function CategoryManagement() {
                           )}
                           <div>
                             <h3 className="font-marcellus text-lg text-gray-950 font-light">{cat.name}</h3>
-                            <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wider font-semibold">{count} active items</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{count} active items</p>
+                              <span className="text-gray-300">•</span>
+                              <button
+                                onClick={() => handleToggleStatus(cat)}
+                                className={`text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 ${
+                                  cat.isActive !== false
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                    : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                }`}
+                                title={cat.isActive !== false ? 'Click to deactivate category' : 'Click to activate category'}
+                              >
+                                <span className={`w-1.5 h-1.5 rounded-full ${cat.isActive !== false ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                {cat.isActive !== false ? 'Active' : 'Inactive'}
+                              </button>
+                            </div>
                           </div>
                         </div>
                         
@@ -351,6 +392,21 @@ export default function CategoryManagement() {
                     placeholder="https://..."
                     className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-xs font-poppins focus:outline-none focus:border-[#FF6A00]"
                   />
+                </div>
+
+                <div>
+                  <label className="text-[9px] uppercase font-bold text-gray-500 tracking-wider block mb-1 font-inter">Category Status</label>
+                  <label className="flex items-center gap-2 cursor-pointer mt-1">
+                    <input
+                      type="checkbox"
+                      checked={editIsActive}
+                      onChange={(e) => setEditIsActive(e.target.checked)}
+                      className="w-4 h-4 text-[#FF6A00] rounded border-gray-300 focus:ring-[#FF6A00] cursor-pointer"
+                    />
+                    <span className="text-xs text-gray-700 font-poppins">
+                      Active (Display on website and contact dropdown)
+                    </span>
+                  </label>
                 </div>
 
                 <div className="flex items-center gap-3 pt-2">

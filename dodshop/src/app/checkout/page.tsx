@@ -12,7 +12,10 @@ import {
   CheckCircle,
   Truck,
   ArrowRight,
-  ShoppingBag
+  ShoppingBag,
+  LogIn,
+  UserCheck,
+  Crown
 } from "lucide-react";
 import InvoiceGenerator, { InvoiceData } from "@/components/common/InvoiceGenerator/InvoiceGenerator";
 import "./Checkout.scss";
@@ -51,6 +54,45 @@ export default function CheckoutPage() {
       if (user?.email) setEmail(user.email);
     }
   }, [user]);
+
+  // If there are items in the cart, always ensure checkout form is shown
+  useEffect(() => {
+    if (cart.length > 0) {
+      setOrderComplete(false);
+      try {
+        sessionStorage.removeItem("dod_last_invoice");
+      } catch {}
+    }
+  }, [cart.length]);
+
+  // Fetch Bespoke Customization for current invoice if missing
+  useEffect(() => {
+    const currentOrderId = invoiceData?.orderId || orderId;
+    if (currentOrderId && (!invoiceData?.customizations || invoiceData.customizations.length === 0)) {
+      fetch(`/api/customizations?orderId=${currentOrderId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.requests?.length > 0) {
+            const details = data.requests.map((r: any) =>
+              r.summaryLine || `Fabric: ${r.fabric} · Colour: ${r.color} · Embroidery: ${r.aemroduriType} · Tassels: ${r.tassels}`
+            );
+            setInvoiceData((prev: any) => {
+              if (!prev) return prev;
+              const updated = {
+                ...prev,
+                customizations: data.requests,
+                customizationDetails: details,
+              };
+              try {
+                sessionStorage.setItem("dod_last_invoice", JSON.stringify(updated));
+              } catch {}
+              return updated;
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [invoiceData?.orderId, orderId]);
 
   // Fetch Saved Addresses
   useEffect(() => {
@@ -105,6 +147,12 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (cart.length === 0) return;
 
+    // ── MANDATORY LOGIN CHECK ──
+    if (!user?.isLoggedIn) {
+      router.push("/login?redirect=/checkout");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -136,7 +184,12 @@ export default function CheckoutPage() {
         const checkoutShipping = checkoutSubtotal > 1999 || checkoutSubtotal === 0 ? 0 : 150;
         const checkoutGrandTotal = checkoutSubtotal + checkoutTax + checkoutShipping;
 
-        setInvoiceData({
+        const returnedCustomizations = data.customizations || [];
+        const returnedDetails = data.customizationDetails || returnedCustomizations.map((c: any) =>
+          c.summaryLine || `Fabric: ${c.fabric} · Colour: ${c.color} · Embroidery: ${c.aemroduriType} · Tassels: ${c.tassels}`
+        );
+
+        const newInvoice: InvoiceData = {
           orderId: data.orderId,
           date: new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }),
           customerName: fullName,
@@ -150,12 +203,20 @@ export default function CheckoutPage() {
             quantity: item.quantity,
             size: item.size,
             sku: (item.product as any).sku || `DOD-SKU-${item.product.id}`,
+            productId: item.product.id,
           })),
           subtotal: checkoutSubtotal,
           gst: checkoutTax,
           shipping: checkoutShipping,
           grandTotal: checkoutGrandTotal,
-        });
+          customizations: returnedCustomizations,
+          customizationDetails: returnedDetails,
+        };
+
+        setInvoiceData(newInvoice);
+        try {
+          sessionStorage.setItem("dod_last_invoice", JSON.stringify(newInvoice));
+        } catch {}
 
         setOrderId(data.orderId);
         setOrderComplete(true);
@@ -260,18 +321,62 @@ export default function CheckoutPage() {
                       <span className="col-price">Unit Price</span>
                       <span className="col-total">Total</span>
                     </div>
-                    {invoiceData.items.map((item, i) => (
-                      <div key={i} className="invoice-table-row">
-                        <div className="col-item">
-                          <span className="item-title">{item.title}</span>
-                          <span className="item-sub">Size: {item.size}{item.sku ? ` | SKU: ${item.sku}` : ''}</span>
+                    {invoiceData.items.map((item, i) => {
+                      const itemPid = (item as any).productId || (item as any).sku?.replace('DOD-SKU-', '');
+                      const matchedCustom = invoiceData.customizations?.find(
+                        (c: any) => String(c.productId) === String(itemPid)
+                      ) || invoiceData.customizations?.[0];
+                      return (
+                        <div key={i} className="invoice-table-row">
+                          <div className="col-item">
+                            <span className="item-title">{item.title}</span>
+                            <span className="item-sub">Size: {item.size}{item.sku ? ` | SKU: ${item.sku}` : ''}</span>
+                            {matchedCustom && (
+                              <span className="item-custom-badge">
+                                ✨ Bespoke Custom: {matchedCustom.fabric} / {matchedCustom.color} / {matchedCustom.aemroduriType}
+                              </span>
+                            )}
+                          </div>
+                          <span className="col-qty">{item.quantity}</span>
+                          <span className="col-price">₹{item.price.toLocaleString("en-IN")}</span>
+                          <span className="col-total">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
                         </div>
-                        <span className="col-qty">{item.quantity}</span>
-                        <span className="col-price">₹{item.price.toLocaleString("en-IN")}</span>
-                        <span className="col-total">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+
+                  {/* Bespoke Customization Section - Latest Customization */}
+                  {((invoiceData.customizations && invoiceData.customizations.length > 0) ||
+                    (invoiceData.customizationDetails && invoiceData.customizationDetails.length > 0)) && (() => {
+                    const c = invoiceData.customizations?.[0];
+                    const fallbackDetail = invoiceData.customizationDetails?.[0];
+                    return (
+                      <div className="invoice-customization-box">
+                        <div className="custom-box-header">
+                          <Crown size={15} />
+                          <span>👑 Bespoke Customization Details</span>
+                        </div>
+                        {c ? (
+                          <div className="custom-box-item">
+                            <div className="custom-summary-text">
+                              Fabric: <strong>{c.fabric}</strong> &nbsp;·&nbsp; Colour: <strong>{c.color}</strong> &nbsp;·&nbsp; Embroidery: <strong>{c.aemroduriType}</strong> &nbsp;·&nbsp; Tassels: <strong>{c.tassels}</strong>
+                            </div>
+                            {(c.notes || c.timeEstimateMonths || c.budget) && (
+                              <div className="custom-sub-meta">
+                                {c.notes && <span>Client Note: &ldquo;{c.notes}&rdquo; &nbsp;•&nbsp; </span>}
+                                {c.timeEstimateMonths && <span>Timeline: {c.timeEstimateMonths} Months &nbsp;•&nbsp; </span>}
+                                {c.budget && <span>Budget: {c.budget}</span>}
+                              </div>
+                            )}
+                          </div>
+                        ) : fallbackDetail ? (
+                          <div className="custom-box-item">
+                            <div className="custom-summary-text">{fallbackDetail}</div>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()}
 
                   {/* Totals */}
                   <div className="invoice-totals">
@@ -296,21 +401,6 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
-                  {/* Payment Info */}
-                  <div className="invoice-payment-bar">
-                    <div>
-                      <span className="meta-label">Payment Method</span>
-                      <p className="billing-name" style={{ marginTop: "4px" }}>{invoiceData.paymentMode}</p>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <span className="meta-label">Payment Status</span>
-                      <div style={{ marginTop: "6px" }}>
-                        <span className="payment-status-badge">
-                          {invoiceData.paymentMode?.includes('COD') ? 'COLLECT ON DELIVERY' : 'PAID'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Invoice Footer */}
                   <div className="invoice-footer-note">
@@ -497,13 +587,30 @@ export default function CheckoutPage() {
 
 
                   <div className="mobile-sticky-btn-wrapper">
+                    {/* Login Status Banner */}
+                    {!user?.isLoggedIn && (
+                      <div className="auth-required-banner">
+                        <LogIn size={16} />
+                        <span>Please login or register to place your order</span>
+                      </div>
+                    )}
+                    {user?.isLoggedIn && (
+                      <div className="auth-verified-banner">
+                        <UserCheck size={16} />
+                        <span>Verified as <strong>{user.name}</strong></span>
+                      </div>
+                    )}
                     <button
                       type="submit"
-                      className="place-order-btn"
+                      className={`place-order-btn ${!user?.isLoggedIn ? 'place-order-btn--login-required' : ''}`}
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? "Placing Your Order..." : "Place Order Masterpiece"}
-                      {!isSubmitting && <ArrowRight size={18} />}
+                      {isSubmitting
+                        ? "Placing Your Order..."
+                        : !user?.isLoggedIn
+                          ? "Login to Place Order"
+                          : "Place Order Masterpiece"}
+                      {!isSubmitting && (user?.isLoggedIn ? <ArrowRight size={18} /> : <LogIn size={18} />)}
                     </button>
                   </div>
                 </form>

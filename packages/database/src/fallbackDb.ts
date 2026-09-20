@@ -230,6 +230,63 @@ const INITIAL_COUPONS = [
   { id: 'coup-1', code: 'ROYALTY10', discountPercent: 10, maxDiscount: 10000, minOrderValue: 50000, isActive: true, validFrom: new Date().toISOString() }
 ];
 
+const DEFAULT_LOGIN_SLOT_URLS = [
+  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1608748010899-18f300247112?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1610030470298-4058fbb6190c?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?auto=format&fit=crop&w=400&q=80"
+];
+
+const DEFAULT_SIGNUP_SLOT_URLS = [
+  "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1608748010899-18f300247112?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?auto=format&fit=crop&w=400&q=80",
+  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=400&q=80"
+];
+
+const INITIAL_AUTH_PAGE_IMAGES = [
+  ...DEFAULT_LOGIN_SLOT_URLS.map((url, idx) => ({
+    id: `auth-login-slot-${idx + 1}`,
+    pageType: 'login',
+    slotNumber: idx + 1,
+    imageUrl: url,
+    storagePath: null,
+    isActive: true,
+    displayOrder: idx + 1,
+    title: `Login Collage ${idx + 1}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })),
+  ...DEFAULT_SIGNUP_SLOT_URLS.map((url, idx) => ({
+    id: `auth-signup-slot-${idx + 1}`,
+    pageType: 'signup',
+    slotNumber: idx + 1,
+    imageUrl: url,
+    storagePath: null,
+    isActive: true,
+    displayOrder: idx + 1,
+    title: `Sign Up Collage ${idx + 1}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  })),
+];
+
 const INITIAL_CMS_CONFIG = {
   heroTitle: 'Designs of Dreams — Heritage & Couture Atelier',
   heroSubtitle: 'Hand-woven luxury ethnic wear preserving the royal weaves of India.',
@@ -388,6 +445,7 @@ function getRawData(): any {
     coupons: INITIAL_COUPONS,
     cmsConfig: INITIAL_CMS_CONFIG,
     customizationRequests: [],
+    auth_page_images: INITIAL_AUTH_PAGE_IMAGES,
   };
 
   if (isReadOnlyEnv) {

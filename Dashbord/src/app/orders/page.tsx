@@ -5,7 +5,7 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { useAdminStore, Order } from '@/store/adminStore';
 import { 
   Eye, Truck, FileText, CheckCircle2, AlertTriangle, 
-  X, ArrowRight, Printer, ShieldAlert, CreditCard 
+  X, ArrowRight, Printer, ShieldAlert, CreditCard, RefreshCw 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { printInvoice } from '@/lib/printInvoice';
@@ -25,6 +25,10 @@ export default function OrderManagement() {
   const [carrier, setCarrier] = useState('');
   const [trackingId, setTrackingId] = useState('');
   const [estDelivery, setEstDelivery] = useState('');
+
+  // WhatsApp retry states
+  const [retryingAdmin, setRetryingAdmin] = useState(false);
+  const [retryingCustomer, setRetryingCustomer] = useState(false);
 
   const loadOrders = async () => {
     setLoading(true);
@@ -99,6 +103,35 @@ export default function OrderManagement() {
     } catch (e) {
       console.error(e);
       alert('Error updating tracking');
+    }
+  };
+
+  const handleRetryWhatsApp = async (orderId: string, recipient: 'admin' | 'customer') => {
+    if (recipient === 'admin') setRetryingAdmin(true);
+    else setRetryingCustomer(true);
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/whatsapp-retry`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient })
+      });
+      const data = await res.json();
+      if (data.success && data.order) {
+        setOrders(prev => prev.map(o => o.id === orderId ? data.order : o));
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder(data.order);
+        }
+        alert(`${recipient === 'admin' ? 'Admin' : 'Customer'} WhatsApp notification triggered successfully.`);
+      } else {
+        alert(data.error || 'Failed to retry WhatsApp notification');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error retrying WhatsApp notification');
+    } finally {
+      if (recipient === 'admin') setRetryingAdmin(false);
+      else setRetryingCustomer(false);
     }
   };
 
@@ -400,6 +433,120 @@ export default function OrderManagement() {
                         </button>
                       </div>
                     </form>
+                  </div>
+
+                  {/* WhatsApp Notifications Status & Retry */}
+                  <div className="space-y-2 border-t border-gray-100 pt-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">WhatsApp Notifications</h4>
+                      <span className="text-[9px] text-gray-400 font-inter">Automated Service</span>
+                    </div>
+
+                    <div className="p-4 border border-gray-100 rounded-xl space-y-3 bg-[#FAF9F6]">
+                      {/* Admin WhatsApp Status */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-gray-100 gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-semibold text-gray-800">Admin Alert</span>
+                            <span className="text-[10px] text-gray-400 font-inter">+91 9313507346</span>
+                            {selectedOrder.whatsappDetails?.adminInvoicePdfStatus === 'SENT' && (
+                              <span className="text-[9px] bg-emerald-50 text-emerald-700 font-medium px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-0.5">
+                                📄 PDF Invoice Sent
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5">
+                            {selectedOrder.whatsappDetails?.adminStatus === 'SENT' ? (
+                              <span className="text-[10px] text-emerald-600 font-inter flex items-center gap-1">
+                                <CheckCircle2 size={11} className="text-emerald-500" />
+                                Sent • {new Date(selectedOrder.whatsappDetails.adminSentAt || selectedOrder.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </span>
+                            ) : selectedOrder.whatsappDetails?.adminStatus === 'FAILED' ? (
+                              <span className="text-[10px] text-rose-600 font-inter flex items-center gap-1">
+                                <AlertTriangle size={11} className="text-rose-500" />
+                                Failed {selectedOrder.whatsappDetails?.adminError ? `(${selectedOrder.whatsappDetails.adminError})` : ''}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-600 font-inter flex items-center gap-1">
+                                <AlertTriangle size={11} className="text-amber-500" />
+                                Pending
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRetryWhatsApp(selectedOrder.id, 'admin')}
+                          disabled={retryingAdmin}
+                          className="px-3 py-1.5 border border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00] rounded-lg text-[10px] font-semibold text-gray-700 bg-white transition-all flex items-center gap-1 self-start sm:self-auto disabled:opacity-50"
+                        >
+                          <RefreshCw size={10} className={retryingAdmin ? 'animate-spin' : ''} />
+                          {retryingAdmin ? 'Retrying...' : 'Retry Admin WhatsApp'}
+                        </button>
+                      </div>
+
+                      {/* Customer WhatsApp Status */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-gray-100 gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[11px] font-semibold text-gray-800">Customer Confirmation</span>
+                            <span className="text-[10px] text-gray-400 font-inter">
+                              {selectedOrder.shippingAddress?.phone || 'No phone provided'}
+                            </span>
+                            {selectedOrder.whatsappDetails?.customerInvoicePdfStatus === 'SENT' && (
+                              <span className="text-[9px] bg-emerald-50 text-emerald-700 font-medium px-1.5 py-0.5 rounded border border-emerald-200 flex items-center gap-0.5">
+                                📄 PDF Invoice Sent
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-0.5">
+                            {selectedOrder.whatsappDetails?.customerStatus === 'SENT' ? (
+                              <span className="text-[10px] text-emerald-600 font-inter flex items-center gap-1">
+                                <CheckCircle2 size={11} className="text-emerald-500" />
+                                Sent • {new Date(selectedOrder.whatsappDetails.customerSentAt || selectedOrder.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                              </span>
+                            ) : selectedOrder.whatsappDetails?.customerStatus === 'SKIPPED' ? (
+                              <span className="text-[10px] text-gray-500 font-inter flex items-center gap-1">
+                                Skipped • Invalid or missing phone number
+                              </span>
+                            ) : selectedOrder.whatsappDetails?.customerStatus === 'FAILED' ? (
+                              <span className="text-[10px] text-rose-600 font-inter flex items-center gap-1">
+                                <AlertTriangle size={11} className="text-rose-500" />
+                                Failed {selectedOrder.whatsappDetails?.customerError ? `(${selectedOrder.whatsappDetails.customerError})` : ''}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-amber-600 font-inter flex items-center gap-1">
+                                <AlertTriangle size={11} className="text-amber-500" />
+                                Pending
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRetryWhatsApp(selectedOrder.id, 'customer')}
+                          disabled={retryingCustomer}
+                          className="px-3 py-1.5 border border-gray-200 hover:border-[#FF6A00] hover:text-[#FF6A00] rounded-lg text-[10px] font-semibold text-gray-700 bg-white transition-all flex items-center gap-1 self-start sm:self-auto disabled:opacity-50"
+                        >
+                          <RefreshCw size={10} className={retryingCustomer ? 'animate-spin' : ''} />
+                          {retryingCustomer ? 'Retrying...' : 'Retry Customer WhatsApp'}
+                        </button>
+                      </div>
+
+                      {/* Direct PDF Download Link */}
+                      <div className="pt-1 flex justify-end">
+                        <a
+                          href={`/api/orders/${selectedOrder.id}/invoice`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-[#FF6A00] hover:underline font-semibold flex items-center gap-1"
+                        >
+                          📥 Download Official PDF Tax Invoice
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>

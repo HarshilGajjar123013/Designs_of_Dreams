@@ -7,19 +7,47 @@ import { verifyAdminSession } from '@/lib/auth';
 const validOrder = (order: any) => !['CANCELLED', 'RETURNED', 'REFUNDED'].includes(String(order.status).toUpperCase());
 const initials = (name: string) => name.split(' ').filter(Boolean).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'P';
 
-function formatCustomer(customer: any, orders: any[] = []) {
-  const customerOrders = orders.filter(order => order.customerId === customer.id);
+function formatCustomer(customer: any, orders: any[] = [], productMap: Map<string, any> = new Map()) {
+  const customerOrders = orders.filter(order =>
+    order.customerId === customer.id ||
+    (customer.email && String(order.customerEmail || '').toLowerCase() === String(customer.email).toLowerCase())
+  );
   const validOrders = customerOrders.filter(validOrder);
   const addresses = customer.addresses || [];
   return {
     ...customer,
-    email: customer.email || '', phone: customer.phone || '', alternatePhone: customer.alternatePhone || '', avatar: customer.avatar || initials(customer.name),
+    email: customer.email || '',
+    phone: customer.phone || '',
+    alternatePhone: customer.alternatePhone || '',
+    avatar: customer.avatar || initials(customer.name || 'Patron'),
     customerType: String(customer.customerType || 'NEW').toLowerCase(),
     joinedDate: customer.joinedDate instanceof Date ? customer.joinedDate.toISOString().slice(0, 10) : String(customer.joinedDate || '').slice(0, 10),
-    totalOrders: validOrders.length, totalSpent: validOrders.reduce((sum, order) => sum + Number(order.grandTotal || 0), 0), notes: customer.notes || '',
-    wishlist: customer.wishlistItems?.map((item: any) => ({ productId: item.productId, name: item.product.name, price: item.product.sellingPrice, image: item.product.images?.[0] || '' })) || customer.wishlist || [],
-    cart: customer.cartItems?.map((item: any) => ({ productId: item.productId, name: item.product.name, price: item.product.sellingPrice, quantity: item.quantity, image: item.product.images?.[0] || '' })) || customer.cart || [],
-    addresses: addresses.map((address: any) => address.address ? address : { type: address.label || 'Home', address: [address.line1, address.line2, address.city, address.state, address.postalCode, address.country].filter(Boolean).join(', ') }),
+    totalOrders: validOrders.length,
+    totalSpent: validOrders.reduce((sum, order) => sum + Number(order.grandTotal || 0), 0),
+    notes: customer.notes || '',
+    wishlist: customer.wishlistItems?.map((item: any) => {
+      const p = productMap.get(item.productId);
+      return {
+        productId: item.productId,
+        name: p?.name || 'Artisanal Piece',
+        price: p?.sellingPrice || 0,
+        image: p?.images?.[0] || ''
+      };
+    }) || customer.wishlist || [],
+    cart: customer.cartItems?.map((item: any) => {
+      const p = productMap.get(item.productId);
+      return {
+        productId: item.productId,
+        name: p?.name || 'Artisanal Piece',
+        price: p?.sellingPrice || 0,
+        quantity: item.quantity || 1,
+        image: p?.images?.[0] || ''
+      };
+    }) || customer.cart || [],
+    addresses: addresses.map((address: any) => address.address ? address : {
+      type: address.label || 'Home',
+      address: [address.line1, address.line2, address.city, address.state, address.postalCode, address.country].filter(Boolean).join(', ')
+    }),
   };
 }
 
@@ -27,7 +55,7 @@ function formatOldCustomer(customer: any) {
   const formatted = formatCustomer({
     ...customer,
     customerType: 'OLD',
-    avatar: initials(customer.name),
+    avatar: initials(customer.name || 'Patron'),
     wishlist: [],
     cart: [],
     addresses: customer.address ? [{ type: 'Home', address: [customer.address, customer.city, customer.state, customer.pincode, customer.country].filter(Boolean).join(', ') }] : [],
@@ -43,21 +71,76 @@ export async function GET() {
   try {
     const { response } = await verifyAdminSession();
     if (response) return response;
+
     try {
-      const [records, oldRecords] = await Promise.all([
-        (prisma as any).customer.findMany({ include: { orders: true, addresses: true, cartItems: { include: { product: true } }, wishlistItems: { include: { product: true } } }, orderBy: { joinedDate: 'desc' } }),
-        (prisma as any).oldCustomer.findMany({ orderBy: { joinedDate: 'desc' } }),
+      const [records, oldRecords, products, allOrders] = await Promise.all([
+        (prisma as any).customer.findMany({
+          include: {
+            orders: true,
+            addresses: true,
+            cartItems: true,
+            wishlistItems: true,
+          },
+          orderBy: { joinedDate: 'desc' },
+        }),
+        (prisma as any).oldCustomer?.findMany({ orderBy: { joinedDate: 'desc' } }).catch(() => []) || [],
+        (prisma as any).product.findMany({
+          select: { id: true, name: true, sellingPrice: true, images: true },
+        }).catch(() => []),
+        (prisma as any).order.findMany({
+          select: { id: true, customerId: true, customerName: true, customerEmail: true, grandTotal: true, status: true, shippingAddress: true, createdAt: true },
+        }).catch(() => []),
       ]);
-      const databaseCustomers = records.map((customer: any) => formatCustomer(customer, customer.orders));
-      // During the safe schema rollout, Prisma can still read the existing
-      // database while old customers are persisted in the shared fallback
-      // store. Merge those explicit OLD records so a successful DB read never
-      // hides a manually added customer before migration is applied.
+
+      const productMap = new Map<string, any>((products || []).map((p: any) => [p.id, p]));
+      const databaseCustomers = records.map((customer: any) => formatCustomer(customer, allOrders, productMap));
+      const oldCustomers = (oldRecords || []).map(formatOldCustomer);
+
+      // Synthesize any storefront orders placed by patrons without an explicit Customer account
+      const existingEmails = new Set(databaseCustomers.map((c: any) => (c.email || '').toLowerCase()).filter(Boolean));
+      const guestCustomers: any[] = [];
+      for (const order of (allOrders || [])) {
+        const email = (order.customerEmail || '').toLowerCase();
+        if (email && !existingEmails.has(email)) {
+          existingEmails.add(email);
+          const guestOrders = allOrders.filter((o: any) => (o.customerEmail || '').toLowerCase() === email && validOrder(o));
+          guestCustomers.push({
+            id: `guest-${order.id}`,
+            name: order.customerName || 'Guest Patron',
+            email: order.customerEmail || '',
+            phone: order.shippingAddress?.phone || '',
+            alternatePhone: '',
+            avatar: initials(order.customerName || 'Guest Patron'),
+            customerType: 'new',
+            joinedDate: order.createdAt instanceof Date ? order.createdAt.toISOString().slice(0, 10) : String(order.createdAt || '').slice(0, 10),
+            totalOrders: guestOrders.length,
+            totalSpent: guestOrders.reduce((sum: number, o: any) => sum + Number(o.grandTotal || 0), 0),
+            notes: 'Storefront Patron',
+            wishlist: [],
+            cart: [],
+            addresses: order.shippingAddress ? [{
+              type: 'Delivery',
+              address: [order.shippingAddress.line1, order.shippingAddress.line2, order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.postalCode, order.shippingAddress.country].filter(Boolean).join(', ')
+            }] : [],
+          });
+        }
+      }
+
       const fallbackOldCustomers = fallbackDb.getCollection('customers')
         .filter((customer: any) => String(customer.customerType || '').toUpperCase() === 'OLD' && !databaseCustomers.some((dbCustomer: any) => dbCustomer.id === customer.id))
         .map(formatOldCustomer);
-      const oldCustomers = oldRecords.map(formatOldCustomer);
-      return NextResponse.json({ success: true, customers: [...databaseCustomers, ...oldCustomers, ...fallbackOldCustomers.filter((customer: any) => !oldCustomers.some((oldCustomer: any) => oldCustomer.id === customer.id))].sort((a, b) => b.joinedDate.localeCompare(a.joinedDate)) });
+
+      const allCombined = [
+        ...databaseCustomers,
+        ...guestCustomers,
+        ...oldCustomers,
+        ...fallbackOldCustomers.filter((customer: any) => !oldCustomers.some((oldCustomer: any) => oldCustomer.id === customer.id))
+      ].sort((a, b) => String(b.joinedDate || '').localeCompare(String(a.joinedDate || '')));
+
+      return NextResponse.json({
+        success: true,
+        customers: allCombined
+      });
     } catch (databaseError) {
       console.warn('⚠️ Database customer query failed. Falling back to local JSON database:', databaseError);
       const orders = fallbackDb.getCollection('orders');
