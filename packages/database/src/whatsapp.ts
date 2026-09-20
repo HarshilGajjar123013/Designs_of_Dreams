@@ -348,7 +348,10 @@ export async function sendWhatsAppMessage(
     const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      const errorMsg = data?.error?.message || `WhatsApp API error: ${res.statusText}`;
+      let errorMsg = data?.error?.message || `WhatsApp API error: ${res.statusText}`;
+      if (data?.error?.code === 190) {
+        errorMsg = `Meta Token Expired (code 190): ${data?.error?.message || 'Access token is invalid or expired. Generate a fresh or permanent token in Meta Developer Console.'}`;
+      }
       console.error(`[WhatsApp Debug] Meta Error: ${errorMsg}`);
       return { success: false, error: errorMsg };
     }
