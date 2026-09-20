@@ -78,7 +78,7 @@ const DEFAULT_SIGNUP_IMAGES = [
   "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=400&q=80"
 ];
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
@@ -691,5 +691,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0d0d0d] text-white">Loading...</div>}>
+      <LoginForm />
+    </React.Suspense>
   );
 }
