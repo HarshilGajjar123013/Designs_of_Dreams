@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useAdminStore, Order } from '@/store/adminStore';
-import { 
-  Eye, Truck, FileText, CheckCircle2, AlertTriangle, 
-  X, ArrowRight, Printer, ShieldAlert, CreditCard, RefreshCw 
+import {
+  Eye, Truck, FileText, CheckCircle2, AlertTriangle,
+  X, ArrowRight, Printer, ShieldAlert, CreditCard, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { printInvoice } from '@/lib/printInvoice';
@@ -16,7 +16,7 @@ export default function OrderManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  
+
   // Drawer & Invoice modal states
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [invoiceOrder, setInvoiceOrder] = useState<any | null>(null);
@@ -136,10 +136,10 @@ export default function OrderManagement() {
   };
 
   const filteredOrders = orders.filter((o) => {
-    const matchesSearch = o.id.toLowerCase().includes(search.toLowerCase()) || 
-                          o.customerName.toLowerCase().includes(search.toLowerCase()) ||
-                          o.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
-                          (o.shippingAddress?.phone || '').includes(search);
+    const matchesSearch = o.id.toLowerCase().includes(search.toLowerCase()) ||
+      o.customerName.toLowerCase().includes(search.toLowerCase()) ||
+      o.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
+      (o.shippingAddress?.phone || '').includes(search);
     const matchesStatus = statusFilter === 'ALL' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -231,9 +231,8 @@ export default function OrderManagement() {
                       </span>
                     </td>
                     <td>
-                      <span className={`text-[9px] uppercase tracking-wider font-semibold font-inter ${
-                        o.paymentStatus === 'PAID' ? 'text-[#0FA958]' : 'text-[#D99A00]'
-                      }`}>
+                      <span className={`text-[9px] uppercase tracking-wider font-semibold font-inter ${o.paymentStatus === 'PAID' ? 'text-[#0FA958]' : 'text-[#D99A00]'
+                        }`}>
                         {o.paymentStatus}
                       </span>
                     </td>
@@ -287,7 +286,7 @@ export default function OrderManagement() {
                     </h3>
                     <p className="text-[10px] text-gray-500 font-inter">Placed: {new Date(selectedOrder.createdAt).toLocaleString()}</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setSelectedOrder(null)}
                     className="p-2 rounded-full hover:bg-gray-100 transition-all text-gray-500"
                   >
@@ -697,7 +696,7 @@ export default function OrderManagement() {
                   {/* Footer Note */}
                   <div className="px-6 sm:px-8 pb-4 text-center">
                     <p className="text-[11px] text-gray-400 leading-relaxed">
-                      This is a computer-generated invoice and does not require a physical signature.<br/>
+                      This is a computer-generated invoice and does not require a physical signature.<br />
                       For queries contact us at <span className="text-[#FF6A00] font-semibold">support@designsofdreams.in</span>
                     </p>
                   </div>

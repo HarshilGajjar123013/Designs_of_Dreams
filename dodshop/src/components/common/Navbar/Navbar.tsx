@@ -25,12 +25,6 @@ import {
 import { useStore } from "@/store/useStore";
 
 // ── DATA STRUCTURE ───────────────────────────────────────────────────────────
-const taglines = [
-  "Elegant Ethnic Wear for Every You",
-  "Free Shipping on All Orders Above ₹1999",
-  "Handcrafted with Love in India",
-  "New Festive Collection Out Now!"
-];
 
 const DEFAULT_INITIAL_CATEGORIES = [
   { id: 'cat-sarees', name: 'Sarees', slug: 'sarees', description: "Timeless drapes from India's finest looms." },
@@ -139,6 +133,12 @@ const Navbar: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("Sarees");
   const [mounted, setMounted] = useState(false);
 
+  const [announcements, setAnnouncements] = useState<string[]>([
+    "FREE SHIPPING ON ALL ORDERS ABOVE ₹1999"
+  ]);
+  const [announcementActive, setAnnouncementActive] = useState<boolean>(true);
+  const [announcementLink, setAnnouncementLink] = useState<string>("");
+
   const fetchCategories = async () => {
     try {
       const res = await fetch("/api/categories", { cache: "no-store" });
@@ -152,6 +152,35 @@ const Navbar: React.FC = () => {
       }
     } catch (e) {
       console.warn("Failed to fetch categories in Navbar", e);
+    }
+  };
+
+  const fetchCms = async () => {
+    try {
+      const res = await fetch("/api/cms", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && data.cms) {
+        setAnnouncementActive(data.cms.announcementActive ?? true);
+        setAnnouncementLink(data.cms.announcementLink || "");
+        if (data.cms.announcementText && data.cms.announcementText.trim()) {
+          let lines: string[] = [];
+          try {
+            const parsed = JSON.parse(data.cms.announcementText);
+            if (Array.isArray(parsed)) {
+              lines = parsed.map((s: any) => String(s).trim()).filter((s: string) => s.length > 0);
+            }
+          } catch {}
+          if (lines.length === 0) {
+            lines = data.cms.announcementText
+              .split(/\r?\n/)
+              .map((s: string) => s.trim())
+              .filter((s: string) => s.length > 0);
+          }
+          setAnnouncements(lines.length > 0 ? lines : [data.cms.announcementText.trim()]);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch CMS announcement in Navbar", e);
     }
   };
 
@@ -198,16 +227,28 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     setMounted(true);
     fetchCategories();
+    fetchCms();
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     window.addEventListener("focus", fetchCategories);
-    const interval = setInterval(() => setTaglineIndex((p) => (p + 1) % taglines.length), 4000);
+    window.addEventListener("focus", fetchCms);
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("focus", fetchCategories);
-      clearInterval(interval);
+      window.removeEventListener("focus", fetchCms);
     };
   }, []);
+
+  useEffect(() => {
+    if (announcements.length <= 1) {
+      setTaglineIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setTaglineIndex((p) => (p + 1) % announcements.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [announcements]);
 
   if (pathname === "/login") return null;
 
@@ -226,19 +267,35 @@ const Navbar: React.FC = () => {
             <Mail size={14} className="navbar-top__icon" />
             <a href="mailto:hello@sareestyle.com">hello@sareestyle.com</a>
           </div>
-          <div className="navbar-top__center">
-            <span className="navbar-top__line" />
-            <span className="navbar-top__dot" />
-            <div className="navbar-top__slider">
-              <AnimatePresence mode="wait">
-                <motion.p key={taglineIndex} initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -15, opacity: 0 }} transition={{ duration: 0.5 }}>
-                  {taglines[taglineIndex]}
-                </motion.p>
-              </AnimatePresence>
+          {announcementActive && announcements.length > 0 ? (
+            <div className="navbar-top__center">
+              <span className="navbar-top__line" />
+              <span className="navbar-top__dot" />
+              <div className="navbar-top__slider">
+                <AnimatePresence mode="wait">
+                  <motion.p
+                    key={taglineIndex}
+                    initial={{ y: 15, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -15, opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {announcementLink ? (
+                      <Link href={announcementLink} className="hover:opacity-80 transition-opacity">
+                        {announcements[taglineIndex] || announcements[0]}
+                      </Link>
+                    ) : (
+                      announcements[taglineIndex] || announcements[0]
+                    )}
+                  </motion.p>
+                </AnimatePresence>
+              </div>
+              <span className="navbar-top__dot" />
+              <span className="navbar-top__line" />
             </div>
-            <span className="navbar-top__dot" />
-            <span className="navbar-top__line" />
-          </div>
+          ) : (
+            <div className="navbar-top__center" style={{ visibility: "hidden" }} />
+          )}
           <div className="navbar-top__right">
             <Phone size={14} className="navbar-top__icon" />
             <a href="tel:+919876543210">+91 98765 43210</a>

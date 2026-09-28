@@ -30,7 +30,9 @@ import {
   Activity,
   Lock,
   ArrowRight,
-  Image
+  Image,
+  Globe,
+  Megaphone
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -104,11 +106,19 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
     ]
   },
   {
-    title: 'CMS & Marketing',
+    title: 'Website Management',
     items: [
-      { name: 'CMS Settings', href: '/cms', icon: Sliders, roles: ['SUPER_ADMIN'] },
-      { name: 'Gallery', href: '/gallery', icon: Image, roles: ['SUPER_ADMIN'] },
-      { name: 'Coupons', href: '/marketing/coupons', icon: Percent, roles: ['SUPER_ADMIN'] }
+      {
+        name: 'Website Management',
+        icon: Globe,
+        roles: ['SUPER_ADMIN', 'MANAGER'],
+        submenu: [
+          { name: 'Homepage', href: '/website-management/homepage', roles: ['SUPER_ADMIN', 'MANAGER'] },
+          { name: 'Announcement Bar', href: '/website-management/announcement', roles: ['SUPER_ADMIN', 'MANAGER'] },
+          { name: 'Gallery', href: '/gallery', roles: ['SUPER_ADMIN', 'MANAGER'] },
+          { name: 'Coupons', href: '/marketing/coupons', roles: ['SUPER_ADMIN'] }
+        ]
+      }
     ]
   },
   {
@@ -347,7 +357,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return (
               <div key={idx} className="space-y-2">
                 {!collapsed && (
-                  <h3 className="text-[10px] tracking-[0.25em] font-semibold text-[#FF6A00] uppercase px-3 mb-3">
+                  <h3 suppressHydrationWarning className="text-[10px] tracking-[0.25em] font-semibold text-[#FF6A00] uppercase px-3 mb-3">
                     {section.title}
                   </h3>
                 )}
@@ -454,8 +464,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[#1A1A1A] truncate">{currentAdmin.name}</p>
-                <p className="text-[10px] text-[#6E6E6E] truncate">{role.replace('_', ' ')}</p>
+                <p suppressHydrationWarning className="text-xs font-semibold text-[#1A1A1A] truncate">{currentAdmin.name}</p>
+                <p suppressHydrationWarning className="text-[10px] text-[#6E6E6E] truncate">{role.replace('_', ' ')}</p>
               </div>
             )}
             {!collapsed && (
@@ -499,7 +509,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className="px-3 lg:px-4 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 lg:gap-2 bg-white text-[#FF6A00] shadow-sm border border-[rgba(255,106,0,0.15)]"
               >
                 <Activity size={12} className="text-[#0FA958] animate-pulse" />
-                <span className="font-poppins uppercase tracking-wider font-semibold text-[10px]">
+                <span suppressHydrationWarning className="font-poppins uppercase tracking-wider font-semibold text-[10px]">
                   Role: {role.replace('_', ' ')}
                 </span>
                 <span className="text-[8px] bg-[rgba(0,0,0,0.04)] text-[#6E6E6E] px-1.5 py-0.5 rounded hidden lg:inline">

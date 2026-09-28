@@ -1,0 +1,649 @@
+@use "../../styles/variables.scss" as *;
+
+$color-cream-bg: #fdfbf7;
+$color-cream-card: #fbf8f2;
+$color-cream-border: #ecdccf;
+$color-gold-solid: #c9a86a;
+$color-gold-light: #f5eedf;
+$color-terracotta: #b8391d;
+$color-terracotta-dark: #962810;
+$color-burgundy: #6a1b29;
+$color-velvet-dark: #141210;
+$color-charcoal-body: #332d28;
+$color-charcoal-muted: #6e655d;
+
+$font-display: var(--font-playfair), 'Playfair Display', Georgia, serif;
+$font-body: var(--font-poppins), 'Inter', sans-serif;
+$font-accent: var(--font-marcellus), 'Marcellus', serif;
+
+.legal-page-root {
+  background-color: $color-cream-bg;
+  color: $color-velvet-dark;
+  font-family: $font-body;
+  min-height: 100vh;
+  padding-bottom: 120px;
+}
+
+.legal-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+
+  @media (max-width: 768px) {
+    padding: 0 20px;
+  }
+}
+
+// ── Hero Header ──
+.legal-hero {
+  background: radial-gradient(circle at 50% 0%, #faf3e5 0%, $color-cream-bg 100%);
+  padding: 130px 0 60px;
+  border-bottom: 1px solid rgba(201, 168, 106, 0.35);
+  text-align: center;
+  position: relative;
+
+  @media (max-width: 768px) {
+    padding: 100px 0 45px;
+  }
+
+  .legal-top-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 24px;
+    width: 100%;
+
+    @media (max-width: 768px) {
+      margin-bottom: 16px;
+    }
+  }
+
+  .back-home-link,
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid rgba(201, 168, 106, 0.45);
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-family: $font-accent;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: $color-velvet-dark;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s ease;
+
+    svg {
+      color: $color-terracotta;
+      transition: transform 0.25s ease;
+    }
+
+    &:hover {
+      background: $color-terracotta;
+      border-color: $color-terracotta;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(184, 57, 29, 0.15);
+
+      svg {
+        color: #ffffff;
+        transform: translateX(-3px);
+      }
+    }
+  }
+
+  .legal-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(201, 168, 106, 0.14);
+    border: 1px solid rgba(201, 168, 106, 0.5);
+    padding: 6px 18px;
+    border-radius: 999px;
+    font-family: $font-accent;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: $color-terracotta;
+    margin-bottom: 16px;
+  }
+
+  .legal-title {
+    font-family: $font-display;
+    font-size: clamp(2.6rem, 5vw, 4.2rem);
+    font-weight: 800;
+    color: $color-burgundy;
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .legal-subtitle {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: $color-charcoal-muted;
+    max-width: 640px;
+    margin: 0 auto 16px;
+  }
+
+  .legal-dates {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 0.86rem;
+    color: $color-charcoal-muted;
+    margin-bottom: 16px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .legal-crest {
+    font-size: 1.25rem;
+    color: $color-gold-solid;
+    letter-spacing: 0.4em;
+  }
+}
+
+// ── Advisory / Disclaimer Banner ──
+.legal-advisory-banner {
+  background: #fff8f0;
+  border: 1.5px solid #f2c99d;
+  border-left: 5px solid $color-terracotta;
+  border-radius: 12px;
+  padding: 18px 24px;
+  margin-top: 36px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  box-shadow: 0 4px 15px rgba(184, 57, 29, 0.04);
+
+  .banner-icon {
+    color: $color-terracotta;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .banner-text {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: $color-charcoal-body;
+
+    strong {
+      color: $color-terracotta;
+      font-weight: 700;
+    }
+  }
+}
+
+// ── Two Column Layout with Sticky Sidebar ──
+.legal-layout-wrapper {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 48px;
+  padding-top: 40px;
+  align-items: start;
+
+  @media (max-width: 1040px) {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+}
+
+// ── Sticky Sidebar Table of Contents ──
+.legal-sticky-sidebar {
+  position: sticky;
+  top: 110px;
+  background: #ffffff;
+  border: 1.5px solid $color-cream-border;
+  border-radius: 18px;
+  padding: 24px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  max-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+
+  @media (max-width: 1040px) {
+    position: relative;
+    top: 0;
+    max-height: none;
+    padding: 20px;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(201, 168, 106, 0.3);
+    margin-bottom: 14px;
+
+    h3 {
+      font-family: $font-accent;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: $color-burgundy;
+      margin: 0;
+    }
+
+    .toc-count {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: $color-gold-solid;
+      background: $color-gold-light;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+  }
+
+  .sidebar-nav-list {
+    overflow-y: auto;
+    padding-right: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(201, 168, 106, 0.4);
+      border-radius: 4px;
+    }
+
+    .toc-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      line-height: 1.35;
+      color: $color-charcoal-body;
+      text-decoration: none;
+      transition: all 0.2s ease;
+
+      .toc-index {
+        font-family: $font-accent;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: $color-gold-solid;
+        width: 22px;
+        flex-shrink: 0;
+      }
+
+      .toc-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      &:hover {
+        background: rgba(201, 168, 106, 0.12);
+        color: $color-terracotta;
+      }
+
+      &.is-active {
+        background: rgba(184, 57, 29, 0.08);
+        color: $color-terracotta;
+        font-weight: 600;
+
+        .toc-index {
+          color: $color-terracotta;
+        }
+      }
+    }
+  }
+
+  .sidebar-footer {
+    padding-top: 16px;
+    border-top: 1px solid rgba(201, 168, 106, 0.3);
+    margin-top: 14px;
+
+    .btn-quick-contact {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 14px;
+      background: $color-burgundy;
+      color: #ffffff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: all 0.25s ease;
+
+      &:hover {
+        background: $color-terracotta;
+        transform: translateY(-1px);
+      }
+    }
+  }
+}
+
+// ── Main Content Column ──
+.legal-content-main {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+// ── Intro Card ──
+.legal-intro-card {
+  background: #ffffff;
+  border: 1.5px solid $color-cream-border;
+  border-radius: 18px;
+  padding: 32px 36px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+
+  p {
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: $color-charcoal-body;
+    margin: 0;
+
+    strong {
+      color: $color-velvet-dark;
+    }
+  }
+
+  .brand-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+
+    .pill {
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: $color-cream-card;
+      border: 1px solid $color-cream-border;
+      color: $color-burgundy;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+  }
+}
+
+// ── Generic Section Styling ──
+.legal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-margin-top: 110px;
+  background: #ffffff;
+  border: 1px solid $color-cream-border;
+  border-radius: 18px;
+  padding: 32px 36px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.02);
+
+  @media (max-width: 768px) {
+    padding: 24px 20px;
+  }
+
+  .section-header-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(201, 168, 106, 0.3);
+
+    .section-num {
+      font-family: $font-accent;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: $color-gold-solid;
+      background: $color-gold-light;
+      border: 1px solid rgba(201, 168, 106, 0.5);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .section-title {
+      font-family: $font-display;
+      font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+      font-weight: 700;
+      color: $color-burgundy;
+      margin: 0;
+    }
+  }
+
+  p {
+    font-size: 0.97rem;
+    line-height: 1.8;
+    color: $color-charcoal-body;
+    margin: 0;
+
+    strong {
+      color: $color-velvet-dark;
+    }
+
+    em {
+      color: $color-charcoal-muted;
+      font-style: italic;
+    }
+  }
+
+  .placeholder-badge {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    font-family: monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px dashed #d97706;
+  }
+
+  .legal-list {
+    margin: 4px 0 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    li {
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: $color-charcoal-body;
+
+      strong {
+        color: $color-velvet-dark;
+      }
+    }
+  }
+
+  .sub-heading {
+    font-family: $font-display;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $color-velvet-dark;
+    margin: 12px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+// ── Subsection Cards / Highlight Grids ──
+.policy-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 10px 0;
+
+  .card-item {
+    background: $color-cream-card;
+    border: 1px solid $color-cream-border;
+    border-radius: 12px;
+    padding: 18px 20px;
+
+    h4 {
+      font-family: $font-accent;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: $color-terracotta;
+      margin: 0 0 8px;
+    }
+
+    p {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: $color-charcoal-body;
+      margin: 0;
+    }
+  }
+}
+
+// ── Callout Box for Security & Privacy ──
+.policy-callout-box {
+  background: #fdfbf7;
+  border: 1px solid rgba(201, 168, 106, 0.6);
+  border-left: 4px solid $color-gold-solid;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 0;
+
+  p {
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin: 0;
+  }
+}
+
+// ── Contact / Grievance Card (Sections 19 & 20) ──
+.contact-highlight-card {
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ec 100%);
+  border: 1.5px solid rgba(201, 168, 106, 0.55);
+  border-radius: 18px;
+  padding: 32px 36px;
+  box-shadow: 0 10px 30px rgba(106, 27, 41, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  h3 {
+    font-family: $font-display;
+    font-size: 1.45rem;
+    color: $color-burgundy;
+    margin: 0;
+  }
+
+  .role-tag {
+    font-family: $font-accent;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: $color-terracotta;
+    margin: -8px 0 4px;
+  }
+
+  .info-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.94rem;
+      color: $color-charcoal-body;
+
+      .icon {
+        color: $color-terracotta;
+        flex-shrink: 0;
+      }
+
+      a {
+        color: $color-velvet-dark;
+        text-decoration: underline;
+        text-decoration-color: rgba(201, 168, 106, 0.6);
+        transition: color 0.2s;
+
+        &:hover {
+          color: $color-terracotta;
+        }
+      }
+    }
+  }
+
+  .hours-note {
+    font-size: 0.84rem;
+    color: $color-charcoal-muted;
+    border-top: 1px solid rgba(201, 168, 106, 0.3);
+    padding-top: 12px;
+    margin: 4px 0 0;
+  }
+}
+
+// ── Related Policies Navigation Bar ──
+.related-policies-bar {
+  background: #ffffff;
+  border: 1.5px solid $color-cream-border;
+  border-radius: 18px;
+  padding: 30px 36px;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.02);
+  margin-top: 50px;
+
+  h3 {
+    font-family: $font-display;
+    font-size: 1.3rem;
+    color: $color-burgundy;
+    margin: 0 0 16px;
+  }
+
+  .related-links-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .related-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: $color-cream-card;
+      border: 1px solid $color-cream-border;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-family: $font-accent;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: $color-velvet-dark;
+      text-decoration: none;
+      transition: all 0.25s ease;
+
+      &:hover {
+        background: $color-terracotta;
+        border-color: $color-terracotta;
+        color: #ffffff;
+        transform: translateY(-2px);
+      }
+    }
+  }
+}

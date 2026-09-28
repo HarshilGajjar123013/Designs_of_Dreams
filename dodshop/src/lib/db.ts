@@ -153,3 +153,15 @@ export async function getDbCategories() {
   }
 }
 
+export async function getDbCmsConfig() {
+  try {
+    const config = await prisma.cMSConfig.findUnique({
+      where: { id: 'singleton' }
+    });
+    if (config) return config;
+    return fallbackDb.getCmsConfig();
+  } catch (err) {
+    console.warn('⚠️ Website: Database CMS query failed, using fallback JSON DB.');
+    return fallbackDb.getCmsConfig();
+  }
+}

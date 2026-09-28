@@ -189,7 +189,8 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
   {
     title: 'System',
     items: [
-      { label: 'CMS Editor', href: '/cms', icon: 'PenTool', permission: 'cms:view' },
+      { label: 'Homepage Management', href: '/website-management/homepage', icon: 'PenTool', permission: 'cms:view' },
+      { label: 'Announcement Bar', href: '/website-management/announcement', icon: 'Megaphone', permission: 'cms:view' },
       { label: 'Coupons & Marketing', href: '/marketing', icon: 'Ticket', permission: 'marketing:view' },
       { label: 'Admin Management', href: '/administration', icon: 'Shield', permission: 'administration:view' },
       { label: 'Security Logs', href: '/administration/security', icon: 'Lock', permission: 'security:view' },

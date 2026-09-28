@@ -97,7 +97,7 @@ export default function SettingsPage() {
             {/* Header */}
             <div className="settings-header">
               <h2>Preferences & Privacy</h2>
-              <p>Configure cookie tracking, marketing notification frequencies, and view refund/return policies.</p>
+              <p>Configure cookie tracking, marketing notification frequencies, and view exchange policies.</p>
             </div>
 
             {/* Notification alert */}
@@ -132,21 +132,21 @@ export default function SettingsPage() {
                     onClick={() => handleTabChange("policies")}
                   >
                     <HelpCircle size={16} />
-                    Returns & Refunds
+                    Exchange Policy
                   </button>
                   <button
                     className={`sidebar-btn ${activeTab === "requests" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("requests")}
                   >
                     <RotateCcw size={16} />
-                    Return Requests
+                    Exchange Requests
                   </button>
                   <button
                     className={`sidebar-btn ${activeTab === "refunds" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("refunds")}
                   >
                     <CreditCard size={16} />
-                    Refund Status
+                    Exchange Status
                   </button>
                 </div>
               </aside>
@@ -240,19 +240,19 @@ export default function SettingsPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Returns & Refunds Policy</h3>
+                      <h3>Exchange Policy</h3>
                       <div className="policy-accordion">
                         <div className="policy-block">
-                          <h4>What is the return window?</h4>
-                          <p>We offer a strict 7-day return policy for all unworn, unaltered handloom garments. The original atelier tags and motif security ribbons must remain fully attached.</p>
+                          <h4>What is the exchange window?</h4>
+                          <p>We offer a strict 7-day exchange policy for all unworn, unaltered handloom garments. The original atelier tags and motif security ribbons must remain fully attached.</p>
                         </div>
                         <div className="policy-block">
-                          <h4>Are customized blouses eligible for return?</h4>
-                          <p>Unfortunately, because custom blouses are tailored to individual body measurement profiles, they cannot be restocked or returned unless a structural stitching defect is validated by our QC managers.</p>
+                          <h4>Are customized blouses eligible for exchange?</h4>
+                          <p>Unfortunately, because custom blouses are tailored to individual body measurement profiles, they cannot be restocked or exchanged unless a structural stitching defect is validated by our QC managers.</p>
                         </div>
                         <div className="policy-block">
-                          <h4>How long do refunds take?</h4>
-                          <p>Once a return shipment is scanned into our Varanasi sorting facility, QC checks take 48 hours. Approved refunds are routed directly to the original payment instrument within 5-7 business days.</p>
+                          <h4>How does the exchange process work?</h4>
+                          <p>Once your exchange request is submitted and the item is inspected at our facility, replacement dispatch or atelier store credit is processed within 48 to 72 hours.</p>
                         </div>
                       </div>
                     </motion.div>
@@ -267,22 +267,22 @@ export default function SettingsPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Return Requests Log</h3>
+                      <h3>Exchange Requests Log</h3>
                       <div className="status-timeline">
                         <div className="status-timeline-item">
                           <div className="status-indicator completed"></div>
                           <div className="status-details">
-                            <h5>Order DOD-235198 Return Request</h5>
-                            <p>Reason: Sizing mismatch on Chikankari Kurti. Item picked up by courier on May 22, 2026.</p>
-                            <span className="status-badge completed">Returned & Refunded</span>
+                            <h5>Order DOD-235198 Exchange Request</h5>
+                            <p>Reason: Sizing adjustment on Chikankari Kurti. Item inspected and replacement dispatched on May 22, 2026.</p>
+                            <span className="status-badge completed">Exchanged &amp; Dispatched</span>
                           </div>
                         </div>
 
                         <div className="status-timeline-item">
                           <div className="status-indicator pending"></div>
                           <div className="status-details">
-                            <h5>Order DOD-894751 Return Request</h5>
-                            <p>Currently no active return requests exist for this order. Confirmed processing status.</p>
+                            <h5>Order DOD-894751 Exchange Request</h5>
+                            <p>Currently no active exchange requests exist for this order. Confirmed processing status.</p>
                             <span className="status-badge pending">No Active Request</span>
                           </div>
                         </div>
@@ -299,7 +299,7 @@ export default function SettingsPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Refund Status Tracker</h3>
+                      <h3>Exchange Status Tracker</h3>
                       <div className="status-timeline">
                         <div className="status-timeline-item">
                           <div className="status-indicator completed"></div>

@@ -60,7 +60,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const { session, response } = await verifyAdminSession('SUPER_ADMIN');
+    const { session, response } = await verifyAdminSession();
     if (response) return response;
 
     const userRole = session!.role;

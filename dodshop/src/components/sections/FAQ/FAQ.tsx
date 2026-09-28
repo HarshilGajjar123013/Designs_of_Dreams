@@ -14,7 +14,7 @@ const faqCategories = [
   { id: "all", label: "All Questions" },
   { id: "product", label: "Our Products" },
   { id: "shipping", label: "Shipping" },
-  { id: "care", label: "Care & Returns" },
+  { id: "care", label: "Care & Exchanges" },
 ];
 
 const faqData: { category: string; item: FAQItem }[] = [
@@ -45,8 +45,8 @@ const faqData: { category: string; item: FAQItem }[] = [
   {
     category: "care",
     item: {
-      question: "What is your exchange and return policy?",
-      answer: "Since our designer garments are hand-tailored, we offer exchanges or store credits for unworn standard sizes within 7 days of delivery. Custom-sized blouses, custom-dyed sarees, and bespoke embroidery orders are final sale and cannot be returned once production/weaving starts.",
+      question: "What is your exchange policy?",
+      answer: "We offer a 7-day exchange policy for all unworn, unaltered standard garments with original atelier tags intact. You can request a size or design exchange, or receive atelier store credit. Custom-sized blouses and personalized bespoke embroidery orders are final sale once handcrafting begins.",
       icon: <Shield size={18} />
     }
   },

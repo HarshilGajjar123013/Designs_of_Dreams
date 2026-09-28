@@ -24,7 +24,7 @@ import {
 import InvoiceGenerator from "@/components/common/InvoiceGenerator/InvoiceGenerator";
 import "./Order.scss";
 
-type TabType = "list" | "details" | "track" | "cancel" | "returns" | "customizations";
+type TabType = "list" | "details" | "track" | "cancel" | "exchange" | "returns" | "customizations";
 
 const FALLBACK_ORDER_IMAGE = "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=300";
 
@@ -112,7 +112,7 @@ export default function OrderPage() {
       if (hash === "#details") setActiveTab("details");
       else if (hash === "#track") setActiveTab("track");
       else if (hash === "#cancel") setActiveTab("cancel");
-      else if (hash === "#returns") setActiveTab("returns");
+      else if (hash === "#returns" || hash === "#exchange") setActiveTab("exchange");
       else if (hash === "#customizations") setActiveTab("customizations");
       else setActiveTab("list");
     }
@@ -147,7 +147,7 @@ export default function OrderPage() {
 
   const handleReturnSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg(`Return/Refund request for ${returnOrderId} has been submitted successfully.`);
+    setSuccessMsg(`Exchange request for ${returnOrderId} has been submitted successfully.`);
     setReturnReason("");
     setTimeout(() => {
       setSuccessMsg("");
@@ -186,7 +186,7 @@ export default function OrderPage() {
             {/* Header */}
             <div className="order-header">
               <h2>My Atelier Orders</h2>
-              <p>View your purchase history, track active orders, or manage returns and cancellations.</p>
+              <p>View your purchase history, track active orders, or manage exchanges and cancellations.</p>
             </div>
 
             {/* Notification alert */}
@@ -238,11 +238,11 @@ export default function OrderPage() {
                     Cancel Order
                   </button>
                   <button
-                    className={`sidebar-btn ${activeTab === "returns" ? "is-active" : ""}`}
-                    onClick={() => handleTabChange("returns")}
+                    className={`sidebar-btn ${activeTab === "exchange" || activeTab === "returns" ? "is-active" : ""}`}
+                    onClick={() => handleTabChange("exchange")}
                   >
                     <RotateCcw size={16} />
-                    Return Requests
+                    Exchange Requests
                   </button>
                   <button
                     className={`sidebar-btn ${activeTab === "customizations" ? "is-active" : ""}`}
@@ -481,13 +481,13 @@ export default function OrderPage() {
                                       />
 
                                       <button
-                                        className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-full text-xs font-bold transition-all border-0 flex items-center gap-1.5 uppercase tracking-wider"
+                                        className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-full text-xs font-bold transition-all border-0 flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
                                         onClick={() => {
                                           setReturnOrderId(ord.id);
-                                          handleTabChange("returns");
+                                          handleTabChange("exchange");
                                         }}
                                       >
-                                        <RotateCcw size={13} /> Return / Refund
+                                        <RotateCcw size={13} /> Exchange
                                       </button>
                                     </div>
                                   </div>
@@ -750,17 +750,17 @@ export default function OrderPage() {
                     </motion.div>
                   )}
 
-                  {activeTab === "returns" && (
+                  {(activeTab === "exchange" || activeTab === "returns") && (
                     <motion.div
-                      key="returns-card"
+                      key="exchange-card"
                       className="order-card"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Return / Refund Request</h3>
-                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Returns are accepted within 7 days of delivery. Motif tags must remain attached.</p>
+                      <h3>Exchange Request</h3>
+                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Exchanges are accepted within 7 days of delivery. Motif tags must remain attached.</p>
 
                       {orders.length > 0 ? (
                         <form onSubmit={handleReturnSubmit} className="order-cancel-form space-y-5">
@@ -777,10 +777,10 @@ export default function OrderPage() {
                             </select>
                           </div>
                           <div className="profile-form-group">
-                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Briefly Describe Reason for Return</label>
+                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Briefly Describe Reason for Exchange</label>
                             <textarea
                               required
-                              placeholder="Please explain the issue (sizing, pattern discrepancy, defect)..."
+                              placeholder="Please explain the issue (sizing, pattern discrepancy, defect, preferred replacement)..."
                               value={returnReason}
                               onChange={(e) => setReturnReason(e.target.value)}
                               className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
@@ -790,11 +790,11 @@ export default function OrderPage() {
                             type="submit"
                             className="w-full py-3.5 px-8 bg-[#FF6A00] hover:bg-[#e05d00] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
                           >
-                            Submit Return Claim
+                            Submit Exchange Request
                           </button>
                         </form>
                       ) : (
-                        <p style={{ textAlign: "center", color: "rgba(0,0,0,0.4)", margin: "40px 0" }}>No orders available for return requests.</p>
+                        <p style={{ textAlign: "center", color: "rgba(0,0,0,0.4)", margin: "40px 0" }}>No orders available for exchange requests.</p>
                       )}
                     </motion.div>
                   )}

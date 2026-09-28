@@ -154,7 +154,7 @@ export async function POST(req: Request) {
 
     if (!databaseConnected) {
       const admins = fallbackDb.getCollection('admins');
-      
+
       // Seed default fallback if empty
       const currentAdmins = admins.length === 0 ? [...FALLBACK_DEFAULT_ADMINS] : admins;
 

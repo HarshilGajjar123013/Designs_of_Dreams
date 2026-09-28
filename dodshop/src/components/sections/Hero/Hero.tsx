@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { gsap } from "gsap";
@@ -109,7 +109,7 @@ const features: FeatureItem[] = [
 ];
 
 // ── Slides Data ──────────────────────────────────────────────────────────────
-const slides = [
+const DEFAULT_SLIDES = [
   {
     id: 1,
     image: "/assets/hero/hero_1.png",
@@ -173,10 +173,76 @@ const imageRevealVariants = {
   visible: (i: number) => ({ opacity: 1, scale: 1, transition: { delay: 0.3 + i * 0.15, duration: 0.7, ease: [0.16, 1, 0.3, 1] as any } }),
 };
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  initialCms?: any;
+}
+
+const Hero: React.FC<HeroProps> = ({ initialCms }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const floatRef1 = useRef<HTMLDivElement>(null);
   const floatRef2 = useRef<HTMLDivElement>(null);
+
+  // Dynamic CMS-controlled Hero values
+  const [heroImage, setHeroImage] = useState<string>(
+    initialCms?.heroImage?.trim() || "/assets/hero/hero_1.png"
+  );
+  const [heroHeading, setHeroHeading] = useState<string>(
+    initialCms?.heroTitle?.trim() || ""
+  );
+  const [heroDescription, setHeroDescription] = useState<string>(
+    initialCms?.heroSubtitle?.trim() || ""
+  );
+
+  const refreshHeroCms = async () => {
+    try {
+      const res = await fetch("/api/cms", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && data.cms) {
+        if (data.cms.heroImage && data.cms.heroImage.trim()) {
+          setHeroImage(data.cms.heroImage.trim());
+        } else {
+          setHeroImage("/assets/hero/hero_1.png");
+        }
+        if (data.cms.heroTitle && data.cms.heroTitle.trim()) {
+          setHeroHeading(data.cms.heroTitle.trim());
+        }
+        if (data.cms.heroSubtitle && data.cms.heroSubtitle.trim()) {
+          setHeroDescription(data.cms.heroSubtitle.trim());
+        }
+      }
+    } catch (e) {
+      console.warn("Could not refresh hero CMS data:", e);
+    }
+  };
+
+  useEffect(() => {
+    refreshHeroCms();
+    window.addEventListener("focus", refreshHeroCms);
+    return () => window.removeEventListener("focus", refreshHeroCms);
+  }, []);
+
+  // Compute slides dynamically with hero background image on primary slide (and any additional slides)
+  const activeSlides = useMemo(() => {
+    let customImages: string[] = [];
+    if (heroImage && heroImage.trim()) {
+      try {
+        const parsed = JSON.parse(heroImage);
+        if (Array.isArray(parsed)) {
+          customImages = parsed.map((s) => String(s).trim());
+        }
+      } catch {}
+    }
+
+    return DEFAULT_SLIDES.map((slide, index) => {
+      const slideCustomImage = customImages[index] || (index === 0 ? heroImage : "");
+      return {
+        ...slide,
+        image: slideCustomImage && slideCustomImage.trim() ? slideCustomImage : slide.image,
+        heading: (index === 0 && heroHeading) ? heroHeading : slide.heading,
+        description: (index === 0 && heroDescription) ? heroDescription : slide.description,
+      };
+    });
+  }, [heroImage, heroHeading, heroDescription]);
 
   // ── Popup State ──
   const [activePopup, setActivePopup] = useState<FeatureItem | null>(null);
@@ -297,7 +363,7 @@ const Hero: React.FC = () => {
         }}
         className="hero__swiper"
       >
-        {slides.map((slide) => (
+        {activeSlides.map((slide) => (
           <SwiperSlide key={slide.id} className="hero__slide">
             {({ isActive }) => (
               <>
