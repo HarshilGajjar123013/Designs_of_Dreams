@@ -39,7 +39,7 @@ const footerLinks = [
     title: "Client Care",
     links: [
       { name: "Private Consultations", href: "/contact" },
-      { name: "Shipping & Returns", href: "/" },
+      { name: "Exchange & Cancellation", href: "/exchange-cancellation-policy" },
       { name: "Care & Preservation", href: "/" },
       { name: "Tailoring & Fit Guide", href: "/" }
     ]
@@ -190,6 +190,8 @@ export default function Footer() {
               <Link href="/privacy-policy">Privacy Policy</Link>
               <span>&middot;</span>
               <Link href="/terms-of-service">Terms of Service</Link>
+              <span>&middot;</span>
+              <Link href="/exchange-cancellation-policy">Exchange &amp; Cancellation Policy</Link>
             </div>
           </div>
         </div>

@@ -1,0 +1,92 @@
+@forward "../privacy-policy/PrivacyPolicy.scss";
+
+// Dedicated step timeline styling for Exchange Process
+.exchange-timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 16px 0;
+
+  .timeline-step-card {
+    background: #fbf8f2;
+    border: 1px solid #ecdccf;
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+
+    .step-number {
+      font-family: var(--font-marcellus), 'Marcellus', serif;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #b8391d;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    h4 {
+      font-family: var(--font-playfair), 'Playfair Display', serif;
+      font-size: 1.05rem;
+      color: #141210;
+      margin: 0 0 6px;
+    }
+
+    p {
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: #332d28;
+      margin: 0;
+    }
+  }
+}
+
+// Ensure related policy links display as beautiful pill buttons
+.related-links-grid {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+
+  .related-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    background: #fbf8f2 !important;
+    border: 1px solid #ecdccf !important;
+    padding: 10px 20px !important;
+    border-radius: 999px !important;
+    font-family: var(--font-marcellus), 'Marcellus', serif !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: #141210 !important;
+    text-decoration: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
+    transition: all 0.25s ease !important;
+
+    span {
+      display: inline-block !important;
+    }
+
+    svg {
+      color: #b8391d !important;
+      transition: transform 0.2s ease !important;
+    }
+
+    &:hover {
+      background: #b8391d !important;
+      border-color: #b8391d !important;
+      color: #ffffff !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 16px rgba(184, 57, 29, 0.18) !important;
+
+      svg {
+        color: #ffffff !important;
+        transform: translateX(3px) !important;
+      }
+    }
+  }
+}
+
