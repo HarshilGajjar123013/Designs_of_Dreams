@@ -13,11 +13,16 @@ import {
   HelpCircle,
   CheckCircle2,
   ShieldAlert,
-  LogIn
+  LogIn,
+  Scale,
+  FileText,
+  ExternalLink,
+  Clock,
+  ArrowUpRight
 } from "lucide-react";
 import "./Settings.scss";
 
-type TabType = "privacy" | "policies" | "requests" | "refunds";
+type TabType = "privacy" | "policies" | "terms" | "privacy-policy" | "requests" | "refunds";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -50,6 +55,8 @@ export default function SettingsPage() {
       const hash = window.location.hash;
       if (hash === "#privacy") setActiveTab("privacy");
       else if (hash === "#policies") setActiveTab("policies");
+      else if (hash === "#terms") setActiveTab("terms");
+      else if (hash === "#privacy-policy") setActiveTab("privacy-policy");
       else if (hash === "#requests") setActiveTab("requests");
       else if (hash === "#refunds") setActiveTab("refunds");
       else setActiveTab("privacy");
@@ -131,14 +138,28 @@ export default function SettingsPage() {
                     className={`sidebar-btn ${activeTab === "policies" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("policies")}
                   >
-                    <HelpCircle size={16} />
+                    <RotateCcw size={16} />
                     Exchange Policy
+                  </button>
+                  <button
+                    className={`sidebar-btn ${activeTab === "terms" ? "is-active" : ""}`}
+                    onClick={() => handleTabChange("terms")}
+                  >
+                    <Scale size={16} />
+                    Terms &amp; Conditions
+                  </button>
+                  <button
+                    className={`sidebar-btn ${activeTab === "privacy-policy" ? "is-active" : ""}`}
+                    onClick={() => handleTabChange("privacy-policy")}
+                  >
+                    <FileText size={16} />
+                    Privacy Policy
                   </button>
                   <button
                     className={`sidebar-btn ${activeTab === "requests" ? "is-active" : ""}`}
                     onClick={() => handleTabChange("requests")}
                   >
-                    <RotateCcw size={16} />
+                    <HelpCircle size={16} />
                     Exchange Requests
                   </button>
                   <button
@@ -240,21 +261,102 @@ export default function SettingsPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Exchange Policy</h3>
+                      <h3>Exchange &amp; Cancellation Policy</h3>
                       <div className="policy-accordion">
                         <div className="policy-block">
                           <h4>What is the exchange window?</h4>
-                          <p>We offer a strict 7-day exchange policy for all unworn, unaltered handloom garments. The original atelier tags and motif security ribbons must remain fully attached.</p>
+                          <p>We offer a 7-day exchange window for all unworn, unaltered handloom garments. The original atelier tags and motif security ribbons must remain fully attached.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>How does order cancellation work?</h4>
+                          <p>Cancellations are accepted before the order enters processing, custom weaving, bespoke embroidery, or courier dispatch. Approved cancellations are refunded directly to your original payment instrument.</p>
                         </div>
                         <div className="policy-block">
                           <h4>Are customized blouses eligible for exchange?</h4>
-                          <p>Unfortunately, because custom blouses are tailored to individual body measurement profiles, they cannot be restocked or exchanged unless a structural stitching defect is validated by our QC managers.</p>
+                          <p>Because custom blouses and monogrammed pieces are tailored to individual body measurement profiles, they cannot be restocked or exchanged unless a structural stitching defect is validated by our QC managers.</p>
                         </div>
                         <div className="policy-block">
-                          <h4>How does the exchange process work?</h4>
-                          <p>Once your exchange request is submitted and the item is inspected at our facility, replacement dispatch or atelier store credit is processed within 48 to 72 hours.</p>
+                          <h4>Handcrafted Variations &amp; Colors</h4>
+                          <p>Subtle slubs in silk weaving, dye nuances, and hand-embroidered variations are natural hallmarks of authentic slow fashion and artisan workmanship, not manufacturing flaws.</p>
                         </div>
                       </div>
+
+                      <Link href="/exchange-cancellation-policy" className="btn-view-full-policy">
+                        <span>Read Full Exchange &amp; Cancellation Policy (25 Sections)</span>
+                        <ExternalLink size={15} />
+                      </Link>
+                    </motion.div>
+                  )}
+
+                  {activeTab === "terms" && (
+                    <motion.div
+                      key="terms-card"
+                      className="settings-card"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <h3>Terms &amp; Conditions</h3>
+                      <div className="policy-accordion">
+                        <div className="policy-block">
+                          <h4>Artisanal Craftsmanship &amp; Heritage</h4>
+                          <p>Designs of Dreams is dedicated to preserving ancient Indian handloom weaving traditions. All sarees, dupattas, and dress materials are crafted by master weavers under fair artisan principles.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>Ordering &amp; Payment Security</h4>
+                          <p>All transactions are processed through authorized, RBI-compliant payment gateways with 256-bit encryption. Designs of Dreams does not store sensitive card credentials or UPI PINs.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>Insured Courier Transit</h4>
+                          <p>Domestic shipments are fully insured against transit loss. Real-time Airway Bill (AWB) tracking numbers are transmitted upon dispatch via SMS and WhatsApp.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>Intellectual Property &amp; Brand Copyright</h4>
+                          <p>All lookbook imagery, weaving motifs, brand medallions, and catalog text are the protected intellectual property of Designs of Dreams under Indian copyright and trademark law.</p>
+                        </div>
+                      </div>
+
+                      <Link href="/terms-of-service" className="btn-view-full-policy">
+                        <span>Read Full Terms &amp; Conditions (35 Sections)</span>
+                        <ExternalLink size={15} />
+                      </Link>
+                    </motion.div>
+                  )}
+
+                  {activeTab === "privacy-policy" && (
+                    <motion.div
+                      key="privacy-policy-card"
+                      className="settings-card"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <h3>Privacy &amp; Data Protection Policy</h3>
+                      <div className="policy-accordion">
+                        <div className="policy-block">
+                          <h4>Patron Confidentiality Commitment</h4>
+                          <p>Designs of Dreams strictly never sells, rents, leases, or trades patron personal data to any external advertising networks or marketing brokers.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>Data Minimization &amp; Lawful Processing</h4>
+                          <p>We collect only contact, delivery, and transactional records strictly necessary to fulfill your orders, provide customer care, and adhere to statutory Indian GST regulations.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>Your Data Rights</h4>
+                          <p>Patrons retain full rights to inspect, update, correct, or request the permanent deletion of their account profile and personal contact records from our active databases.</p>
+                        </div>
+                        <div className="policy-block">
+                          <h4>Grievance Redressal Desk</h4>
+                          <p>In accordance with the Information Technology Act, 2000, our dedicated Grievance Officer promptly investigates and addresses all consumer privacy concerns.</p>
+                        </div>
+                      </div>
+
+                      <Link href="/privacy-policy" className="btn-view-full-policy">
+                        <span>Read Full Privacy Policy (20 Sections)</span>
+                        <ExternalLink size={15} />
+                      </Link>
                     </motion.div>
                   )}
 
