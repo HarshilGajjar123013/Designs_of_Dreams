@@ -78,6 +78,15 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // SECURITY: Validate binary magic bytes, don't trust Content-Type header alone
+    const { valid, ext } = validateMagicBytes(buffer, file.type);
+    if (!valid) {
+      return NextResponse.json(
+        { success: false, error: 'File failed binary signature validation' },
+        { status: 400 }
+      );
+    }
+
     if (isReadOnlyEnv) {
       const base64 = buffer.toString('base64');
       const dataUrl = `data:${file.type};base64,${base64}`;
@@ -86,14 +95,6 @@ export async function POST(request: NextRequest) {
         url: dataUrl,
         originalName: file.name,
       });
-    }
-
-    const { valid, ext } = validateMagicBytes(buffer, file.type);
-    if (!valid) {
-      return NextResponse.json(
-        { success: false, error: 'File failed binary signature validation' },
-        { status: 400 }
-      );
     }
 
     await mkdir(DASHBOARD_AUTH_UPLOAD_DIR, { recursive: true });

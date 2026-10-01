@@ -246,7 +246,7 @@ export default function AnnouncementBarManagement() {
 
           <div className="flex items-center gap-3">
             <a
-              href="http://localhost:3000"
+              href={process.env.NEXT_PUBLIC_STORE_URL || 'https://designsofdreams.com'}
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-medium hover:border-[#FF6A00] hover:text-[#FF6A00] transition-all flex items-center gap-1.5 shadow-sm"

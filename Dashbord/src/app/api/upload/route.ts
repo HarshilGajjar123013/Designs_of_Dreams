@@ -102,8 +102,18 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
+        // SECURITY: Validate binary magic bytes, don't trust Content-Type header alone
+        const { valid, ext } = validateMagicBytes(buffer, file.type);
+        if (!valid) {
+          return {
+            url: '',
+            originalName: file.name,
+            error: `File "${file.name}" failed binary signature validation for type ${file.type}`,
+          };
+        }
+
         if (isReadOnlyEnv) {
-          // On Vercel: convert to base64 data URL (stored in DB with product)
+          // On Vercel / serverless: convert to base64 data URL (stored in DB with product)
           const base64 = buffer.toString('base64');
           const dataUrl = `data:${file.type};base64,${base64}`;
           return {
@@ -111,16 +121,6 @@ export async function POST(request: NextRequest) {
             originalName: file.name,
           };
         } else {
-          // SECURITY: Validate binary magic bytes, don't trust Content-Type
-          const { valid, ext } = validateMagicBytes(buffer, file.type);
-          if (!valid) {
-            return {
-              url: '',
-              originalName: file.name,
-              error: `File "${file.name}" failed binary signature validation for type ${file.type}`,
-            };
-          }
-
           // Ensure upload directories exist
           await mkdir(DASHBOARD_UPLOAD_DIR, { recursive: true });
           await mkdir(STOREFRONT_UPLOAD_DIR, { recursive: true });
