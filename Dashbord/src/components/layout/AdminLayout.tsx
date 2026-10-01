@@ -139,7 +139,7 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
           { name: 'Admins & Roles', href: '/administration', roles: ['SUPER_ADMIN'] },
           { name: 'Sign Up Data', href: '/administration/signup-data', roles: ['SUPER_ADMIN'] },
           { name: 'Sign In Data', href: '/administration/signin-data', roles: ['SUPER_ADMIN'] },
-          { name: 'Auth Page Images', href: '/administration/auth-images', roles: ['SUPER_ADMIN'] },
+          { name: 'Sign In & Sign Up Images', href: '/administration/auth-images', roles: ['SUPER_ADMIN'] },
           { name: 'Security Panel', href: '/administration/security', roles: ['SUPER_ADMIN'] }
         ]
       }
@@ -179,7 +179,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({
+    'Website Management': true,
+    'Administration': true,
+  });
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 

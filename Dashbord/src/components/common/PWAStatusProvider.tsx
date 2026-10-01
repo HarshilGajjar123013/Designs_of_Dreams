@@ -18,17 +18,36 @@ export default function PWAStatusProvider({ children }: { children: React.ReactN
       window.addEventListener("offline", handleOffline);
     }
 
-    // 2. Register Service Worker on all environments for PWA installability
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((reg) => {
-          console.log("[PWA] Service Worker registered:", reg.scope);
-          setSwRegistered(true);
-        })
-        .catch((err) => {
-          console.warn("[PWA] Service Worker registration failed:", err);
+    // 2. Service Worker handling: Disable & purge on localhost/dev to prevent stale UI caching
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (isLocalhost) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister();
+            console.log("[PWA] Unregistered stale local service worker");
+          }
         });
+        if ("caches" in window) {
+          caches.keys().then((keys) => {
+            for (const key of keys) {
+              caches.delete(key);
+              console.log("[PWA] Purged stale local cache:", key);
+            }
+          });
+        }
+      } else {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .then((reg) => {
+            console.log("[PWA] Service Worker registered:", reg.scope);
+            setSwRegistered(true);
+            reg.update();
+          })
+          .catch((err) => {
+            console.warn("[PWA] Service Worker registration failed:", err);
+          });
+      }
     }
 
     return () => {

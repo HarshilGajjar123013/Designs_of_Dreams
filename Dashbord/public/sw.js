@@ -1,5 +1,5 @@
 // Designs of Dreams — Admin Dashboard Service Worker (sw.js)
-const CACHE_NAME = 'dod-admin-pwa-v2';
+const CACHE_NAME = 'dod-admin-pwa-v6';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -11,37 +11,44 @@ const STATIC_ASSETS = [
   '/globals.css',
 ];
 
-// Install Event — Cache Core Shell Assets
+// Install Event — Force activate immediately
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Core Shell Assets with Official DOD Logo');
+      console.log('[ServiceWorker] Pre-caching Core Shell Assets v6');
       return cache.addAll(STATIC_ASSETS);
     })
   );
-  self.skipWaiting();
 });
 
-// Activate Event — Clean Old Caches
+// Activate Event — Clean all previous caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log('[ServiceWorker] Purging stale cache:', name);
+            return caches.delete(name);
+          })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Fetch Event — Network First for API, Stale-While-Revalidate for Static Assets
+// Fetch Event
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
   if (request.method !== 'GET' || !url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Bypass service worker caching on localhost / dev
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
     return;
   }
 
@@ -79,12 +86,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static Assets (_next/static & icons): Cache First Strategy
+  // Static Assets (_next/static & icons): Network First with Cache Fallback
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/') || url.pathname.endsWith('.png')) {
     event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        if (cachedResponse) return cachedResponse;
-        return fetch(request).then((response) => {
+      fetch(request)
+        .then((response) => {
           if (response.status === 200) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -92,8 +98,8 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return response;
-        });
-      })
+        })
+        .catch(() => caches.match(request))
     );
     return;
   }
@@ -111,21 +117,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Default: Stale While Revalidate
+  // Default: Network First with Cache Fallback
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, networkResponse.clone());
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || fetchPromise;
-    })
+    fetch(request)
+      .then((networkResponse) => {
+        if (networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(request, clone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(request))
   );
 });
