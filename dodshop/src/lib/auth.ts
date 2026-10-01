@@ -41,17 +41,12 @@ export async function signToken(payload: Omit<CustomerTokenPayload, 'iat' | 'exp
  */
 export async function verifyToken(token: string): Promise<CustomerTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getJwtSecret());
+    const { payload } = await jwtVerify(token, getJwtSecret(), {
+      algorithms: ['HS256'],
+    });
     return payload as CustomerTokenPayload;
   } catch {
-    // Try legacy fallback secret to prevent invalidating active sessions
-    try {
-      const legacySecret = new TextEncoder().encode('dod-atelier-fallback-secret-key-at-least-32-bytes-long');
-      const { payload } = await jwtVerify(token, legacySecret);
-      return payload as CustomerTokenPayload;
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
@@ -92,14 +87,18 @@ export async function getSession(): Promise<CustomerTokenPayload | null> {
 }
 
 /**
- * Resolve customer from session cookie, Authorization header, or fallback userId
+ * Resolves the verified customer identity from an authenticated session cookie
+ * or valid Authorization: Bearer token.
+ * 
+ * SECURITY GUARANTEE: Never trusts client-supplied query/body identity or fallback IDs.
+ * Returns the verified customer ID and session payload, or null if unauthenticated.
  */
 export async function resolveCustomer(
   req?: Request,
-  fallbackUserId?: string | null
+  _legacyFallbackIgnored?: any
 ): Promise<{
   userId: string;
-  session: CustomerTokenPayload | null;
+  session: CustomerTokenPayload;
 } | null> {
   // 1. Check HTTP-only cookie session
   try {
@@ -121,12 +120,28 @@ export async function resolveCustomer(
     }
   }
 
-  // 3. Check fallback userId passed from client
-  if (fallbackUserId && typeof fallbackUserId === 'string' && fallbackUserId.trim().length > 0) {
-    return { userId: fallbackUserId.trim(), session: null };
-  }
-
   return null;
+}
+
+/**
+ * Requires an authenticated customer session.
+ * Returns { customer, response: null } on success, or { customer: null, response: 401 NextResponse } on failure.
+ */
+export async function requireAuthenticatedCustomer(req?: Request): Promise<{
+  customer: { userId: string; session: CustomerTokenPayload } | null;
+  response: NextResponse | null;
+}> {
+  const customer = await resolveCustomer(req);
+  if (!customer) {
+    return {
+      customer: null,
+      response: NextResponse.json(
+        { error: 'Unauthorized: Authentication required' },
+        { status: 401 }
+      ),
+    };
+  }
+  return { customer, response: null };
 }
 
 /**

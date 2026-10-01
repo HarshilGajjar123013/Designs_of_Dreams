@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login') {
     if (token) {
       try {
-        await jwtVerify(token, getJwtSecret());
+        await jwtVerify(token, getJwtSecret(), { algorithms: ['HS256'] });
         // If already logged in, redirect to overview
         return NextResponse.redirect(new URL('/', request.url));
       } catch {
@@ -75,7 +75,7 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, getJwtSecret());
+    const { payload } = await jwtVerify(token, getJwtSecret(), { algorithms: ['HS256'] });
     const userRole = payload.role as string;
 
     // 5. Role validation for SUPER_ADMIN restricted sections

@@ -4,15 +4,22 @@ import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const queryUserId = searchParams.get('userId');
-    const customer = await resolveCustomer(req, queryUserId);
+    const customer = await resolveCustomer(req);
 
     if (!customer) {
-      return NextResponse.json({
-        success: true,
-        orders: []
-      });
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to view orders' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const queryUserId = searchParams.get('userId');
+    if (queryUserId && queryUserId !== customer.userId) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view orders for another account' },
+        { status: 403 }
+      );
     }
 
     const userId = customer.userId;

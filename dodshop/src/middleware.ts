@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
   if (pathname === '/login') {
     if (token) {
       try {
-        await jwtVerify(token, getJwtSecret());
+        await jwtVerify(token, getJwtSecret(), { algorithms: ['HS256'] });
         // If already logged in, redirect to profile
         return NextResponse.redirect(new URL('/profile', request.url));
       } catch {
@@ -66,7 +66,7 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
-      const { payload } = await jwtVerify(token, getJwtSecret());
+      const { payload } = await jwtVerify(token, getJwtSecret(), { algorithms: ['HS256'] });
 
       // Allow access, pass down user details in headers
       const requestHeaders = new Headers(request.headers);

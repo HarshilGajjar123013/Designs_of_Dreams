@@ -43,16 +43,12 @@ export async function signToken(payload: Omit<AdminTokenPayload, 'iat' | 'exp'>)
  */
 export async function verifyToken(token: string): Promise<AdminTokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getJwtSecret());
+    const { payload } = await jwtVerify(token, getJwtSecret(), {
+      algorithms: ['HS256'],
+    });
     return payload as AdminTokenPayload;
   } catch {
-    try {
-      const legacySecret = new TextEncoder().encode('dod-atelier-fallback-secret-key-at-least-32-bytes-long');
-      const { payload } = await jwtVerify(token, legacySecret);
-      return payload as AdminTokenPayload;
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 

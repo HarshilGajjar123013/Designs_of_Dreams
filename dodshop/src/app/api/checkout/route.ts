@@ -33,10 +33,10 @@ export async function POST(req: Request) {
       cart 
     } = body;
 
-    // Check if customer is authenticated; if guest, allow checkout with contact info
+    // Check if customer is authenticated; if guest, generate unique guest ID (never trust body.customerId)
     const session = await getSession();
-    const customerId = session?.id || body.customerId || `guest-${randomUUID()}`;
-    const customerEmail = session?.email || body.customerEmail || email || 'guest@luxury.in';
+    const customerId = session?.id || `guest-${randomUUID()}`;
+    const customerEmail = session?.email || (typeof email === 'string' && email.trim() ? email.trim() : 'guest@luxury.in');
 
     if (!cart || cart.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });

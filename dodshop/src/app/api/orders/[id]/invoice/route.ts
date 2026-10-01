@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb, generateInvoicePdfBuffer, generateInvoiceFileName } from '@dod/database';
+import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const customer = await resolveCustomer(req);
+    if (!customer) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to download invoices' },
+        { status: 401 }
+      );
+    }
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
+
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: 'Valid Order ID required' }, { status: 400 });
+    }
 
     let order: any = null;
     try {
@@ -15,8 +28,8 @@ export async function GET(
         where: { id },
         include: { items: true },
       });
-    } catch {
-      // Prisma error or disconnected
+    } catch (dbErr) {
+      console.warn('⚠️ Order query failed via Prisma for invoice, checking fallback DB:', dbErr);
     }
 
     if (!order) {
@@ -28,6 +41,14 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
+    // Server-Side Authorization: Verify that the authenticated customer actually owns this order
+    if (order.customerId !== customer.userId) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view this invoice' },
+        { status: 403 }
+      );
+    }
+
     const pdfBuffer = await generateInvoicePdfBuffer(order);
     const filename = generateInvoiceFileName(order);
 
@@ -36,13 +57,14 @@ export async function GET(
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${filename}"`,
-        'Cache-Control': 'public, max-age=3600',
+        // Invoices contain sensitive PII (name, phone, full address); MUST be private and never cached publicly
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
       },
     });
   } catch (err: any) {
     console.error('Failed to generate/serve invoice PDF:', err);
     return NextResponse.json(
-      { error: err?.message || 'Failed to generate invoice PDF' },
+      { error: 'Failed to generate invoice PDF' },
       { status: 500 }
     );
   }

@@ -84,9 +84,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, id: contactId });
   } catch (error: unknown) {
     console.error('[CONTACT FORM ERROR]', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to save contact form';
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: 'An unexpected error occurred while submitting your message. Please try again later.' },
       { status: 500 }
     );
   }

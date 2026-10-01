@@ -5,27 +5,6 @@ import { fallbackDb } from '@/lib/fallbackDb';
 import { createAdminSchema } from '@/lib/validators';
 import { randomUUID } from 'crypto';
 
-const FALLBACK_DEFAULT_ADMINS = [
-  {
-    id: 'dev-fallback-super-admin',
-    name: 'Khyati Acharya',
-    email: 'dod@gmail.com',
-    role: 'SUPER_ADMIN',
-    avatar: 'KA',
-    status: 'ACTIVE',
-    lastLogin: ''
-  },
-  {
-    id: 'dev-fallback-manager',
-    name: 'Harshil Gajjar',
-    email: 'harshilgajjar124@gmail.com',
-    role: 'MANAGER',
-    avatar: 'HG',
-    status: 'ACTIVE',
-    lastLogin: ''
-  }
-];
-
 import { verifyAdminSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
@@ -34,7 +13,6 @@ export async function GET(req: Request) {
     if (response) return response;
 
     let admins: any[] = [];
-    let databaseConnected = true;
 
     try {
       admins = await prisma.adminUser.findMany({
@@ -53,19 +31,11 @@ export async function GET(req: Request) {
         }
       });
     } catch (dbError) {
-      console.warn('⚠️ Database query failed, using fallback JSON DB.');
-      databaseConnected = false;
-    }
-
-    if (!databaseConnected) {
-      admins = fallbackDb.getCollection('admins');
-      if (admins.length === 0) {
-        // Seed default admins in fallback if empty
-        fallbackDb.saveCollection('admins', FALLBACK_DEFAULT_ADMINS);
-        admins = FALLBACK_DEFAULT_ADMINS;
-      }
-      // Sort by name ascending
-      admins.sort((a, b) => a.name.localeCompare(b.name));
+      console.error('Database query failed for admin users:', dbError);
+      return NextResponse.json(
+        { error: 'Database service unavailable' },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({
@@ -148,48 +118,11 @@ export async function POST(req: Request) {
       });
 
     } catch (dbError: any) {
-      console.warn('⚠️ Database create failed, falling back to JSON DB:', dbError);
-      databaseConnected = false;
-    }
-
-    if (!databaseConnected) {
-      const admins = fallbackDb.getCollection('admins');
-
-      // Seed default fallback if empty
-      const currentAdmins = admins.length === 0 ? [...FALLBACK_DEFAULT_ADMINS] : admins;
-
-      const existing = currentAdmins.find(a => a.email.toLowerCase() === email.toLowerCase());
-      if (existing) {
-        return NextResponse.json({ error: 'An admin with this email already exists in fallback' }, { status: 400 });
-      }
-
-      const id = 'adm-' + randomUUID();
-      newAdmin = {
-        id,
-        name,
-        email,
-        role,
-        avatar,
-        passwordHash,
-        status: 'ACTIVE',
-        lastLogin: null,
-        createdAt: new Date().toISOString()
-      };
-
-      currentAdmins.push(newAdmin);
-      fallbackDb.saveCollection('admins', currentAdmins);
-
-      // Audit Log Fallback
-      const secLogs = fallbackDb.getCollection('securityLogs');
-      secLogs.push({
-        id: randomUUID(),
-        timestamp: new Date().toISOString(),
-        action: `Created new admin account (Fallback): ${name} (${email}, Role: ${role})`,
-        adminName: `Admin ID: ${userId}`,
-        role: userRole,
-        status: 'SUCCESS'
-      });
-      fallbackDb.saveCollection('securityLogs', secLogs);
+      console.error('Database create failed for admin account:', dbError);
+      return NextResponse.json(
+        { error: 'Database service unavailable. Admin account could not be created.' },
+        { status: 503 }
+      );
     }
 
     return NextResponse.json({

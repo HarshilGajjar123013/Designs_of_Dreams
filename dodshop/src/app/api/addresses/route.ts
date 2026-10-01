@@ -5,15 +5,22 @@ import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const queryUserId = searchParams.get('userId');
-    const customer = await resolveCustomer(req, queryUserId);
+    const customer = await resolveCustomer(req);
 
     if (!customer) {
-      return NextResponse.json({
-        success: true,
-        addresses: []
-      });
+      return NextResponse.json(
+        { error: 'Unauthorized: Authentication required to view addresses' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const queryUserId = searchParams.get('userId');
+    if (queryUserId && queryUserId !== customer.userId) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view addresses for another account' },
+        { status: 403 }
+      );
     }
 
     const userId = customer.userId;
@@ -35,8 +42,8 @@ export async function GET(req: Request) {
     if (!databaseConnected) {
       // 2. Query fallback database
       const customers = fallbackDb.getCollection('customers');
-      const customer = customers.find(c => c.id === userId);
-      const rawAddresses = customer?.addresses || [];
+      const customerRecord = customers.find(c => c.id === userId);
+      const rawAddresses = customerRecord?.addresses || [];
 
       // Normalize address data in fallback in case of mixed formats
       addresses = rawAddresses.map((addr: any) => {
@@ -50,7 +57,7 @@ export async function GET(req: Request) {
             state: '',
             postalCode: '',
             country: 'India',
-            phone: customer.phone || '',
+            phone: customerRecord.phone || '',
             isDefault: true
           };
         }
@@ -85,14 +92,22 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { address, userId: bodyUserId } = body;
-    const customer = await resolveCustomer(req, bodyUserId);
+    const customer = await resolveCustomer(req);
 
     if (!customer) {
       return NextResponse.json(
-        { error: 'Customer session or user ID required' },
+        { error: 'Unauthorized: Authentication required to save addresses' },
         { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { address, userId: bodyUserId } = body;
+
+    if (bodyUserId && bodyUserId !== customer.userId) {
+      return NextResponse.json(
+        { error: 'Forbidden: You cannot modify addresses belonging to another account' },
+        { status: 403 }
       );
     }
 
@@ -259,19 +274,24 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const addressId = searchParams.get('addressId');
-    const queryUserId = searchParams.get('userId');
-    const customer = await resolveCustomer(req, queryUserId);
-
-    if (!customer || !addressId) {
+    const customer = await resolveCustomer(req);
+    if (!customer) {
       return NextResponse.json(
-        { error: 'Customer session and address ID are required' },
-        { status: 400 }
+        { error: 'Unauthorized: Authentication required to delete addresses' },
+        { status: 401 }
       );
     }
 
-    const userId = customer.userId;
+    const { searchParams } = new URL(req.url);
+    const addressId = searchParams.get('addressId');
+    const queryUserId = searchParams.get('userId');
+
+    if (queryUserId && queryUserId !== customer.userId) {
+      return NextResponse.json(
+        { error: 'Forbidden: You cannot modify addresses belonging to another account' },
+        { status: 403 }
+      );
+    }
 
     if (!addressId) {
       return NextResponse.json(
@@ -279,6 +299,8 @@ export async function DELETE(req: Request) {
         { status: 400 }
       );
     }
+
+    const userId = customer.userId;
 
     let databaseConnected = true;
 

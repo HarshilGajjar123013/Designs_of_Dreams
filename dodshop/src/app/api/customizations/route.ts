@@ -166,10 +166,18 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const customer = await resolveCustomer(req);
     const { searchParams } = new URL(req.url);
     const orderId = searchParams.get('orderId');
 
     if (orderId) {
+      if (!customer) {
+        return NextResponse.json(
+          { error: 'Unauthorized: Authentication required to view order customizations' },
+          { status: 401 }
+        );
+      }
+
       let order: any = null;
       try {
         order = await prisma.order.findUnique({
@@ -183,18 +191,34 @@ export async function GET(req: Request) {
         order = orders.find((o: any) => o.id === orderId);
       }
 
-      if (order) {
-        const requests = await resolveOrderCustomizations(order);
-        return NextResponse.json({ success: true, requests });
+      if (!order) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
+
+      // Server-Side Authorization: Customer must own the order
+      if (order.customerId !== customer.userId) {
+        return NextResponse.json(
+          { error: 'Forbidden: You do not have permission to view customizations for this order' },
+          { status: 403 }
+        );
+      }
+
+      const requests = await resolveOrderCustomizations(order);
+      return NextResponse.json({ success: true, requests });
     }
 
     const productId = searchParams.get('productId');
     const queryUserId = searchParams.get('userId');
-    const customer = await resolveCustomer(req, queryUserId);
 
-    // A customer can only view their own bespoke requests. Admin tooling uses
-    // its dedicated dashboard API and must not rely on this customer endpoint.
+    // Cross-account protection: Reject unauthorized inspection of other customer customization requests
+    if (queryUserId && (!customer || queryUserId !== customer.userId)) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view customization requests for another user' },
+        { status: 403 }
+      );
+    }
+
+    // A customer can only view their own bespoke requests.
     if (!customer) {
       return NextResponse.json({ success: true, requests: [] });
     }

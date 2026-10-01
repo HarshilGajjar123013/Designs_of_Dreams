@@ -3,22 +3,23 @@ import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
-    const adminCount = await prisma.adminUser.count();
-    const productCount = await prisma.product.count();
+    // Perform lightweight read to test connection health
+    await prisma.product.count();
+
     return NextResponse.json({
-      status: 'CONNECTED',
-      database: 'MongoDB Atlas',
-      adminCount,
-      productCount,
-      databaseUrlSet: !!process.env.DATABASE_URL,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    return NextResponse.json({
-      status: 'DISCONNECTED',
-      errorName: error?.name,
-      errorMessage: error?.message,
-      errorStack: error?.stack,
-      databaseUrlSet: !!process.env.DATABASE_URL,
-    }, { status: 500 });
+    // Log detailed diagnostics securely to server logs only — never return to client
+    console.error('Database health probe failed:', error?.message || error);
+
+    return NextResponse.json(
+      {
+        status: 'error',
+        message: 'Database service unavailable'
+      },
+      { status: 503 }
+    );
   }
 }

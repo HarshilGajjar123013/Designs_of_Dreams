@@ -4,9 +4,18 @@ import { resolveCustomer } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
+    const customer = await resolveCustomer(req);
+
     const { searchParams } = new URL(req.url);
     const queryUserId = searchParams.get('userId');
-    const customer = await resolveCustomer(req, queryUserId);
+
+    // Cross-account protection: Reject unauthorized inspection of other user carts
+    if (queryUserId && (!customer || queryUserId !== customer.userId)) {
+      return NextResponse.json(
+        { error: 'Forbidden: You do not have permission to view cart for another user' },
+        { status: 403 }
+      );
+    }
 
     if (!customer) {
       return NextResponse.json({
@@ -124,9 +133,17 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const customer = await resolveCustomer(req);
     const body = await req.json();
     const { cart, userId: bodyUserId } = body;
-    const customer = await resolveCustomer(req, bodyUserId);
+
+    // Cross-account protection: Reject attempts to manipulate another customer's cart
+    if (bodyUserId && (!customer || bodyUserId !== customer.userId)) {
+      return NextResponse.json(
+        { error: 'Forbidden: You cannot modify cart items for another user' },
+        { status: 403 }
+      );
+    }
 
     if (!Array.isArray(cart)) {
       return NextResponse.json(
