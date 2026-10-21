@@ -9,17 +9,19 @@ if (process.env.DATABASE_URL) {
 }
 
 const rawPrisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'error', 'warn']
-        : ['error'],
-  });
+  (globalForPrisma.prisma && (globalForPrisma.prisma as any).costCalculation)
+    ? globalForPrisma.prisma
+    : new PrismaClient({
+        log:
+          process.env.NODE_ENV === 'development'
+            ? ['query', 'error', 'warn']
+            : ['error'],
+      });
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = rawPrisma;
 }
+
 
 let cachedReachable: boolean | null = null;
 let lastChecked = 0;

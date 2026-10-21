@@ -839,3 +839,224 @@ $warm-cream: #F5F0E8;
     box-shadow: 0 0 15px rgba($antique-gold, 0.3);
   }
 }
+
+// ── Heritage Popup Action Buttons ─────────────────────────────────────────────
+.hero-popup__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.hero-popup__cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: $font-body;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.3s $ease-luxury;
+  border: none;
+  outline: none;
+
+  &--primary {
+    background: $brand-orange;
+    color: $brand-white;
+    box-shadow: 0 4px 15px rgba($brand-orange, 0.35);
+
+    &:hover {
+      background: color.scale($brand-orange, $lightness: 5%);
+      box-shadow: 0 6px 20px rgba($brand-orange, 0.5);
+      transform: translateY(-2px);
+    }
+  }
+
+  &--secondary {
+    background: rgba($brand-white, 0.08);
+    color: $brand-white;
+    border: 1px solid rgba($brand-white, 0.25);
+    backdrop-filter: blur(8px);
+
+    &:hover {
+      background: rgba($brand-white, 0.16);
+      border-color: rgba($brand-white, 0.5);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+// ── Cinema Brand Film Modal ───────────────────────────────────────────────────
+.hero-film-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(10, 10, 14, 0.88);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.hero-film-modal {
+  position: relative;
+  width: 100%;
+  max-width: 940px;
+  background: #0f1015;
+  border: 1px solid rgba($antique-gold, 0.35);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba($antique-gold, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-film-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hero-film-modal__badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: $font-body;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: $antique-gold;
+}
+
+.hero-film-modal__badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $brand-orange;
+  box-shadow: 0 0 10px $brand-orange;
+  animation: filmDotPulse 2s infinite ease-in-out;
+}
+
+@keyframes filmDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
+}
+
+.hero-film-modal__close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: $brand-orange;
+    border-color: $brand-orange;
+    transform: rotate(90deg);
+  }
+}
+
+.hero-film-modal__player-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000000;
+  overflow: hidden;
+}
+
+.hero-film-modal__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.hero-film-modal__footer {
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: rgba(18, 19, 25, 0.98);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.hero-film-modal__info {
+  flex: 1;
+  min-width: 240px;
+}
+
+.hero-film-modal__title {
+  font-family: $font-display;
+  font-size: 19px;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.hero-film-modal__desc {
+  font-family: $font-body;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.hero-film-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-film-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: $font-body;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s $ease-luxury;
+
+  &--primary {
+    background: $brand-orange;
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba($brand-orange, 0.4);
+
+    &:hover {
+      background: color.scale($brand-orange, $lightness: 6%);
+      box-shadow: 0 6px 22px rgba($brand-orange, 0.6);
+      transform: translateY(-2px);
+    }
+  }
+}

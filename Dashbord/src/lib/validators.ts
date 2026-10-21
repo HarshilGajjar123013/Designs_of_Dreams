@@ -157,3 +157,17 @@ export const inventoryAdjustSchema = z.object({
   change: z.number().int().refine(v => v !== 0, 'Change cannot be zero'),
   reason: z.string().min(3, 'Reason is required'),
 });
+
+// ── Cost Calculation ──
+export const costCalculationSchema = z.object({
+  productName: z.string().min(1, 'Product name is required').max(150),
+  quantity: z.number().int().min(1, 'Quantity must be at least 1').default(1),
+  fabricCost: z.number().min(0, 'Fabric cost cannot be negative').default(0),
+  threadCost: z.number().min(0, 'Thread cost cannot be negative').default(0),
+  materialCost: z.number().min(0, 'Material cost cannot be negative').default(0),
+  printingCost: z.number().min(0, 'Printing cost cannot be negative').default(0),
+  labourCost: z.number().min(0, 'Labour cost cannot be negative').default(0),
+  otherCost: z.number().min(0, 'Other cost cannot be negative').default(0),
+  sellingPrice: z.number().min(0, 'Selling price cannot be negative').optional().nullable(),
+});
+

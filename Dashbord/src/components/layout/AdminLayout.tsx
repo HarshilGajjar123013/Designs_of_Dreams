@@ -32,7 +32,8 @@ import {
   ArrowRight,
   Image,
   Globe,
-  Megaphone
+  Megaphone,
+  Calculator
 } from 'lucide-react';
 
 interface SidebarItem {
@@ -83,6 +84,12 @@ const SIDEBAR_STRUCTURE: SidebarSection[] = [
           { name: 'Inventory', href: '/catalog/inventory', roles: ['SUPER_ADMIN', 'MANAGER'] }
         ]
       }
+    ]
+  },
+  {
+    title: 'Production',
+    items: [
+      { name: 'Cost Calculator', href: '/cost-calculator', icon: Calculator, roles: ['SUPER_ADMIN', 'MANAGER'] }
     ]
   },
   {

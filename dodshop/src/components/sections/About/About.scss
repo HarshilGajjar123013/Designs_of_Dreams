@@ -508,6 +508,7 @@ $font-accent: var(--font-marcellus), 'Marcellus', Georgia, serif;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 .editorial-story-section {
   padding: 100px 0;
+  scroll-margin-top: 100px;
 
   // Social Impact Metrics Strip
   .story-metrics-strip {
@@ -740,6 +741,7 @@ $font-accent: var(--font-marcellus), 'Marcellus', Georgia, serif;
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 .editorial-philosophy-section {
   padding: 100px 0;
+  scroll-margin-top: 100px;
   background: #f7f3ec;
   border-top: 1px solid rgba(201, 168, 106, 0.35);
   border-bottom: 1px solid rgba(201, 168, 106, 0.35);

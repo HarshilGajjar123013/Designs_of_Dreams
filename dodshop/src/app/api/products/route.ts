@@ -1,20 +1,41 @@
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@dod/database';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
+    const search = searchParams.get('search') || searchParams.get('q');
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-      const where: any = { status: 'ACTIVE' };
+      const conditions: any[] = [{ status: 'ACTIVE' }];
+
       if (category && category !== 'All') {
-        where.OR = [
-          { category: { is: { name: { contains: category, mode: 'insensitive' } } } },
-          { subCategory: { contains: category, mode: 'insensitive' } }
-        ];
+        conditions.push({
+          OR: [
+            { category: { is: { name: { contains: category, mode: 'insensitive' } } } },
+            { subCategory: { contains: category, mode: 'insensitive' } }
+          ]
+        });
       }
+
+      if (search && search.trim()) {
+        const s = search.trim();
+        conditions.push({
+          OR: [
+            { name: { contains: s, mode: 'insensitive' } },
+            { description: { contains: s, mode: 'insensitive' } },
+            { subCategory: { contains: s, mode: 'insensitive' } },
+            { fabric: { contains: s, mode: 'insensitive' } },
+            { category: { is: { name: { contains: s, mode: 'insensitive' } } } }
+          ]
+        });
+      }
+
+      const where: any = conditions.length === 1 ? conditions[0] : { AND: conditions };
 
       const dbProducts = await prisma.product.findMany({
         where,
@@ -29,7 +50,7 @@ export async function GET(req: Request) {
       if (Array.isArray(dbProducts) && dbProducts.length > 0) {
         return NextResponse.json({ success: true, products: dbProducts });
       }
-      if (Array.isArray(dbProducts) && category && category !== 'All') {
+      if (Array.isArray(dbProducts) && ((category && category !== 'All') || (search && search.trim()))) {
         return NextResponse.json({ success: true, products: [] });
       }
     } catch (dbErr) {
@@ -56,6 +77,24 @@ export async function GET(req: Request) {
           const catName = (p.category?.name || '').toLowerCase();
           const subCat = (p.subCategory || '').toLowerCase();
           return catName.includes(catLower) || subCat.includes(catLower);
+        });
+      }
+
+      if (search && search.trim()) {
+        const sLower = search.trim().toLowerCase();
+        mapped = mapped.filter((p: any) => {
+          const name = (p.name || p.title || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+          const catName = (p.category?.name || '').toLowerCase();
+          const subCat = (p.subCategory || '').toLowerCase();
+          const fabric = (p.fabric || '').toLowerCase();
+          return (
+            name.includes(sLower) ||
+            desc.includes(sLower) ||
+            catName.includes(sLower) ||
+            subCat.includes(sLower) ||
+            fabric.includes(sLower)
+          );
         });
       }
 

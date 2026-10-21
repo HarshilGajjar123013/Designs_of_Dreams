@@ -329,6 +329,20 @@ export default function About() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxIndex, nextLightbox, prevLightbox]);
 
+  // Auto-scroll to section if hash exists in URL (e.g. #philosophy, #our-story)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const targetId = window.location.hash.replace("#", "");
+      const timer = setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   return (
     <div className="about-editorial-root">
 
@@ -575,7 +589,7 @@ export default function About() {
           SECTION 3 — OUR PHILOSOPHY
           4 Luxury Editorial Information Panels with Gold Flourishes
       ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      <section className="editorial-philosophy-section">
+      <section id="philosophy" className="editorial-philosophy-section">
         <div className="editorial-container">
           <div className="section-header-center">
             <span className="section-label-gold">PILLARS OF PURPOSE</span>

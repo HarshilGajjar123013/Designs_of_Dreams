@@ -420,16 +420,13 @@ function getEmptyData() {
     coupons: [],
     cmsConfig: null,
     customizationRequests: [],
+    cost_calculations: [],
   };
 }
 
 function getRawData(): any {
-  if (!isFallbackEnabled) {
-    return getEmptyData();
-  }
-
   const isDev = process.env.NODE_ENV !== 'production';
-  if (!isDev && inMemoryData) {
+  if (inMemoryData) {
     return inMemoryData;
   }
 
@@ -446,6 +443,7 @@ function getRawData(): any {
     cmsConfig: INITIAL_CMS_CONFIG,
     customizationRequests: [],
     auth_page_images: INITIAL_AUTH_PAGE_IMAGES,
+    cost_calculations: [],
   };
 
   if (isReadOnlyEnv) {
@@ -453,39 +451,36 @@ function getRawData(): any {
     return defaultData;
   }
 
-  if (!fs.existsSync(FALLBACK_FILE)) {
+  if (fs.existsSync(FALLBACK_FILE)) {
     try {
-      fs.writeFileSync(FALLBACK_FILE, JSON.stringify(defaultData, null, 2), 'utf-8');
-    } catch (e) {
-      console.warn('⚠️ Failed to write initial fallback DB to disk (filesystem might be read-only):', e);
+      const content = fs.readFileSync(FALLBACK_FILE, 'utf-8');
+      inMemoryData = JSON.parse(content);
+      return inMemoryData;
+    } catch (error) {
+      console.error('Failed to read fallback DB, resetting to defaults.', error);
     }
-    inMemoryData = defaultData;
-    return defaultData;
+  }
+
+  if (!isFallbackEnabled) {
+    inMemoryData = getEmptyData();
+    return inMemoryData;
   }
 
   try {
-    const content = fs.readFileSync(FALLBACK_FILE, 'utf-8');
-    inMemoryData = JSON.parse(content);
-    return inMemoryData;
-  } catch (error) {
-    console.error('Failed to read fallback DB, resetting to defaults.', error);
-    try {
-      fs.unlinkSync(FALLBACK_FILE);
-    } catch (e) { }
-    inMemoryData = null;
-    return getRawData();
+    fs.writeFileSync(FALLBACK_FILE, JSON.stringify(defaultData, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('⚠️ Failed to write initial fallback DB to disk:', e);
   }
+  inMemoryData = defaultData;
+  return defaultData;
 }
 
 function saveRawData(data: any) {
-  if (!isFallbackEnabled) {
-    return;
-  }
-
   inMemoryData = data;
   if (isReadOnlyEnv) {
     return;
   }
+
   try {
     fs.writeFileSync(FALLBACK_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error: any) {

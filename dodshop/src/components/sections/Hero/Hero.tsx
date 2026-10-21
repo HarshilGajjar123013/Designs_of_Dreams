@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { gsap } from "gsap";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -271,6 +272,53 @@ const Hero: React.FC<HeroProps> = ({ initialCms }) => {
     setActiveGalleryIdx((prev) => (prev - 1 + allGalleryImages.length) % allGalleryImages.length);
   };
 
+  const router = useRouter();
+  const [showFilmModal, setShowFilmModal] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowFilmModal(false);
+      }
+    };
+    if (showFilmModal) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showFilmModal]);
+
+  const handlePrimaryAction = (slide: { primaryCTA?: string }) => {
+    const cta = (slide.primaryCTA || "").toLowerCase();
+    if (cta.includes("shop")) {
+      router.push("/collection");
+    } else if (cta.includes("explore") || cta.includes("collection")) {
+      const el = document.querySelector(".collection-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      } else {
+        router.push("/collection");
+      }
+    } else if (cta.includes("detail")) {
+      const craftFeature = features.find((f) => f.id === 2) || features[0];
+      openPopup(craftFeature);
+    } else {
+      router.push("/collection");
+    }
+  };
+
+  const handleSecondaryAction = (slide: { secondaryCTA?: string }) => {
+    const cta = (slide.secondaryCTA || "").toLowerCase();
+    if (cta.includes("film") || cta.includes("watch")) {
+      setShowFilmModal(true);
+    } else if (cta.includes("story")) {
+      router.push("/about#our-story");
+    } else if (cta.includes("philosophy")) {
+      router.push("/about#philosophy");
+    } else {
+      router.push("/about");
+    }
+  };
+
   // ── GSAP Floating Animations ──
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -422,11 +470,19 @@ const Hero: React.FC<HeroProps> = ({ initialCms }) => {
                           initial="hidden"
                           animate="visible"
                         >
-                          <button className="hero__btn hero__btn--primary">
+                          <button
+                            className="hero__btn hero__btn--primary"
+                            onClick={() => handlePrimaryAction(slide)}
+                            aria-label={slide.primaryCTA}
+                          >
                             {slide.primaryCTA}
                             <ArrowRight size={18} />
                           </button>
-                          <button className="hero__btn hero__btn--secondary">
+                          <button
+                            className="hero__btn hero__btn--secondary"
+                            onClick={() => handleSecondaryAction(slide)}
+                            aria-label={slide.secondaryCTA}
+                          >
                             {slide.secondaryCTA}
                             {slide.secondaryCTA.toLowerCase().includes("film") || slide.secondaryCTA.toLowerCase().includes("story") ? <Play size={18} /> : null}
                           </button>
@@ -502,6 +558,32 @@ const Hero: React.FC<HeroProps> = ({ initialCms }) => {
                   <motion.div className="hero-popup__gold-line" variants={textSlideVariants} custom={1} initial="hidden" animate="visible" />
                   <motion.h2 className="hero-popup__title" variants={textSlideVariants} custom={2} initial="hidden" animate="visible">{activePopup.popupTitle}</motion.h2>
                   <motion.p className="hero-popup__body" variants={textSlideVariants} custom={3} initial="hidden" animate="visible">{activePopup.popupBody}</motion.p>
+                  <motion.div
+                    className="hero-popup__actions"
+                    variants={textSlideVariants}
+                    custom={4}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    <button
+                      className="hero-popup__cta-btn hero-popup__cta-btn--primary"
+                      onClick={() => {
+                        closePopup();
+                        router.push("/collection");
+                      }}
+                    >
+                      Shop Collection <ArrowRight size={16} />
+                    </button>
+                    <button
+                      className="hero-popup__cta-btn hero-popup__cta-btn--secondary"
+                      onClick={() => {
+                        closePopup();
+                        router.push("/about#our-story");
+                      }}
+                    >
+                      Our Story & Craft
+                    </button>
+                  </motion.div>
                 </div>
                 {/* RIGHT: Editorial Gallery with Navigation */}
                 <div className="hero-popup__gallery">
@@ -551,6 +633,76 @@ const Hero: React.FC<HeroProps> = ({ initialCms }) => {
                       </motion.div>
                     ))}
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* CINEMA BRAND FILM MODAL                                            */}
+      {/* ════════════════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {showFilmModal && (
+          <motion.div
+            className="hero-film-modal__overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => setShowFilmModal(false)}
+          >
+            <motion.div
+              className="hero-film-modal"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as any }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="hero-film-modal__header">
+                <div className="hero-film-modal__badge">
+                  <span className="hero-film-modal__badge-dot" />
+                  ATELIER CINEMA • THE CRAFT OF DREAMS
+                </div>
+                <button
+                  className="hero-film-modal__close"
+                  onClick={() => setShowFilmModal(false)}
+                  aria-label="Close Film Modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="hero-film-modal__player-wrap">
+                <video
+                  className="hero-film-modal__video"
+                  src="/uploads/products/a2393efc-6219-4ca1-a80d-71f8ee53f547.mp4"
+                  poster="/assets/hero/hero_3.png"
+                  controls
+                  autoPlay
+                  playsInline
+                />
+              </div>
+
+              <div className="hero-film-modal__footer">
+                <div className="hero-film-modal__info">
+                  <h3 className="hero-film-modal__title">The Art of Handcrafted Luxury</h3>
+                  <p className="hero-film-modal__desc">
+                    Experience the patience, heritage, and generational mastery woven into every single drape.
+                  </p>
+                </div>
+                <div className="hero-film-modal__actions">
+                  <button
+                    className="hero-film-modal__btn hero-film-modal__btn--primary"
+                    onClick={() => {
+                      setShowFilmModal(false);
+                      router.push("/collection");
+                    }}
+                  >
+                    Shop Handcrafted Pieces <ArrowRight size={16} />
+                  </button>
                 </div>
               </div>
             </motion.div>

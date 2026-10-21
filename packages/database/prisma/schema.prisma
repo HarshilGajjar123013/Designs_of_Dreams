@@ -539,3 +539,29 @@ model AuthPageImage {
   @@unique([pageType, slotNumber])
   @@map("auth_page_images")
 }
+
+// ────────────────────────────────────────────────────────────
+// 19. COST CALCULATION — Production Cost & Profit Calculator
+// ────────────────────────────────────────────────────────────
+
+model CostCalculation {
+  id             String    @id @default(uuid()) @map("_id")
+  productName    String    @map("product_name")
+  quantity       Int       @default(1)
+  fabricCost     Float     @default(0) @map("fabric_cost")
+  threadCost     Float     @default(0) @map("thread_cost")
+  materialCost   Float     @default(0) @map("material_cost")
+  printingCost   Float     @default(0) @map("printing_cost")
+  labourCost     Float     @default(0) @map("labour_cost")
+  otherCost      Float     @default(0) @map("other_cost")
+  totalCost      Float     @default(0) @map("total_cost")
+  costPerPiece   Float     @default(0) @map("cost_per_piece")
+  sellingPrice   Float?    @map("selling_price")
+  profitPerPiece Float?    @map("profit_per_piece")
+  totalProfit    Float?    @map("total_profit")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("cost_calculations")
+}
+

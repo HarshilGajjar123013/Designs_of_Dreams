@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
@@ -21,6 +21,10 @@ import {
   PhoneCall,
   LogIn,
   Gift,
+  ArrowRight,
+  TrendingUp,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
 
@@ -201,21 +205,163 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
-  // Search overlay states
+  // Search overlay states & dynamic data
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [navSearchQuery, setNavSearchQuery] = useState("");
+  const [liveSearchResults, setLiveSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("dod_recent_searches");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setRecentSearches(parsed.slice(0, 5));
+        }
+      } catch {}
+    }
+  }, []);
+
+  const saveRecentSearch = (term: string) => {
+    const trimmed = term.trim();
+    if (!trimmed) return;
+    setRecentSearches((prev) => {
+      const updated = [trimmed, ...prev.filter((item) => item.toLowerCase() !== trimmed.toLowerCase())].slice(0, 5);
+      try {
+        localStorage.setItem("dod_recent_searches", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem("dod_recent_searches");
+    } catch {}
+  };
+
+  // Helper to extract first image safely (whether array or space-separated string)
+  const getProductImage = useCallback((prod: any) => {
+    if (Array.isArray(prod.images) && prod.images.length > 0) {
+      return prod.images[0];
+    }
+    if (typeof prod.images === "string" && prod.images.trim()) {
+      const parts = prod.images.trim().split(/\s+/);
+      if (parts.length > 0 && parts[0]) return parts[0];
+    }
+    return prod.image || "/mobile/saree.jpg";
+  }, []);
+
+  // Dynamic trending tags derived from live database categories, subcategories & fabrics
+  const dynamicTrendingTags = useMemo(() => {
+    const tags: string[] = [];
+    if (categories && Array.isArray(categories)) {
+      categories.forEach((cat) => {
+        if (cat.name && typeof cat.name === "string" && cat.name.trim()) {
+          tags.push(cat.name.trim());
+        }
+        if (Array.isArray(cat.subcategories)) {
+          cat.subcategories.forEach((sub: string) => {
+            if (sub && typeof sub === "string" && sub.trim()) {
+              tags.push(sub.trim());
+            }
+          });
+        }
+        if (Array.isArray(cat.fabrics)) {
+          cat.fabrics.forEach((fab: string) => {
+            if (fab && typeof fab === "string" && fab.trim()) {
+              tags.push(fab.trim());
+            }
+          });
+        }
+      });
+    }
+
+    const unique = Array.from(new Set(tags)).filter((t) => t.length > 1 && !t.includes(";;"));
+    if (unique.length > 0) {
+      return unique.slice(0, 8);
+    }
+    return ["Saree", "Kurti", "Pure Silk", "Couture", "Handloom"];
+  }, [categories]);
+
+  // Dynamic input placeholder based on live catalog data
+  const dynamicPlaceholder = useMemo(() => {
+    if (categories && categories.length > 0) {
+      const names = categories
+        .filter((c) => c.name && c.name.trim())
+        .slice(0, 3)
+        .map((c) => c.name.trim());
+      if (names.length > 0) {
+        return `Search for ${names.join(", ")}...`;
+      }
+    }
+    return "Search for sarees, kurtis, blouses...";
+  }, [categories]);
+
+  // Live real-time search debounced effect
+  useEffect(() => {
+    const q = navSearchQuery.trim();
+    if (!q) {
+      setLiveSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/products?search=${encodeURIComponent(q)}&limit=6`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.products)) {
+          setLiveSearchResults(data.products);
+        } else {
+          setLiveSearchResults([]);
+        }
+      } catch (err) {
+        console.warn("Live search query failed:", err);
+        setLiveSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 220);
+
+    return () => clearTimeout(timer);
+  }, [navSearchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!navSearchQuery.trim()) return;
+    const q = navSearchQuery.trim();
+    if (!q) return;
+    saveRecentSearch(q);
     setIsSearchOpen(false);
-    router.push(`/collection?search=${encodeURIComponent(navSearchQuery.trim())}`);
+    router.push(`/collection?search=${encodeURIComponent(q)}`);
   };
 
   const handleSuggestionClick = (tag: string) => {
+    saveRecentSearch(tag);
     setIsSearchOpen(false);
     setNavSearchQuery(tag);
-    router.push(`/collection?search=${encodeURIComponent(tag)}`);
+
+    // If tag matches an active category, filter by category
+    const matchedCategory = categories.find(
+      (c) => c.name && c.name.toLowerCase() === tag.toLowerCase()
+    );
+    if (matchedCategory) {
+      router.push(`/collection?category=${encodeURIComponent(matchedCategory.name)}`);
+    } else {
+      router.push(`/collection?search=${encodeURIComponent(tag)}`);
+    }
+  };
+
+  const handleProductResultClick = (prod: any) => {
+    saveRecentSearch(prod.name || navSearchQuery);
+    setIsSearchOpen(false);
+    setNavSearchQuery("");
+    router.push(`/product/${prod.id || prod.slug}`);
   };
 
   // Store connection
@@ -549,15 +695,16 @@ const Navbar: React.FC = () => {
               onClick={() => setIsSearchOpen(false)}
               aria-label="Close search"
             >
-              <X size={32} />
+              <X size={28} />
             </button>
 
             <motion.div
               className="navbar-search-overlay__content"
-              initial={{ y: 50, opacity: 0 }}
+              initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ duration: 0.4, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => e.stopPropagation()}
             >
               <span className="navbar-search-overlay__subtitle">Discover Our Masterpieces</span>
               <h2 className="navbar-search-overlay__title">What are you looking for?</h2>
@@ -566,24 +713,122 @@ const Navbar: React.FC = () => {
                 <div className="navbar-search-overlay__input-wrapper">
                   <input
                     type="text"
-                    placeholder="Search for sarees, kurtis, blouses..."
+                    placeholder={dynamicPlaceholder}
                     value={navSearchQuery}
                     onChange={(e) => setNavSearchQuery(e.target.value)}
                     className="navbar-search-overlay__input"
                     autoFocus
                   />
-                  <button type="submit" className="navbar-search-overlay__submit-btn">
-                    <Search size={28} />
+                  {navSearchQuery ? (
+                    <button
+                      type="button"
+                      className="navbar-search-overlay__clear-btn"
+                      onClick={() => setNavSearchQuery("")}
+                      aria-label="Clear query"
+                    >
+                      <X size={20} />
+                    </button>
+                  ) : null}
+                  <button type="submit" className="navbar-search-overlay__submit-btn" aria-label="Submit search">
+                    <Search size={26} />
                   </button>
                 </div>
               </form>
 
+              {/* LIVE SEARCH RESULTS — If user typed query */}
+              {navSearchQuery.trim().length > 0 ? (
+                <div className="navbar-search-overlay__results">
+                  {isSearching ? (
+                    <div className="navbar-search-overlay__loading">
+                      <div className="search-spinner" />
+                      <span>Searching our catalog...</span>
+                    </div>
+                  ) : liveSearchResults.length > 0 ? (
+                    <>
+                      <div className="navbar-search-overlay__results-header">
+                        <span>Matching Pieces ({liveSearchResults.length})</span>
+                        <button
+                          type="button"
+                          className="results-view-all-link"
+                          onClick={handleSearchSubmit}
+                        >
+                          View all results in shop <ArrowRight size={14} />
+                        </button>
+                      </div>
+
+                      <div className="navbar-search-overlay__grid">
+                        {liveSearchResults.map((prod) => {
+                          const img = getProductImage(prod);
+                          const price = prod.sellingPrice || prod.price || prod.mrp;
+                          const categoryName = prod.category?.name || prod.subCategory || "Heritage Piece";
+                          return (
+                            <div
+                              key={prod.id}
+                              className="search-result-card"
+                              onClick={() => handleProductResultClick(prod)}
+                            >
+                              <div className="search-result-card__image-wrap">
+                                <img src={img} alt={prod.name} />
+                              </div>
+                              <div className="search-result-card__details">
+                                <span className="search-result-card__category">{categoryName}</span>
+                                <h4 className="search-result-card__title">{prod.name}</h4>
+                                <div className="search-result-card__price">
+                                  {price ? `₹${Number(price).toLocaleString('en-IN')}` : 'Inquire Price'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="navbar-search-overlay__empty">
+                      <p>No products found matching &ldquo;{navSearchQuery}&rdquo;</p>
+                      <span>Explore popular categories or fabrics below:</span>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {/* RECENT SEARCHES — If any exist and no active query */}
+              {!navSearchQuery.trim() && recentSearches.length > 0 && (
+                <div className="navbar-search-overlay__recent">
+                  <div className="recent-header">
+                    <div className="recent-title">
+                      <Clock size={13} />
+                      <span>Recent Searches:</span>
+                    </div>
+                    <button type="button" onClick={clearRecentSearches} className="recent-clear-btn">
+                      Clear
+                    </button>
+                  </div>
+                  <div className="suggestion-tags">
+                    {recentSearches.map((term) => (
+                      <button
+                        key={term}
+                        type="button"
+                        onClick={() => handleSuggestionClick(term)}
+                        className="suggestion-tag suggestion-tag--recent"
+                      >
+                        {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DYNAMIC CATEGORIES & TRENDING TAGS FROM LIVE DATABASE */}
               <div className="navbar-search-overlay__suggestions">
-                <p>Trending Searches:</p>
+                <p>
+                  <TrendingUp size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: "6px" }} />
+                  Trending Searches from Our Catalog:
+                </p>
                 <div className="suggestion-tags">
-                  {["Banarasi", "Kurti", "Blouse", "Dupatta", "Anarkali", "Silk Saree"].map((tag) => (
+                  {dynamicTrendingTags.map((tag) => (
                     <button
                       key={tag}
+                      type="button"
                       onClick={() => handleSuggestionClick(tag)}
                       className="suggestion-tag"
                     >
@@ -592,6 +837,31 @@ const Navbar: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {/* DYNAMIC ATELIER CATEGORIES ROW */}
+              {categories && categories.length > 0 && (
+                <div className="navbar-search-overlay__categories-quick">
+                  <span className="quick-title">Explore Store Categories:</span>
+                  <div className="category-chips">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id || cat.name}
+                        type="button"
+                        className="category-chip"
+                        onClick={() => {
+                          setIsSearchOpen(false);
+                          router.push(`/collection?category=${encodeURIComponent(cat.name)}`);
+                        }}
+                      >
+                        <span>{cat.name}</span>
+                        {typeof cat.productCount === "number" && cat.productCount > 0 && (
+                          <span className="category-chip__count">{cat.productCount}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

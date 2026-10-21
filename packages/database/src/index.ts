@@ -49,6 +49,25 @@ export interface CustomizationRequest {
   updatedAt: Date | string;
 }
 
+export interface CostCalculation {
+  id: string;
+  productName: string;
+  quantity: number;
+  fabricCost: number;
+  threadCost: number;
+  materialCost: number;
+  printingCost: number;
+  labourCost: number;
+  otherCost: number;
+  totalCost: number;
+  costPerPiece: number;
+  sellingPrice?: number | null;
+  profitPerPiece?: number | null;
+  totalProfit?: number | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 // Re-export all enums
 export {
   AdminRole,
