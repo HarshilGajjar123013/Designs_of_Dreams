@@ -91,6 +91,7 @@ export {
   uploadWhatsAppMedia,
   sendWhatsAppDocument,
   sendOrderWhatsAppNotifications,
+  sendWhatsAppTemplate,
   buildContactAdminWhatsAppMessage,
   buildContactCustomerWhatsAppMessage,
   sendContactWhatsAppNotifications,

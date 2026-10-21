@@ -8,6 +8,12 @@ import { prisma } from './client';
 import { fallbackDb } from './fallbackDb';
 import { generateInvoicePdfBuffer, generateInvoiceFileName, resolveOrderCustomizations } from './invoicePdf';
 
+const FALLBACK_ENV_DEFAULTS: Record<string, string> = {
+  ADMIN_WHATSAPP_NUMBER: '919313507346',
+  WHATSAPP_API_TOKEN: 'EAAP8CMCQhEEBS8DWUqehIVuddK9CMHKIPphhr5z8ivWttQZCfHt9D3fPIMAH1rBES8weCrm0NEWdMnKE8ZBZAM5OmwMFBCRSiFagZCrV5YBFccHgSSkTY3IM2zqZAPRZCafixzlUlnxro84ZA1hBdtyXsiTNMGZCVvOuNT0Qk4UDnqGwLZC2v9ZAde0bZBO7aIqraAprfBlkfUSQPViTZCfZCTY9hGEcPh6cj6YeOuiqZAf14ezEMApxErPVkuUkvuZBmZBmWkZBUMnr7Vj00ZCvMjwEd3uKkydAZDZD',
+  WHATSAPP_PHONE_NUMBER_ID: '1337919859404316',
+};
+
 function getEnvVar(key: string, defaultValue: string = ''): string {
   if (process.env[key]) return process.env[key]!;
   try {
@@ -31,7 +37,7 @@ function getEnvVar(key: string, defaultValue: string = ''): string {
       }
     }
   } catch {}
-  return defaultValue;
+  return defaultValue || FALLBACK_ENV_DEFAULTS[key] || '';
 }
 
 export interface WhatsAppNotificationDetails {
@@ -824,6 +830,54 @@ export function buildContactReplyWhatsAppMessage(contact: ContactNotificationInp
 }
 
 /**
+ * Sends a pre-approved WhatsApp template message via Meta Cloud API.
+ * Essential for opening or re-engaging the 24-hour messaging window.
+ */
+export async function sendWhatsAppTemplate(
+  recipientPhone: string,
+  templateName: string = 'hello_world',
+  languageCode: string = 'en_US'
+): Promise<{ success: boolean; messageId?: string; error?: string; isSimulated?: boolean }> {
+  const token = getEnvVar('WHATSAPP_API_TOKEN');
+  const phoneNumberId = getEnvVar('WHATSAPP_PHONE_NUMBER_ID');
+
+  if (!token || !phoneNumberId) {
+    return {
+      success: true,
+      messageId: `sim-tpl-${Date.now()}`,
+      isSimulated: true
+    };
+  }
+
+  try {
+    const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: recipientPhone,
+        type: 'template',
+        template: {
+          name: templateName,
+          language: { code: languageCode },
+        },
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { success: false, error: data?.error?.message || res.statusText };
+    }
+    return { success: true, messageId: data?.messages?.[0]?.id };
+  } catch (err: any) {
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
  * Sends WhatsApp notification messages to both Admin and Customer when Contact Us is submitted.
  */
 export async function sendContactWhatsAppNotifications(
@@ -844,6 +898,8 @@ export async function sendContactWhatsAppNotifications(
   if (adminNorm.isValid) {
     result.adminPhone = adminNorm.normalized;
     try {
+      // Send template first to ensure session window is open, then full details
+      await sendWhatsAppTemplate(adminNorm.normalized, 'hello_world').catch(() => {});
       const adminMsg = buildContactAdminWhatsAppMessage(contact);
       console.log(`[WhatsApp Contact] Sending to Admin: ${adminNorm.normalized}`);
       const adminRes = await sendWhatsAppMessage(adminNorm.normalized, adminMsg);
@@ -870,6 +926,8 @@ export async function sendContactWhatsAppNotifications(
   if (custNorm.isValid) {
     result.customerPhone = custNorm.normalized;
     try {
+      // Send template first to ensure session window is open, then full confirmation
+      await sendWhatsAppTemplate(custNorm.normalized, 'hello_world').catch(() => {});
       const custMsg = buildContactCustomerWhatsAppMessage(contact);
       console.log(`[WhatsApp Contact] Sending to Customer: ${custNorm.normalized}`);
       const custRes = await sendWhatsAppMessage(custNorm.normalized, custMsg);
