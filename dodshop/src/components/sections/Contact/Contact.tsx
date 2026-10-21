@@ -29,7 +29,13 @@ interface ProductItem {
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
-  const [submittedData, setSubmittedData] = useState<{ id?: string } | null>(null);
+  const [submittedData, setSubmittedData] = useState<{
+    id?: string;
+    name?: string;
+    category?: string;
+    item?: string;
+    date?: string;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(true);
@@ -147,24 +153,14 @@ export default function Contact() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setSubmittedData({ id: data.id });
+        setSubmittedData({
+          id: data.id,
+          name: form.name,
+          category: form.interest || 'General Consultation',
+          item: form.productName,
+          date: form.date,
+        });
         setSubmitted(true);
-        setTimeout(() => {
-          setSubmitted(false);
-          setSubmittedData(null);
-          setForm({
-            name: "",
-            email: "",
-            phone: "",
-            categoryId: "",
-            interest: "",
-            productId: "",
-            productName: "",
-            date: "",
-            message: ""
-          });
-          setSearchQuery("");
-        }, 5000);
       } else {
         alert(data.error || 'Failed to submit. Please try again.');
       }
@@ -554,22 +550,102 @@ export default function Contact() {
               </button>
             </form>
 
-            {/* Success Animation Notification */}
+            {/* Ultra-Stylish Luxury Atelier Success Box */}
             <AnimatePresence>
               {submitted && (
                 <motion.div
                   className="booking-form__success"
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -15 }}
+                  initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96, y: -15 }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 >
-                  <CheckCircle size={24} className="success-icon" />
-                  <div>
-                    <h5>Inquiry Submitted Successfully</h5>
-                    <p>
-                      Reference: <strong>#{submittedData?.id || 'NEW'}</strong>. We have received your consultation details, and automatic WhatsApp notifications have been dispatched.
-                    </p>
+                  {/* Decorative Corner Filigrees */}
+                  <div className="success-corner success-corner--tl" />
+                  <div className="success-corner success-corner--tr" />
+                  <div className="success-corner success-corner--bl" />
+                  <div className="success-corner success-corner--br" />
+
+                  {/* Glowing Seal */}
+                  <div className="success-seal">
+                    <div className="success-seal__ring">
+                      <div className="success-seal__inner">
+                        <CheckCircle size={30} className="success-seal__icon" />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Header */}
+                  <span className="success-kicker">
+                    <Sparkles size={11} /> Atelier Consultation Confirmed <Sparkles size={11} />
+                  </span>
+                  <h4 className="success-title">Your Styling Session is Registered</h4>
+
+                  <div className="success-divider">
+                    <span className="success-divider__line" />
+                    <span className="success-divider__gem">✦</span>
+                    <span className="success-divider__line" />
+                  </div>
+
+                  {/* Reference Ticket Chip */}
+                  <div className="success-reference-chip">
+                    <span className="success-reference-chip__label">Reference Number</span>
+                    <span className="success-reference-chip__val">#{submittedData?.id || 'INQ-CONFIRMED'}</span>
+                  </div>
+
+                  {/* Dossier Summary Cards Grid */}
+                  <div className="success-summary-grid">
+                    {submittedData?.name && (
+                      <div className="success-summary-card">
+                        <span className="success-summary-card__key">Patron</span>
+                        <strong className="success-summary-card__val">{submittedData.name}</strong>
+                      </div>
+                    )}
+                    {submittedData?.category && (
+                      <div className="success-summary-card">
+                        <span className="success-summary-card__key">Collection</span>
+                        <strong className="success-summary-card__val">{submittedData.category}</strong>
+                      </div>
+                    )}
+                    {submittedData?.date && (
+                      <div className="success-summary-card">
+                        <span className="success-summary-card__key">Preferred Date</span>
+                        <strong className="success-summary-card__val">{submittedData.date}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status Strip */}
+                  <div className="success-status-strip">
+                    <span className="success-status-strip__dot" />
+                    <span className="success-status-strip__text">
+                      Live alert sent to WhatsApp • Concierge connects within 24h
+                    </span>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubmitted(false);
+                      setSubmittedData(null);
+                      setForm({
+                        name: "",
+                        email: "",
+                        phone: "",
+                        categoryId: "",
+                        interest: "",
+                        productId: "",
+                        productName: "",
+                        date: "",
+                        message: ""
+                      });
+                      setSearchQuery("");
+                    }}
+                    className="success-action-btn"
+                  >
+                    <span>Book Another Session</span>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
