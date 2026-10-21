@@ -898,8 +898,6 @@ export async function sendContactWhatsAppNotifications(
   if (adminNorm.isValid) {
     result.adminPhone = adminNorm.normalized;
     try {
-      // Send template first to ensure session window is open, then full details
-      await sendWhatsAppTemplate(adminNorm.normalized, 'hello_world').catch(() => {});
       const adminMsg = buildContactAdminWhatsAppMessage(contact);
       console.log(`[WhatsApp Contact] Sending to Admin: ${adminNorm.normalized}`);
       const adminRes = await sendWhatsAppMessage(adminNorm.normalized, adminMsg);
@@ -926,8 +924,6 @@ export async function sendContactWhatsAppNotifications(
   if (custNorm.isValid) {
     result.customerPhone = custNorm.normalized;
     try {
-      // Send template first to ensure session window is open, then full confirmation
-      await sendWhatsAppTemplate(custNorm.normalized, 'hello_world').catch(() => {});
       const custMsg = buildContactCustomerWhatsAppMessage(contact);
       console.log(`[WhatsApp Contact] Sending to Customer: ${custNorm.normalized}`);
       const custRes = await sendWhatsAppMessage(custNorm.normalized, custMsg);

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, Calendar, Sparkles, Send, CheckCircle, RefreshCw, Search, ListFilter, X } from "lucide-react";
-import { FaWhatsapp } from "react-icons/fa";
 import "./Contact.scss";
 
 interface CategoryItem {
@@ -30,7 +29,7 @@ interface ProductItem {
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
-  const [submittedData, setSubmittedData] = useState<{ id?: string; whatsappUrl?: string } | null>(null);
+  const [submittedData, setSubmittedData] = useState<{ id?: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(true);
@@ -148,31 +147,24 @@ export default function Contact() {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        const adminPhone = "919313507346";
-        const selectedCat = form.interest || "General Consultation";
-        const selectedProd = form.productName ? `• Item: ${form.productName}` : "";
-        const preferredDate = form.date ? `• Preferred Date: ${form.date}` : "";
-        const clientNote = form.message ? `• Note: "${form.message}"` : "";
-
-        const waText = [
-          `Namaste Designs of Dreams,`,
-          `I just submitted a styling & consultation inquiry (Ref: #${data.id || 'NEW'}).`,
-          `• Name: ${form.name}`,
-          `• Phone: ${form.phone}`,
-          `• Email: ${form.email}`,
-          `• Category: ${selectedCat}`,
-          selectedProd,
-          preferredDate,
-          clientNote,
-        ].filter(Boolean).join('\n');
-
-        const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(waText)}`;
-
-        setSubmittedData({
-          id: data.id,
-          whatsappUrl: waUrl,
-        });
+        setSubmittedData({ id: data.id });
         setSubmitted(true);
+        setTimeout(() => {
+          setSubmitted(false);
+          setSubmittedData(null);
+          setForm({
+            name: "",
+            email: "",
+            phone: "",
+            categoryId: "",
+            interest: "",
+            productId: "",
+            productName: "",
+            date: "",
+            message: ""
+          });
+          setSearchQuery("");
+        }, 5000);
       } else {
         alert(data.error || 'Failed to submit. Please try again.');
       }
@@ -570,73 +562,14 @@ export default function Contact() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'flex-start' }}
                 >
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <CheckCircle size={26} className="success-icon" style={{ color: '#0FA958', flexShrink: 0 }} />
-                    <div>
-                      <h5 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Inquiry Dispatched Successfully</h5>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#4B5563', lineHeight: 1.5 }}>
-                        Reference ID: <strong>#{submittedData?.id || 'NEW'}</strong>. WhatsApp notifications have been transmitted to our atelier concierge and your registered phone number.
-                      </p>
-                    </div>
+                  <CheckCircle size={24} className="success-icon" />
+                  <div>
+                    <h5>Inquiry Submitted Successfully</h5>
+                    <p>
+                      Reference: <strong>#{submittedData?.id || 'NEW'}</strong>. We have received your consultation details, and automatic WhatsApp notifications have been dispatched.
+                    </p>
                   </div>
-
-                  {submittedData?.whatsappUrl && (
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                      <a
-                        href={submittedData.whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          backgroundColor: '#25D366',
-                          color: '#FFFFFF',
-                          padding: '10px 18px',
-                          borderRadius: '9999px',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          textDecoration: 'none',
-                          boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <FaWhatsapp size={17} /> Open WhatsApp with Details
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSubmitted(false);
-                          setSubmittedData(null);
-                          setForm({
-                            name: "",
-                            email: "",
-                            phone: "",
-                            categoryId: "",
-                            interest: "",
-                            productId: "",
-                            productName: "",
-                            date: "",
-                            message: ""
-                          });
-                          setSearchQuery("");
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: '1px solid #D1D5DB',
-                          borderRadius: '9999px',
-                          padding: '9px 16px',
-                          fontSize: '11px',
-                          cursor: 'pointer',
-                          color: '#4B5563'
-                        }}
-                      >
-                        Book Another Session
-                      </button>
-                    </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
