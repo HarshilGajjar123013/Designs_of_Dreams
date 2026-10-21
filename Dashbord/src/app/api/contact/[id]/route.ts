@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
+import { sendContactReplyWhatsAppNotification } from '@dod/database';
 
 export async function PATCH(
   req: Request,
@@ -44,7 +45,27 @@ export async function PATCH(
       updatedForm = forms[idx];
     }
 
-    return NextResponse.json({ success: true, contactForm: updatedForm });
+    // Automatically send WhatsApp notification to Customer if reply is provided
+    let whatsappResult = null;
+    if (reply && updatedForm?.phone) {
+      try {
+        whatsappResult = await sendContactReplyWhatsAppNotification(
+          {
+            id: updatedForm.id,
+            name: updatedForm.name,
+            email: updatedForm.email,
+            phone: updatedForm.phone,
+            message: updatedForm.message,
+            subject: updatedForm.subject,
+          },
+          reply
+        );
+      } catch (waErr) {
+        console.error('⚠️ WhatsApp reply notification error:', waErr);
+      }
+    }
+
+    return NextResponse.json({ success: true, contactForm: updatedForm, whatsapp: whatsappResult });
   } catch (err: any) {
     console.error(err);
     return NextResponse.json({ error: 'Failed to update contact form' }, { status: 500 });

@@ -274,7 +274,7 @@ export default function Contact() {
                     required
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="Phone Number"
+                    placeholder="Phone / WhatsApp Number *"
                     className="booking-form__input"
                   />
                   <span className="booking-form__line" />
@@ -563,7 +563,7 @@ export default function Contact() {
                   <CheckCircle size={24} className="success-icon" />
                   <div>
                     <h5>Request Submitted</h5>
-                    <p>We have received your appointment request. Check your inbox shortly for our confirmation call.</p>
+                    <p>We have received your appointment request. A confirmation has been sent to your WhatsApp number, and our atelier concierge will connect with you shortly.</p>
                   </div>
                 </motion.div>
               )}

@@ -140,7 +140,11 @@ export default function SupportDesk() {
       if (data.success) {
         setContactForms(prev => prev.map(cf => cf.id === selectedTicket.id ? data.contactForm : cf));
         setReplyText('');
-        alert('Reply processed and marked as sent.');
+        if (data.whatsapp?.success) {
+          alert('Reply processed and dispatched to customer WhatsApp successfully!');
+        } else {
+          alert('Reply processed and marked as sent.');
+        }
       } else {
         alert(data.error || 'Failed to send reply');
       }
@@ -341,7 +345,18 @@ export default function SupportDesk() {
                         <p className="text-gray-500 pl-5">{selectedTicket.email}</p>
                         <p className="flex items-center gap-2 text-gray-700 pl-0.5">
                           <Phone size={13} className="text-gray-400" />
-                          {selectedTicket.phone}
+                          <span>{selectedTicket.phone}</span>
+                          {selectedTicket.phone && (
+                            <a
+                              href={`https://wa.me/${selectedTicket.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-[#0FA958] border border-green-200 text-[10px] font-semibold hover:bg-green-100 transition-colors"
+                              title="Chat directly with customer on WhatsApp"
+                            >
+                              WhatsApp Chat ↗
+                            </a>
+                          )}
                         </p>
                         <p className="flex items-center gap-2 text-gray-500 pl-0.5">
                           <Calendar size={13} className="text-gray-400" />
@@ -375,7 +390,7 @@ export default function SupportDesk() {
                         "{selectedTicket.reply}"
                       </div>
                       {selectedTicket.repliedAt && (
-                        <p className="text-[9px] text-gray-400 font-inter">Replied at: {new Date(selectedTicket.repliedAt).toLocaleString()}</p>
+                        <p className="text-[9px] text-gray-400 font-inter">Replied at: {new Date(selectedTicket.repliedAt).toLocaleString()} • Dispatched via WhatsApp</p>
                       )}
                     </div>
                   )}
@@ -384,7 +399,7 @@ export default function SupportDesk() {
                 {/* Reply Composer Form */}
                 {selectedTicket.status === 'UNREAD' && (
                   <form onSubmit={handleSendReply} className="space-y-3 border-t border-gray-100 pt-4 bg-white">
-                    <span className="text-[9px] uppercase font-bold text-[#FF6A00] tracking-wider block">Compose Atelier Reply</span>
+                    <span className="text-[9px] uppercase font-bold text-[#FF6A00] tracking-wider block">Compose Atelier Reply (Dispatched via WhatsApp)</span>
                     <textarea
                       rows={4}
                       value={replyText}
@@ -394,9 +409,10 @@ export default function SupportDesk() {
                     />
                     <button
                       type="submit"
-                      className="w-full bg-[#1A1A1A] hover:bg-[#FF6A00] text-white py-3 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md"
+                      disabled={!replyText.trim()}
+                      className="w-full py-2.5 bg-[#FF6A00] text-white rounded-xl text-xs font-semibold hover:bg-black transition-colors disabled:opacity-50 cursor-pointer shadow-luxury flex items-center justify-center gap-1.5"
                     >
-                      <Send size={12} /> Send Response
+                      <Send size={12} /> Send WhatsApp Reply
                     </button>
                   </form>
                 )}

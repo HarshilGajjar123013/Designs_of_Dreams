@@ -697,3 +697,223 @@ export async function sendOrderWhatsAppNotifications(
 
   return updatedDetails;
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// CONTACT US NOTIFICATIONS (Admin & Customer WhatsApp)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export interface ContactNotificationInput {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  categoryName?: string;
+  categoryId?: string;
+  productId?: string;
+  productName?: string;
+  date?: string;
+  message?: string;
+  subject?: string;
+}
+
+export interface ContactNotificationResult {
+  adminStatus: 'SENT' | 'FAILED' | 'SKIPPED';
+  adminPhone?: string;
+  adminError?: string;
+  customerStatus: 'SENT' | 'FAILED' | 'SKIPPED';
+  customerPhone?: string;
+  customerError?: string;
+}
+
+/**
+ * Builds the Admin WhatsApp notification message when a Contact Us form is submitted.
+ */
+export function buildContactAdminWhatsAppMessage(contact: ContactNotificationInput): string {
+  const phoneRes = normalizePhoneNumber(contact.phone);
+  const displayPhone = phoneRes.isValid ? phoneRes.formattedDisplay : (contact.phone || 'Not provided');
+  const chatLink = phoneRes.isValid ? `• *Direct Chat:* https://wa.me/${phoneRes.normalized}` : '';
+  const selectedCat = contact.categoryName || 'General Consultation';
+  const selectedProd = contact.productName ? `• *Item of Interest:* ${contact.productName}` : '';
+  const preferredDate = contact.date ? `• *Preferred Date:* ${contact.date}` : '';
+  const noteText = contact.message ? contact.message.trim() : 'No additional message provided';
+
+  const detailsList = [
+    `• *Category / Collection:* ${selectedCat}`,
+    selectedProd,
+    preferredDate,
+  ].filter(Boolean).join('\n');
+
+  return [
+    '📩 *NEW CONTACT INQUIRY RECEIVED*',
+    '━━━━━━━━━━━━━━━━━━━━',
+    `*Inquiry ID:* #${contact.id || 'INQ-' + Date.now().toString().slice(-6)}`,
+    '',
+    '*Client Details:*',
+    `• *Name:* ${contact.name}`,
+    `• *Phone:* ${displayPhone}`,
+    `• *Email:* ${contact.email}`,
+    chatLink,
+    '',
+    '*Inquiry Scope:*',
+    detailsList,
+    '',
+    '*Client Message:*',
+    `"${noteText}"`,
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🏛️ *Designs of Dreams — Atelier Support Desk*',
+    'Please check the Admin Support panel to respond to this client.'
+  ].filter(line => line !== '').join('\n');
+}
+
+/**
+ * Builds the Customer WhatsApp confirmation message acknowledging their Contact Us submission.
+ */
+export function buildContactCustomerWhatsAppMessage(contact: ContactNotificationInput): string {
+  const fullName = contact.name || 'Valued Patron';
+  const firstName = fullName.split(' ')[0] || 'Patron';
+  const selectedCat = contact.categoryName || 'General Consultation';
+  const selectedProd = contact.productName ? `• *Item:* ${contact.productName}` : '';
+  const preferredDate = contact.date ? `• *Preferred Consultation Date:* ${contact.date}` : '';
+
+  const detailsList = [
+    `• *Category:* ${selectedCat}`,
+    selectedProd,
+    preferredDate,
+  ].filter(Boolean).join('\n');
+
+  return [
+    `✨ *Namaste ${firstName},*`,
+    '',
+    'Thank you for contacting *Designs of Dreams*. We have received your consultation inquiry and our atelier concierge is reviewing your request.',
+    '',
+    '*Your Inquiry Summary:*',
+    `• *Reference ID:* #${contact.id || 'INQ-' + Date.now().toString().slice(-6)}`,
+    detailsList,
+    contact.message ? `• *Your Note:* "${contact.message.trim()}"` : '',
+    '',
+    'Our master stylists will connect with you shortly on this WhatsApp number to assist with your bespoke requirements.',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🌿 *DESIGNS OF DREAMS*',
+    'Handcrafted Sarees & Bespoke Atelier'
+  ].filter(line => line !== '').join('\n');
+}
+
+/**
+ * Builds the Customer WhatsApp message when the Admin replies to an inquiry ticket.
+ */
+export function buildContactReplyWhatsAppMessage(contact: ContactNotificationInput, reply: string): string {
+  const fullName = contact.name || 'Valued Patron';
+  const firstName = fullName.split(' ')[0] || 'Patron';
+
+  return [
+    `✨ *Namaste ${firstName},*`,
+    '',
+    `This is an update regarding your inquiry with *Designs of Dreams* (Ref: #${contact.id || ''}).`,
+    '',
+    '*Concierge Response:*',
+    `"${reply.trim()}"`,
+    '',
+    'If you have any further questions or would like to proceed with a bespoke consultation, feel free to reply directly to this message.',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🌿 *DESIGNS OF DREAMS*',
+    'Handcrafted Sarees & Bespoke Atelier'
+  ].join('\n');
+}
+
+/**
+ * Sends WhatsApp notification messages to both Admin and Customer when Contact Us is submitted.
+ */
+export async function sendContactWhatsAppNotifications(
+  contact: ContactNotificationInput
+): Promise<ContactNotificationResult> {
+  const result: ContactNotificationResult = {
+    adminStatus: 'SKIPPED',
+    customerStatus: 'SKIPPED',
+  };
+
+  const adminNum = getEnvVar('ADMIN_WHATSAPP_NUMBER', '919313507346');
+  const adminNorm = normalizePhoneNumber(adminNum);
+  const custNorm = normalizePhoneNumber(contact.phone);
+
+  console.log(`[WhatsApp Contact] Processing notification for Inquiry ${contact.id || 'new'}...`);
+
+  // 1. Send to Admin WhatsApp
+  if (adminNorm.isValid) {
+    result.adminPhone = adminNorm.normalized;
+    try {
+      const adminMsg = buildContactAdminWhatsAppMessage(contact);
+      console.log(`[WhatsApp Contact] Sending to Admin: ${adminNorm.normalized}`);
+      const adminRes = await sendWhatsAppMessage(adminNorm.normalized, adminMsg);
+      if (adminRes.success) {
+        result.adminStatus = 'SENT';
+        console.log(`[WhatsApp Contact] Admin message sent successfully.`);
+      } else {
+        result.adminStatus = 'FAILED';
+        result.adminError = adminRes.error;
+        console.warn(`[WhatsApp Contact] Admin send failed:`, adminRes.error);
+      }
+    } catch (err: any) {
+      result.adminStatus = 'FAILED';
+      result.adminError = err?.message || 'Error sending admin WhatsApp';
+      console.error(`[WhatsApp Contact] Admin exception:`, err);
+    }
+  } else {
+    result.adminStatus = 'FAILED';
+    result.adminError = `Invalid ADMIN_WHATSAPP_NUMBER: ${adminNum}`;
+    console.warn(`[WhatsApp Contact] Invalid admin phone: ${adminNum}`);
+  }
+
+  // 2. Send to Customer WhatsApp
+  if (custNorm.isValid) {
+    result.customerPhone = custNorm.normalized;
+    try {
+      const custMsg = buildContactCustomerWhatsAppMessage(contact);
+      console.log(`[WhatsApp Contact] Sending to Customer: ${custNorm.normalized}`);
+      const custRes = await sendWhatsAppMessage(custNorm.normalized, custMsg);
+      if (custRes.success) {
+        result.customerStatus = 'SENT';
+        console.log(`[WhatsApp Contact] Customer confirmation sent successfully.`);
+      } else {
+        result.customerStatus = 'FAILED';
+        result.customerError = custRes.error;
+        console.warn(`[WhatsApp Contact] Customer send failed:`, custRes.error);
+      }
+    } catch (err: any) {
+      result.customerStatus = 'FAILED';
+      result.customerError = err?.message || 'Error sending customer WhatsApp';
+      console.error(`[WhatsApp Contact] Customer exception:`, err);
+    }
+  } else {
+    result.customerStatus = 'FAILED';
+    result.customerError = `Invalid customer phone: ${contact.phone}`;
+    console.warn(`[WhatsApp Contact] Invalid customer phone: ${contact.phone}`);
+  }
+
+  return result;
+}
+
+/**
+ * Sends customer a WhatsApp notification when Admin responds to their Contact inquiry.
+ */
+export async function sendContactReplyWhatsAppNotification(
+  contact: ContactNotificationInput,
+  reply: string
+): Promise<{ success: boolean; error?: string }> {
+  const custNorm = normalizePhoneNumber(contact.phone);
+  if (!custNorm.isValid) {
+    return { success: false, error: `Invalid customer phone: ${contact.phone}` };
+  }
+  try {
+    const msg = buildContactReplyWhatsAppMessage(contact, reply);
+    console.log(`[WhatsApp Contact Reply] Sending reply to Customer: ${custNorm.normalized}`);
+    const res = await sendWhatsAppMessage(custNorm.normalized, msg);
+    return res;
+  } catch (err: any) {
+    console.error(`[WhatsApp Contact Reply] Exception:`, err);
+    return { success: false, error: err?.message || 'Error sending reply WhatsApp' };
+  }
+}
+

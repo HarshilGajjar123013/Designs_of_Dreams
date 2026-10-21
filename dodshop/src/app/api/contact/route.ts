@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma, fallbackDb } from '@/lib/db';
+import { sendContactWhatsAppNotifications } from '@dod/database';
 import { randomUUID } from 'crypto';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
@@ -81,7 +82,39 @@ export async function POST(request: Request) {
       fallbackDb.saveCollection('contactForms', contactForms);
     }
 
-    return NextResponse.json({ success: true, id: contactId });
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // AUTOMATIC WHATSAPP NOTIFICATIONS (Admin + Customer)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let whatsappResult = null;
+    try {
+      whatsappResult = await Promise.race([
+        sendContactWhatsAppNotifications({
+          id: contactId,
+          name,
+          email,
+          phone,
+          categoryName: selectedCategory,
+          categoryId,
+          productId,
+          productName,
+          date,
+          message,
+          subject,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('WhatsApp notification timeout')), 6000)
+        )
+      ]);
+      console.log('✅ Contact form WhatsApp notifications result:', whatsappResult);
+    } catch (waErr) {
+      console.error('⚠️ WhatsApp notification error on contact form:', waErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      id: contactId,
+      whatsapp: whatsappResult
+    });
   } catch (error: unknown) {
     console.error('[CONTACT FORM ERROR]', error);
     return NextResponse.json(

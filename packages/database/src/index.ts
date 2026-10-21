@@ -91,8 +91,17 @@ export {
   uploadWhatsAppMedia,
   sendWhatsAppDocument,
   sendOrderWhatsAppNotifications,
+  buildContactAdminWhatsAppMessage,
+  buildContactCustomerWhatsAppMessage,
+  sendContactWhatsAppNotifications,
+  buildContactReplyWhatsAppMessage,
+  sendContactReplyWhatsAppNotification,
 } from './whatsapp';
-export type { WhatsAppNotificationDetails } from './whatsapp';
+export type {
+  WhatsAppNotificationDetails,
+  ContactNotificationInput,
+  ContactNotificationResult
+} from './whatsapp';
 
 // Invoice PDF Generator
 export { generateInvoicePdfBuffer, generateInvoiceFileName, resolveOrderCustomizations } from './invoicePdf';
