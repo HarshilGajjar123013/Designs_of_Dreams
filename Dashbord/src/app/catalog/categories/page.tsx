@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { Layers, Plus, Tag, RefreshCw, Folder, Trash2, Edit2, X, Loader2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
+import { Layers, Plus, Tag, RefreshCw, Folder, Trash2, Edit2, X, Loader2, AlertTriangle, Image as ImageIcon, Check } from 'lucide-react';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function CategoryManagement() {
   const [mounted, setMounted] = useState(false);
@@ -11,6 +13,12 @@ export default function CategoryManagement() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form states
   const [name, setName] = useState('');
@@ -155,30 +163,83 @@ export default function CategoryManagement() {
     }
   };
 
-  const handleDeleteCategory = async (cat: any) => {
+  const handleToggleSelect = (id: string) => {
+    setSelectedCategoryIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedCategoryIds(categories.map(c => c.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedCategoryIds([]);
+  };
+
+  const handleOpenSingleDelete = (cat: any) => {
     const activeProducts = products.filter(p => p.categoryId === cat.id && p.status !== 'ARCHIVED');
     if (activeProducts.length > 0) {
       alert(`Cannot delete "${cat.name}" because it contains ${activeProducts.length} active products. Reassign or delete those products first.`);
       return;
     }
+    setDeleteTarget(cat);
+    setDeleteModalOpen(true);
+  };
 
-    if (!confirm(`Are you sure you want to delete the category "${cat.name}"?`)) return;
+  const handleOpenBulkDelete = () => {
+    // Check if any selected category has active products
+    const blockedCats = categories.filter(c => 
+      selectedCategoryIds.includes(c.id) &&
+      products.some(p => p.categoryId === c.id && p.status !== 'ARCHIVED')
+    );
+    if (blockedCats.length > 0) {
+      alert(`Cannot delete categories (${blockedCats.map(c => c.name).join(', ')}) because they contain active products. Reassign or delete those products first.`);
+      return;
+    }
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
 
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/categories/${cat.id}`, {
-        method: 'DELETE'
-      });
-      const result = await response.json();
-      if (response.ok && result.success) {
-        loadData();
-      } else {
-        alert(result.error || 'Failed to delete category');
+      if (deleteTarget) {
+        const response = await fetch(`/api/categories/${deleteTarget.id}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setSelectedCategoryIds(prev => prev.filter(id => id !== deleteTarget.id));
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+          loadData();
+        } else {
+          alert(result.error || 'Failed to delete category');
+        }
+      } else if (selectedCategoryIds.length > 0) {
+        const response = await fetch('/api/categories', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedCategoryIds })
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setSelectedCategoryIds([]);
+          setDeleteModalOpen(false);
+          loadData();
+        } else {
+          alert(result.error || 'Failed to delete selected categories');
+        }
       }
     } catch (err) {
       console.error(err);
       alert('An error occurred while deleting the category');
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   const getProductCountForCat = (catId: string) => {
     return products.filter(p => p.categoryId === catId && p.status !== 'ARCHIVED').length;
@@ -208,6 +269,17 @@ export default function CategoryManagement() {
           </div>
         )}
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedCategoryIds.length}
+          totalCount={categories.length}
+          isAllSelected={selectedCategoryIds.length > 0 && selectedCategoryIds.length === categories.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleOpenBulkDelete}
+          itemName="categories"
+        />
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 size={36} className="animate-spin text-[#FF6A00]" />
@@ -220,10 +292,13 @@ export default function CategoryManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {categories.map((cat) => {
                   const count = getProductCountForCat(cat.id);
+                  const isSelected = selectedCategoryIds.includes(cat.id);
                   return (
                     <div 
                       key={cat.id} 
-                      className="glass-card rounded-[24px] p-6 shadow-luxury flex flex-col justify-between min-h-[200px] bg-white border border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00] transition-all relative group"
+                      className={`glass-card rounded-[24px] p-6 shadow-luxury flex flex-col justify-between min-h-[200px] bg-white border transition-all relative group ${
+                        isSelected ? 'border-[#FF6A00] ring-2 ring-[#FF6A00]/20' : 'border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00]'
+                      }`}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
@@ -259,21 +334,41 @@ export default function CategoryManagement() {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all absolute top-4 right-4">
+                        <div className="flex items-center gap-2">
+                          {/* Selection Checkbox */}
                           <button
-                            onClick={() => openEditModal(cat)}
-                            className="p-1.5 text-gray-400 hover:text-[#FF6A00] hover:bg-orange-50 rounded-lg transition-all cursor-pointer"
-                            title="Edit Category"
+                            type="button"
+                            onClick={() => handleToggleSelect(cat.id)}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#FF6A00] text-white scale-105'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-400'
+                            }`}
+                            title={isSelected ? 'Deselect category' : 'Select category'}
                           >
-                            <Edit2 size={16} />
+                            {isSelected ? (
+                              <Check size={13} className="stroke-[3]" />
+                            ) : (
+                              <div className="w-3 h-3 rounded-xs border-2 border-gray-400" />
+                            )}
                           </button>
-                          <button
-                            onClick={() => handleDeleteCategory(cat)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
-                            title="Delete Category"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                              onClick={() => openEditModal(cat)}
+                              className="p-1.5 text-gray-400 hover:text-[#FF6A00] hover:bg-orange-50 rounded-lg transition-all cursor-pointer"
+                              title="Edit Category"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleOpenSingleDelete(cat)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer"
+                              title="Delete Category"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -429,6 +524,23 @@ export default function CategoryManagement() {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalOpen}
+          title={deleteTarget ? 'Delete Category?' : `Delete ${selectedCategoryIds.length} Categories?`}
+          itemName={deleteTarget ? deleteTarget.name : undefined}
+          count={!deleteTarget ? selectedCategoryIds.length : undefined}
+          itemType="category"
+          isDeleting={isDeleting}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={handleExecuteDelete}
+        />
       </div>
     </AdminLayout>
   );

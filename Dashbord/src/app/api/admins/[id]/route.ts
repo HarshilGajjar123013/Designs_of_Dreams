@@ -139,3 +139,60 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { session, response } = await verifyAdminSession('SUPER_ADMIN');
+    if (response) return response;
+
+    const { id } = await params;
+    const userId = session!.id;
+    const userRole = session!.role;
+
+    let admin = null;
+    try {
+      admin = await prisma.adminUser.findUnique({ where: { id } });
+    } catch {
+      const admins = fallbackDb.getCollection('admins');
+      admin = admins.find((a: any) => a.id === id);
+    }
+
+    if (!admin) {
+      return NextResponse.json({ error: 'Admin not found' }, { status: 404 });
+    }
+
+    if (admin.role === 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Super Administrator accounts cannot be deleted' }, { status: 400 });
+    }
+
+    if (admin.id === userId) {
+      return NextResponse.json({ error: 'You cannot delete your own account' }, { status: 400 });
+    }
+
+    try {
+      await prisma.adminUser.delete({ where: { id } });
+      await prisma.securityLog.create({
+        data: {
+          action: `Deleted admin account: ${admin.name} (${admin.email})`,
+          adminName: `Admin ID: ${userId}`,
+          role: userRole,
+          status: 'SUCCESS'
+        }
+      });
+    } catch (e) {
+      console.warn('Database delete failed, falling back to JSON DB:', e);
+    }
+
+    let admins = fallbackDb.getCollection('admins');
+    admins = admins.filter((a: any) => a.id !== id);
+    fallbackDb.saveCollection('admins', admins);
+
+    return NextResponse.json({ success: true, message: 'Admin deleted successfully' });
+  } catch (err: any) {
+    console.error('Admin DELETE error:', err);
+    return NextResponse.json({ error: 'Failed to delete admin user' }, { status: 500 });
+  }
+}

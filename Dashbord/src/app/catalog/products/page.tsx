@@ -10,6 +10,8 @@ import {
   Sparkles, Palette, Scissors, Clock, CheckCircle2, User, Mail, Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function ProductCatalog() {
   const [mounted, setMounted] = useState(false);
@@ -21,6 +23,12 @@ export default function ProductCatalog() {
   const [collections, setCollections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filter & Search states
   const [search, setSearch] = useState('');
@@ -354,24 +362,69 @@ export default function ProductCatalog() {
     setActiveTab('info');
   };
 
-  const handleArchiveDelete = async (product: any) => {
-    if (!confirm(`Are you sure you want to delete ${product.name}?`)) return;
+  const handleToggleSelect = (id: string) => {
+    setSelectedProductIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
+  const handleSelectAll = () => {
+    setSelectedProductIds(filteredProducts.map(p => p.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedProductIds([]);
+  };
+
+  const handleOpenSingleDelete = (product: any) => {
+    setDeleteTarget(product);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/products/${product.id}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        setProducts(prev => prev.filter(p => p.id !== product.id));
-      } else {
-        const res = await response.json();
-        alert(res.error || 'Failed to delete product');
+      if (deleteTarget) {
+        const response = await fetch(`/api/products/${deleteTarget.id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setProducts(prev => prev.filter(p => p.id !== deleteTarget.id));
+          setSelectedProductIds(prev => prev.filter(id => id !== deleteTarget.id));
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+        } else {
+          const res = await response.json();
+          alert(res.error || 'Failed to delete product');
+        }
+      } else if (selectedProductIds.length > 0) {
+        const response = await fetch('/api/products', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedProductIds }),
+        });
+        if (response.ok) {
+          setProducts(prev => prev.filter(p => !selectedProductIds.includes(p.id)));
+          setSelectedProductIds([]);
+          setDeleteModalOpen(false);
+        } else {
+          const res = await response.json();
+          alert(res.error || 'Failed to delete selected products');
+        }
       }
     } catch (err) {
       console.error(err);
-      alert('Network error occurred while deleting product');
+      alert('Network error occurred while deleting product(s)');
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   // Real file upload handler
   const handleFileUpload = async (files: FileList | File[]) => {
@@ -627,6 +680,17 @@ export default function ProductCatalog() {
           </div>
         </div>
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedProductIds.length}
+          totalCount={filteredProducts.length}
+          isAllSelected={selectedProductIds.length > 0 && selectedProductIds.length === filteredProducts.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleOpenBulkDelete}
+          itemName="products"
+        />
+
         {/* Loading Spinner */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -642,12 +706,37 @@ export default function ProductCatalog() {
         ) : (
           /* Product Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((p) => (
+            {filteredProducts.map((p) => {
+              const isSelected = selectedProductIds.includes(p.id);
+              return (
               <motion.div
                 key={p.id}
                 whileHover={{ y: -4 }}
-                className="glass-card rounded-3xl border border-[rgba(0,0,0,0.04)] shadow-luxury overflow-hidden flex flex-col justify-between hover:border-luxury-gold transition-all duration-300 bg-white"
+                className={`glass-card rounded-3xl border shadow-luxury overflow-hidden flex flex-col justify-between transition-all duration-300 bg-white relative ${
+                  isSelected ? 'border-luxury-gold ring-2 ring-luxury-gold/20' : 'border-[rgba(0,0,0,0.04)] hover:border-luxury-gold'
+                }`}
               >
+                {/* Selection Checkbox */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleSelect(p.id);
+                  }}
+                  className={`absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-md cursor-pointer ${
+                    isSelected
+                      ? 'bg-luxury-gold text-white scale-105'
+                      : 'bg-white/90 hover:bg-white text-gray-400 hover:text-gray-800 backdrop-blur-xs border border-gray-200/60'
+                  }`}
+                  title={isSelected ? 'Deselect piece' : 'Select piece'}
+                >
+                  {isSelected ? (
+                    <Check size={14} className="stroke-[3]" />
+                  ) : (
+                    <div className="w-3.5 h-3.5 rounded-sm border-2 border-gray-400" />
+                  )}
+                </button>
+
                 {/* Image Preview & Badges */}
                 <div className="relative h-64 bg-gray-50 overflow-hidden group">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -658,7 +747,7 @@ export default function ProductCatalog() {
                   />
                   
                   {/* Overlay tags */}
-                  <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 z-10">
+                  <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 z-10 max-w-[calc(100%-48px)]">
                     {p.premium && (
                       <span className="text-[8px] font-semibold uppercase tracking-widest bg-text-primary text-white px-2 py-0.5 rounded">
                         Premium
@@ -687,12 +776,14 @@ export default function ProductCatalog() {
                     <button
                       onClick={() => handleOpenEdit(p)}
                       className="p-2.5 bg-white text-gray-800 rounded-full hover:bg-luxury-gold hover:text-white transition-all shadow-md cursor-pointer"
+                      title="Edit Piece"
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
-                      onClick={() => handleArchiveDelete(p)}
+                      onClick={() => handleOpenSingleDelete(p)}
                       className="p-2.5 bg-white text-red-600 rounded-full hover:bg-red-600 hover:text-white transition-all shadow-md cursor-pointer"
+                      title="Delete Piece"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -736,7 +827,8 @@ export default function ProductCatalog() {
                   </div>
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -1876,6 +1968,23 @@ export default function ProductCatalog() {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalOpen}
+          title={deleteTarget ? 'Delete Product?' : `Delete ${selectedProductIds.length} Products?`}
+          itemName={deleteTarget ? deleteTarget.name : undefined}
+          count={!deleteTarget ? selectedProductIds.length : undefined}
+          itemType="product"
+          isDeleting={isDeleting}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={handleExecuteDelete}
+        />
       </div>
     </AdminLayout>
   );

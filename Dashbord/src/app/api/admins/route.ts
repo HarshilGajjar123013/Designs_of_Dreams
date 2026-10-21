@@ -138,3 +138,51 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { session, response } = await verifyAdminSession('SUPER_ADMIN');
+    if (response) return response;
+
+    const userId = session!.id;
+    const userRole = session!.role;
+
+    const body = await req.json();
+    const { ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'Array of admin ids is required' }, { status: 400 });
+    }
+
+    // Filter out SUPER_ADMIN and self
+    const validIds = ids.filter((id: string) => id !== userId);
+
+    try {
+      await prisma.adminUser.deleteMany({
+        where: {
+          id: { in: validIds },
+          role: { not: 'SUPER_ADMIN' }
+        }
+      });
+      await prisma.securityLog.create({
+        data: {
+          action: `Bulk deleted ${validIds.length} admin accounts`,
+          adminName: `Admin ID: ${userId}`,
+          role: userRole,
+          status: 'SUCCESS'
+        }
+      });
+    } catch (e) {
+      console.warn('Database bulk admin delete error:', e);
+    }
+
+    let admins = fallbackDb.getCollection('admins');
+    admins = admins.filter((a: any) => !(validIds.includes(a.id) && a.role !== 'SUPER_ADMIN'));
+    fallbackDb.saveCollection('admins', admins);
+
+    return NextResponse.json({ success: true, count: validIds.length });
+  } catch (err: any) {
+    console.error('Admins bulk DELETE error:', err);
+    return NextResponse.json({ error: 'Failed to delete administrators' }, { status: 500 });
+  }
+}

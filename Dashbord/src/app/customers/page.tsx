@@ -8,6 +8,8 @@ import {
   MapPin, Edit, Check, X, Notebook, Plus, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function CustomerManagement() {
   const [mounted, setMounted] = useState(false);
@@ -16,6 +18,13 @@ export default function CustomerManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeType, setActiveType] = useState<'new' | 'old'>('new');
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any | null>(null);
   const [duplicateCustomer, setDuplicateCustomer] = useState<any | null>(null);
@@ -122,13 +131,73 @@ export default function CustomerManagement() {
     loadData();
   };
 
-  const deleteOldCustomer = async (customer: any) => {
-    if (!confirm(`Delete historical profile for ${customer.name}?`)) return;
-    const res = await fetch(`/api/customers/${customer.id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (!res.ok || !data.success) { alert(data.error || 'Failed to delete customer'); return; }
-    loadData();
+  const handleToggleSelect = (id: string) => {
+    setSelectedCustomerIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
   };
+
+  const handleSelectAll = () => {
+    setSelectedCustomerIds(filteredCustomers.map(c => c.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedCustomerIds([]);
+  };
+
+  const handleOpenSingleDelete = (customer: any) => {
+    setDeleteTarget(customer);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteTarget) {
+        const res = await fetch(`/api/customers/${deleteTarget.id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.error || 'Failed to delete customer');
+        } else {
+          setSelectedCustomerIds(prev => prev.filter(id => id !== deleteTarget.id));
+          if (selectedCust && selectedCust.id === deleteTarget.id) {
+            setSelectedCust(null);
+          }
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+          loadData();
+        }
+      } else if (selectedCustomerIds.length > 0) {
+        const res = await fetch('/api/customers', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedCustomerIds })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data.error || 'Failed to delete selected customers');
+        } else {
+          setSelectedCustomerIds([]);
+          if (selectedCust && selectedCustomerIds.includes(selectedCust.id)) {
+            setSelectedCust(null);
+          }
+          setDeleteModalOpen(false);
+          loadData();
+        }
+      }
+    } catch (err) {
+      console.error('Customer delete error:', err);
+      alert('Error deleting customer(s)');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   const newCustomersCount = customers.filter(c => (c.customerType || 'new').toLowerCase() === 'new').length;
   const oldCustomersCount = customers.filter(c => (c.customerType || 'new').toLowerCase() === 'old').length;
@@ -168,12 +237,37 @@ export default function CustomerManagement() {
           />
         </div>
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedCustomerIds.length}
+          totalCount={filteredCustomers.length}
+          isAllSelected={filteredCustomers.length > 0 && selectedCustomerIds.length === filteredCustomers.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleOpenBulkDelete}
+          itemName="customers"
+        />
+
         {/* Directory List */}
         <div className="glass-card rounded-[28px] p-6 shadow-luxury">
           <div className="overflow-x-auto">
             <table className="luxury-table">
               <thead>
                 <tr>
+                  <th className="w-10">
+                    <button
+                      type="button"
+                      onClick={selectedCustomerIds.length === filteredCustomers.length ? handleDeselectAll : handleSelectAll}
+                      className="w-5 h-5 rounded flex items-center justify-center border border-gray-300 hover:border-[#FF6A00] transition-all cursor-pointer"
+                      title={selectedCustomerIds.length === filteredCustomers.length ? 'Deselect all' : 'Select all'}
+                    >
+                      {filteredCustomers.length > 0 && selectedCustomerIds.length === filteredCustomers.length ? (
+                        <Check size={13} className="text-[#FF6A00] stroke-[3]" />
+                      ) : (
+                        <span className="w-2.5 h-2.5" />
+                      )}
+                    </button>
+                  </th>
                   <th>Patron</th>
                   <th>Joined Date</th>
                   <th>Purchases count</th>
@@ -185,19 +279,35 @@ export default function CustomerManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-gray-500 text-xs">
+                    <td colSpan={7} className="text-center py-12 text-gray-500 text-xs">
                       Loading patron records from atelier database...
                     </td>
                   </tr>
                 ) : filteredCustomers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-12 text-gray-500 text-xs">
+                    <td colSpan={7} className="text-center py-12 text-gray-500 text-xs">
                       {search ? `No ${activeType} customers found matching "${search}".` : `No ${activeType} customers in the directory.`}
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map((c) => (
-                    <tr key={c.id}>
+                  filteredCustomers.map((c) => {
+                    const isSelected = selectedCustomerIds.includes(c.id);
+                    return (
+                    <tr key={c.id} className={isSelected ? 'bg-amber-50/50' : ''}>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSelect(c.id)}
+                          className={`w-5 h-5 rounded flex items-center justify-center transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#FF6A00] text-white border border-[#FF6A00]'
+                              : 'border border-gray-300 hover:border-gray-400 bg-white'
+                          }`}
+                          title={isSelected ? 'Deselect customer' : 'Select customer'}
+                        >
+                          {isSelected && <Check size={12} className="stroke-[3]" />}
+                        </button>
+                      </td>
                       <td>
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-[#FF6A00] text-white flex items-center justify-center font-bold text-xs overflow-hidden">
@@ -220,21 +330,24 @@ export default function CustomerManagement() {
                       </td>
                       <td className="text-xs text-gray-600 font-inter">{c.phone || '—'}</td>
                       <td>
-                        <button
-                          onClick={() => setSelectedCust(c)}
-                          className="p-1.5 bg-white border border-gray-200 hover:border-[#FF6A00] rounded-lg text-gray-600 hover:text-[#FF6A00] transition-all flex items-center gap-1.5 text-[10px]"
-                        >
-                          <Eye size={12} /> Inspect Profile
-                        </button>
-                        {activeType === 'old' && (
-                          <div className="mt-2 flex gap-2">
-                            <button onClick={() => openOldCustomerForm(c)} className="text-[10px] text-[#FF6A00] hover:underline"><Edit size={11} className="inline mr-1" />Edit</button>
-                            <button onClick={() => deleteOldCustomer(c)} className="text-[10px] text-red-500 hover:underline"><Trash2 size={11} className="inline mr-1" />Delete</button>
+                        <div className="flex flex-col gap-1.5">
+                          <button
+                            onClick={() => setSelectedCust(c)}
+                            className="p-1.5 bg-white border border-gray-200 hover:border-[#FF6A00] rounded-lg text-gray-600 hover:text-[#FF6A00] transition-all flex items-center gap-1.5 text-[10px] w-fit"
+                          >
+                            <Eye size={12} /> Inspect Profile
+                          </button>
+                          <div className="flex gap-2">
+                            {activeType === 'old' && (
+                              <button onClick={() => openOldCustomerForm(c)} className="text-[10px] text-[#FF6A00] hover:underline cursor-pointer"><Edit size={11} className="inline mr-0.5" />Edit</button>
+                            )}
+                            <button onClick={() => handleOpenSingleDelete(c)} className="text-[10px] text-red-500 hover:underline cursor-pointer"><Trash2 size={11} className="inline mr-0.5" />Delete</button>
                           </div>
-                        )}
+                        </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -478,6 +591,23 @@ export default function CustomerManagement() {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalOpen}
+          title={deleteTarget ? 'Delete Customer Profile?' : `Delete ${selectedCustomerIds.length} Customers?`}
+          itemName={deleteTarget ? deleteTarget.name : undefined}
+          count={!deleteTarget ? selectedCustomerIds.length : undefined}
+          itemType="customer profile"
+          isDeleting={isDeleting}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={handleExecuteDelete}
+        />
       </div>
     </AdminLayout>
   );

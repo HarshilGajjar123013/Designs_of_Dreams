@@ -5,10 +5,12 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { useAdminStore, Order } from '@/store/adminStore';
 import {
   Eye, Truck, FileText, CheckCircle2, AlertTriangle,
-  X, ArrowRight, Printer, ShieldAlert, CreditCard, RefreshCw
+  X, ArrowRight, Printer, ShieldAlert, CreditCard, RefreshCw, Trash2, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { printInvoice } from '@/lib/printInvoice';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function OrderManagement() {
   const [mounted, setMounted] = useState(false);
@@ -16,6 +18,12 @@ export default function OrderManagement() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Drawer & Invoice modal states
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
@@ -135,6 +143,75 @@ export default function OrderManagement() {
     }
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedOrderIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedOrderIds(filteredOrders.map(o => o.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedOrderIds([]);
+  };
+
+  const handleOpenSingleDelete = (order: any) => {
+    setDeleteTarget(order);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteTarget) {
+        const res = await fetch(`/api/orders/${deleteTarget.id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          setOrders(prev => prev.filter(o => o.id !== deleteTarget.id));
+          setSelectedOrderIds(prev => prev.filter(id => id !== deleteTarget.id));
+          if (selectedOrder && selectedOrder.id === deleteTarget.id) {
+            setSelectedOrder(null);
+          }
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+        } else {
+          alert(data.error || 'Failed to delete order');
+        }
+      } else if (selectedOrderIds.length > 0) {
+        const res = await fetch('/api/orders', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedOrderIds })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setOrders(prev => prev.filter(o => !selectedOrderIds.includes(o.id)));
+          if (selectedOrder && selectedOrderIds.includes(selectedOrder.id)) {
+            setSelectedOrder(null);
+          }
+          setSelectedOrderIds([]);
+          setDeleteModalOpen(false);
+        } else {
+          alert(data.error || 'Failed to delete selected orders');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting order(s)');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredOrders = orders.filter((o) => {
     const matchesSearch = o.id.toLowerCase().includes(search.toLowerCase()) ||
       o.customerName.toLowerCase().includes(search.toLowerCase()) ||
@@ -190,12 +267,37 @@ export default function OrderManagement() {
           </select>
         </div>
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedOrderIds.length}
+          totalCount={filteredOrders.length}
+          isAllSelected={filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleOpenBulkDelete}
+          itemName="orders"
+        />
+
         {/* Order Table List */}
         <div className="glass-card rounded-[28px] p-6 shadow-luxury">
           <div className="overflow-x-auto">
             <table className="luxury-table">
               <thead>
                 <tr>
+                  <th className="w-10">
+                    <button
+                      type="button"
+                      onClick={selectedOrderIds.length === filteredOrders.length ? handleDeselectAll : handleSelectAll}
+                      className="w-5 h-5 rounded flex items-center justify-center border border-gray-300 hover:border-[#FF6A00] transition-all cursor-pointer"
+                      title={selectedOrderIds.length === filteredOrders.length ? 'Deselect all' : 'Select all'}
+                    >
+                      {filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length ? (
+                        <Check size={13} className="text-[#FF6A00] stroke-[3]" />
+                      ) : (
+                        <span className="w-2.5 h-2.5" />
+                      )}
+                    </button>
+                  </th>
                   <th>Order ID</th>
                   <th>Customer</th>
                   <th>Phone</th>
@@ -207,8 +309,24 @@ export default function OrderManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((o) => (
-                  <tr key={o.id}>
+                {filteredOrders.map((o) => {
+                  const isSelected = selectedOrderIds.includes(o.id);
+                  return (
+                  <tr key={o.id} className={isSelected ? 'bg-amber-50/50' : ''}>
+                    <td>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelect(o.id)}
+                        className={`w-5 h-5 rounded flex items-center justify-center transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#FF6A00] text-white border border-[#FF6A00]'
+                            : 'border border-gray-300 hover:border-gray-400 bg-white'
+                        }`}
+                        title={isSelected ? 'Deselect order' : 'Select order'}
+                      >
+                        {isSelected && <Check size={12} className="stroke-[3]" />}
+                      </button>
+                    </td>
                     <td className="font-semibold text-xs text-gray-800 font-inter">{o.id}</td>
                     <td>
                       <div>
@@ -250,10 +368,18 @@ export default function OrderManagement() {
                         >
                           <FileText size={12} /> Invoice
                         </button>
+                        <button
+                          onClick={() => handleOpenSingleDelete(o)}
+                          className="p-1.5 bg-white border border-gray-200 hover:border-red-500 rounded-lg text-gray-600 hover:text-red-600 transition-all flex items-center gap-1 text-[10px] cursor-pointer"
+                          title="Delete Order"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -726,6 +852,23 @@ export default function OrderManagement() {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalOpen}
+          title={deleteTarget ? `Delete Order ${deleteTarget.id}?` : `Delete ${selectedOrderIds.length} Orders?`}
+          itemName={deleteTarget ? `Order #${deleteTarget.id} (${deleteTarget.customerName})` : undefined}
+          count={!deleteTarget ? selectedOrderIds.length : undefined}
+          itemType="order"
+          isDeleting={isDeleting}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={handleExecuteDelete}
+        />
       </div>
     </AdminLayout>
   );

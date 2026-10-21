@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { Layers, Plus, Gem, RefreshCw, Trash2, Loader2, AlertTriangle, Calendar } from 'lucide-react';
+import { Layers, Plus, Gem, RefreshCw, Trash2, Loader2, AlertTriangle, Calendar, Check } from 'lucide-react';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function CollectionManagement() {
   const [mounted, setMounted] = useState(false);
@@ -11,6 +13,12 @@ export default function CollectionManagement() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form states
   const [name, setName] = useState('');
@@ -84,24 +92,69 @@ export default function CollectionManagement() {
     }
   };
 
-  const handleDeleteCollection = async (coll: any) => {
-    if (!confirm(`Are you sure you want to delete the collection "${coll.name}"? Products in this collection will remain but will be set to Evergreen heritage.`)) return;
+  const handleToggleSelect = (id: string) => {
+    setSelectedCollectionIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
 
+  const handleSelectAll = () => {
+    setSelectedCollectionIds(collections.map(c => c.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedCollectionIds([]);
+  };
+
+  const handleOpenSingleDelete = (coll: any) => {
+    setDeleteTarget(coll);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/collections/${coll.id}`, {
-        method: 'DELETE'
-      });
-      const result = await response.json();
-      if (response.ok && result.success) {
-        loadData();
-      } else {
-        alert(result.error || 'Failed to delete collection');
+      if (deleteTarget) {
+        const response = await fetch(`/api/collections/${deleteTarget.id}`, {
+          method: 'DELETE'
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setSelectedCollectionIds(prev => prev.filter(id => id !== deleteTarget.id));
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+          loadData();
+        } else {
+          alert(result.error || 'Failed to delete collection');
+        }
+      } else if (selectedCollectionIds.length > 0) {
+        const response = await fetch('/api/collections', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedCollectionIds })
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          setSelectedCollectionIds([]);
+          setDeleteModalOpen(false);
+          loadData();
+        } else {
+          alert(result.error || 'Failed to delete selected collections');
+        }
       }
     } catch (err) {
       console.error(err);
       alert('An error occurred while deleting the collection');
+    } finally {
+      setIsDeleting(false);
     }
   };
+
 
   const getProductCountForColl = (collId: string) => {
     return products.filter(p => p.collectionId === collId && p.status !== 'ARCHIVED').length;
@@ -131,6 +184,17 @@ export default function CollectionManagement() {
           </div>
         )}
 
+        {/* Bulk Action Bar */}
+        <BulkActionBar
+          selectedCount={selectedCollectionIds.length}
+          totalCount={collections.length}
+          isAllSelected={selectedCollectionIds.length > 0 && selectedCollectionIds.length === collections.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleOpenBulkDelete}
+          itemName="collections"
+        />
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 size={36} className="animate-spin text-[#FF6A00]" />
@@ -150,10 +214,13 @@ export default function CollectionManagement() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {collections.map((coll) => {
                     const count = getProductCountForColl(coll.id);
+                    const isSelected = selectedCollectionIds.includes(coll.id);
                     return (
                       <div 
                         key={coll.id} 
-                        className="glass-card rounded-[24px] p-6 shadow-luxury flex flex-col justify-between h-[220px] bg-white border border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00] transition-all relative group"
+                        className={`glass-card rounded-[24px] p-6 shadow-luxury flex flex-col justify-between h-[220px] bg-white border transition-all relative group ${
+                          isSelected ? 'border-[#FF6A00] ring-2 ring-[#FF6A00]/20' : 'border-[rgba(0,0,0,0.03)] hover:border-[#FF6A00]'
+                        }`}
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -168,13 +235,33 @@ export default function CollectionManagement() {
                             </div>
                           </div>
                           
-                          <button
-                            onClick={() => handleDeleteCollection(coll)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all cursor-pointer absolute top-4 right-4"
-                            title="Delete Collection"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {/* Selection Checkbox */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSelect(coll.id)}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+                                isSelected
+                                ? 'bg-[#FF6A00] text-white scale-105'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-400'
+                              }`}
+                              title={isSelected ? 'Deselect collection' : 'Select collection'}
+                            >
+                              {isSelected ? (
+                                <Check size={13} className="stroke-[3]" />
+                              ) : (
+                                <div className="w-3 h-3 rounded-xs border-2 border-gray-400" />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenSingleDelete(coll)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                              title="Delete Collection"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
 
                         <div className="border-t border-gray-50 pt-3 mt-4">
@@ -245,6 +332,23 @@ export default function CollectionManagement() {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalOpen}
+          title={deleteTarget ? 'Delete Collection?' : `Delete ${selectedCollectionIds.length} Collections?`}
+          itemName={deleteTarget ? deleteTarget.name : undefined}
+          count={!deleteTarget ? selectedCollectionIds.length : undefined}
+          itemType="collection"
+          isDeleting={isDeleting}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={handleExecuteDelete}
+        />
       </div>
     </AdminLayout>
   );

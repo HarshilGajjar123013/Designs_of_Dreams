@@ -135,3 +135,71 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
+    const body = await req.json();
+    const { ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'Array of collection ids is required' }, { status: 400 });
+    }
+
+    let databaseConnected = true;
+
+    try {
+      await prisma.product.updateMany({
+        where: { collectionId: { in: ids } },
+        data: { collectionId: null }
+      });
+
+      await prisma.collection.deleteMany({
+        where: { id: { in: ids } },
+      });
+
+      try {
+        await prisma.securityLog.create({
+          data: {
+            action: `Bulk Collections Deleted (${ids.length} items): ${ids.slice(0, 5).join(', ')}${ids.length > 5 ? '...' : ''}`,
+            adminName: `Admin ID: ${session!.id}`,
+            role: session!.role,
+            status: 'SUCCESS',
+            ip: req.headers.get('x-forwarded-for') || '127.0.0.1',
+            device: req.headers.get('user-agent') || 'Unknown Browser',
+          }
+        });
+      } catch (secErr) {
+        console.warn('Security log write failed:', secErr);
+      }
+    } catch (dbError) {
+      console.warn('⚠️ Database bulk delete failed, using fallback JSON DB:', dbError);
+      databaseConnected = false;
+    }
+
+    if (!databaseConnected) {
+      const collections = fallbackDb.getCollection('collections');
+      const filtered = collections.filter((c: any) => !ids.includes(c.id));
+      fallbackDb.saveCollection('collections', filtered);
+
+      const products = fallbackDb.getCollection('products');
+      products.forEach((p: any) => {
+        if (ids.includes(p.collectionId)) {
+          p.collectionId = null;
+        }
+      });
+      fallbackDb.saveCollection('products', products);
+    }
+
+    return NextResponse.json({ success: true, count: ids.length });
+  } catch (err: any) {
+    console.error('Collections bulk DELETE error:', err);
+    return NextResponse.json(
+      { error: 'Failed to delete collections' },
+      { status: 500 }
+    );
+  }
+}
+

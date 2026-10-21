@@ -71,19 +71,19 @@ export async function DELETE(
     let databaseConnected = true;
 
     try {
-      await prisma.coupon.delete({
-        where: { id }
+      await prisma.coupon.deleteMany({
+        where: {
+          OR: [{ id }, { code: id }]
+        }
       });
     } catch (e) {
       console.warn('⚠️ Database DELETE failed, falling back to JSON DB.');
-      databaseConnected = false;
     }
 
-    if (!databaseConnected) {
-      let coupons = fallbackDb.getCollection('coupons');
-      coupons = coupons.filter(c => c.id !== id && c.code !== id);
-      fallbackDb.saveCollection('coupons', coupons);
-    }
+    // Also update fallback DB to stay in sync
+    let coupons = fallbackDb.getCollection('coupons');
+    coupons = coupons.filter(c => c.id !== id && c.code !== id);
+    fallbackDb.saveCollection('coupons', coupons);
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

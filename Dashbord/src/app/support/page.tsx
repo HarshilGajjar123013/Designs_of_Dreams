@@ -5,8 +5,10 @@ import AdminLayout from '@/components/layout/AdminLayout';
 import { useAdminStore, ContactForm } from '@/store/adminStore';
 import {
   Inbox, Send, ArrowRight, Download, Mail,
-  Phone, Calendar, CheckSquare, Clock, Search
+  Phone, Calendar, CheckSquare, Clock, Search, Trash2
 } from 'lucide-react';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function SupportDesk() {
   const [mounted, setMounted] = useState(false);
@@ -20,6 +22,79 @@ export default function SupportDesk() {
 
   // Reply composer
   const [replyText, setReplyText] = useState('');
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleToggleSelect = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedTicketIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (tickets: any[]) => {
+    setSelectedTicketIds(tickets.map((t) => t.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedTicketIds([]);
+  };
+
+  const handleOpenSingleDelete = (ticket: any, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDeleteTarget(ticket);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteTarget) {
+        const res = await fetch(`/api/contact/${deleteTarget.id}`, {
+          method: 'DELETE',
+        });
+        const data = await res.json();
+        if (data.success) {
+          setContactForms((prev) => prev.filter((cf) => cf.id !== deleteTarget.id));
+          setSelectedTicketIds((prev) => prev.filter((id) => id !== deleteTarget.id));
+          if (selectedTicket?.id === deleteTarget.id) setSelectedTicket(null);
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+        } else {
+          alert(data.error || 'Failed to delete support ticket');
+        }
+      } else if (selectedTicketIds.length > 0) {
+        const res = await fetch('/api/contact', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedTicketIds }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setContactForms((prev) => prev.filter((cf) => !selectedTicketIds.includes(cf.id)));
+          if (selectedTicket && selectedTicketIds.includes(selectedTicket.id)) setSelectedTicket(null);
+          setSelectedTicketIds([]);
+          setDeleteModalOpen(false);
+        } else {
+          alert(data.error || 'Failed to delete selected support tickets');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting support ticket(s)');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const loadContactForms = async () => {
     setLoading(true);
@@ -164,6 +239,15 @@ export default function SupportDesk() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 min-h-[500px]">
           {/* Messages list (Col 1 & 2) */}
           <div className="lg:col-span-2 space-y-4">
+            <BulkActionBar
+              selectedCount={selectedTicketIds.length}
+              totalCount={filteredTickets.length}
+              onSelectAll={() => handleSelectAll(filteredTickets)}
+              onDeselectAll={handleDeselectAll}
+              onDeleteSelected={handleOpenBulkDelete}
+              itemLabel="support inquiries"
+            />
+
             {filteredTickets.length === 0 ? (
               <div className="glass-card rounded-[28px] p-12 text-center text-gray-500 border border-gray-100 flex flex-col items-center">
                 <Inbox size={48} className="text-gray-300 mb-4 stroke-[1.5]" />
@@ -175,35 +259,59 @@ export default function SupportDesk() {
                 <div
                   key={cf.id}
                   onClick={() => setSelectedTicket(cf)}
-                  className={`p-5 rounded-[24px] border transition-all cursor-pointer flex flex-col justify-between h-[150px] ${selectedTicket?.id === cf.id
+                  className={`p-5 rounded-[24px] border transition-all cursor-pointer flex flex-col justify-between min-h-[150px] ${
+                    selectedTicket?.id === cf.id
                       ? 'bg-white border-[#FF6A00] shadow-luxury'
+                      : selectedTicketIds.includes(cf.id)
+                      ? 'bg-orange-50/30 border-orange-200'
                       : 'bg-white hover:bg-gray-50 border-[rgba(0,0,0,0.03)] shadow-sm'
-                    }`}
+                  }`}
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <span className={`text-[8px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded border ${cf.status === 'UNREAD'
-                          ? 'bg-amber-50 text-[#D99A00] border-[rgba(217,154,0,0.15)] animate-pulse'
-                          : 'bg-green-50 text-[#0FA958] border-[rgba(15,169,88,0.15)]'
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedTicketIds.includes(cf.id)}
+                        onChange={() => {}}
+                        onClick={(e) => handleToggleSelect(cf.id, e)}
+                        className="w-4 h-4 rounded text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 cursor-pointer mt-1 shrink-0"
+                        title="Select Inquiry"
+                      />
+                      <div>
+                        <span className={`text-[8px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded border ${
+                          cf.status === 'UNREAD'
+                            ? 'bg-amber-50 text-[#D99A00] border-[rgba(217,154,0,0.15)] animate-pulse'
+                            : 'bg-green-50 text-[#0FA958] border-[rgba(15,169,88,0.15)]'
                         }`}>
-                        {cf.status}
-                      </span>
-                      <h4 className="font-marcellus text-base text-gray-900 font-light mt-2">
-                        {cf.subject}
-                      </h4>
+                          {cf.status}
+                        </span>
+                        <h4 className="font-marcellus text-base text-gray-900 font-light mt-2">
+                          {cf.subject}
+                        </h4>
+                      </div>
                     </div>
-                    <span className="text-[10px] text-gray-400 font-inter">
-                      {new Date(cf.createdAt).toLocaleDateString('en-IN', {
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-gray-400 font-inter">
+                        {new Date(cf.createdAt).toLocaleDateString('en-IN', {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenSingleDelete(cf, e)}
+                        className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                        title="Delete inquiry"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
 
-                  <p className="text-xs text-gray-500 font-light line-clamp-2 mt-2 leading-relaxed">
+                  <p className="text-xs text-gray-500 font-light line-clamp-2 mt-2 leading-relaxed pl-7">
                     {cf.message}
                   </p>
 
-                  <div className="flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-50 pt-2 mt-2 font-poppins">
+                  <div className="flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-50 pt-2 mt-2 font-poppins pl-7">
                     <span>Sender: <strong>{cf.name}</strong> ({cf.email})</span>
                     <span className="text-[#FF6A00] font-semibold flex items-center gap-0.5">
                       Inspect Request <ArrowRight size={10} />
@@ -220,25 +328,35 @@ export default function SupportDesk() {
               <div className="flex flex-col justify-between h-full space-y-6">
                 <div className="space-y-4">
                   {/* Sender Dossier */}
-                  <div className="border-b border-gray-100 pb-4">
-                    <h3 className="font-marcellus text-lg text-gray-900 font-light uppercase tracking-wider">
-                      Sender Dossier
-                    </h3>
-                    <div className="mt-3 text-xs space-y-2">
-                      <p className="flex items-center gap-2 text-gray-700">
-                        <Mail size={13} className="text-gray-400" />
-                        <strong>{selectedTicket.name}</strong>
-                      </p>
-                      <p className="text-gray-500 pl-5">{selectedTicket.email}</p>
-                      <p className="flex items-center gap-2 text-gray-700 pl-0.5">
-                        <Phone size={13} className="text-gray-400" />
-                        {selectedTicket.phone}
-                      </p>
-                      <p className="flex items-center gap-2 text-gray-500 pl-0.5">
-                        <Calendar size={13} className="text-gray-400" />
-                        Sent: {new Date(selectedTicket.createdAt).toLocaleString()}
-                      </p>
+                  <div className="border-b border-gray-100 pb-4 flex justify-between items-start">
+                    <div>
+                      <h3 className="font-marcellus text-lg text-gray-900 font-light uppercase tracking-wider">
+                        Sender Dossier
+                      </h3>
+                      <div className="mt-3 text-xs space-y-2">
+                        <p className="flex items-center gap-2 text-gray-700">
+                          <Mail size={13} className="text-gray-400" />
+                          <strong>{selectedTicket.name}</strong>
+                        </p>
+                        <p className="text-gray-500 pl-5">{selectedTicket.email}</p>
+                        <p className="flex items-center gap-2 text-gray-700 pl-0.5">
+                          <Phone size={13} className="text-gray-400" />
+                          {selectedTicket.phone}
+                        </p>
+                        <p className="flex items-center gap-2 text-gray-500 pl-0.5">
+                          <Calendar size={13} className="text-gray-400" />
+                          Sent: {new Date(selectedTicket.createdAt).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSingleDelete(selectedTicket)}
+                      className="p-1.5 rounded-lg border border-red-100 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all cursor-pointer flex items-center gap-1 text-[10px] font-semibold shrink-0"
+                      title="Delete ticket"
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
                   </div>
 
                   {/* Message Content */}
@@ -293,6 +411,27 @@ export default function SupportDesk() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteModalOpen(false);
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleExecuteDelete}
+        isLoading={isDeleting}
+        title={deleteTarget ? 'Delete Support Inquiry' : 'Delete Selected Inquiries'}
+        itemDescription={
+          deleteTarget
+            ? `support inquiry "${deleteTarget.subject}" from ${deleteTarget.name}`
+            : `${selectedTicketIds.length} support inquiry(s)`
+        }
+        isBulk={!deleteTarget}
+        bulkCount={selectedTicketIds.length}
+      />
     </AdminLayout>
   );
 }

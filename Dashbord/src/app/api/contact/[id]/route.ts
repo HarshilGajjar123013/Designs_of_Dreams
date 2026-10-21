@@ -50,3 +50,31 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update contact form' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
+
+    try {
+      await prisma.contactForm.delete({
+        where: { id }
+      });
+    } catch (dbErr) {
+      console.warn('Database contact delete error:', dbErr);
+    }
+
+    const forms = fallbackDb.getCollection('contactForms');
+    const filtered = forms.filter((f: any) => f.id !== id);
+    fallbackDb.saveCollection('contactForms', filtered);
+
+    return NextResponse.json({ success: true, message: 'Contact ticket deleted' });
+  } catch (err: any) {
+    console.error('Contact DELETE error:', err);
+    return NextResponse.json({ error: 'Failed to delete contact form' }, { status: 500 });
+  }
+}
+

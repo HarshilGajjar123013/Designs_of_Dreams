@@ -153,3 +153,70 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
+    const { id } = await params;
+    const userRole = session!.role;
+    const userId = session!.id;
+
+    let databaseConnected = true;
+
+    try {
+      await prisma.order.delete({
+        where: { id },
+      });
+
+      // Security Audit Log
+      try {
+        await prisma.securityLog.create({
+          data: {
+            action: `Order Deleted: ${id}`,
+            adminName: `Admin ID: ${userId}`,
+            role: userRole,
+            status: 'SUCCESS',
+            ip: req.headers.get('x-forwarded-for') || '127.0.0.1',
+            device: req.headers.get('user-agent') || 'Unknown Browser',
+          }
+        });
+      } catch (secErr) {
+        console.warn('Security log write failed:', secErr);
+      }
+    } catch (dbError) {
+      console.warn('⚠️ Database order delete failed, falling back to JSON DB:', dbError);
+      databaseConnected = false;
+    }
+
+    if (!databaseConnected) {
+      const orders = fallbackDb.getCollection('orders');
+      const filtered = orders.filter((o: any) => o.id !== id);
+      fallbackDb.saveCollection('orders', filtered);
+
+      const secLogs = fallbackDb.getCollection('securityLogs');
+      secLogs.push({
+        id: randomUUID(),
+        timestamp: new Date().toISOString(),
+        action: `Order ${id} Deleted (Fallback)`,
+        adminName: `Admin ID: ${userId}`,
+        role: userRole,
+        status: 'SUCCESS'
+      });
+      fallbackDb.saveCollection('securityLogs', secLogs);
+    }
+
+    return NextResponse.json({ success: true, message: `Order ${id} deleted successfully` });
+  } catch (err: any) {
+    console.error('Order DELETE error:', err);
+    return NextResponse.json(
+      { error: 'Failed to delete order' },
+      { status: 500 }
+    );
+  }
+}
+

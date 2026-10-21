@@ -130,3 +130,58 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
+    const body = await req.json();
+    const { ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'Array of category ids is required' }, { status: 400 });
+    }
+
+    let databaseConnected = true;
+
+    try {
+      await prisma.category.deleteMany({
+        where: { id: { in: ids } },
+      });
+
+      try {
+        await prisma.securityLog.create({
+          data: {
+            action: `Bulk Categories Deleted (${ids.length} items): ${ids.slice(0, 5).join(', ')}${ids.length > 5 ? '...' : ''}`,
+            adminName: `Admin ID: ${session!.id}`,
+            role: session!.role,
+            status: 'SUCCESS',
+            ip: req.headers.get('x-forwarded-for') || '127.0.0.1',
+            device: req.headers.get('user-agent') || 'Unknown Browser',
+          }
+        });
+      } catch (secErr) {
+        console.warn('Security log write failed:', secErr);
+      }
+    } catch (dbError) {
+      console.warn('⚠️ Database bulk delete failed, using fallback JSON DB:', dbError);
+      databaseConnected = false;
+    }
+
+    if (!databaseConnected) {
+      const categories = fallbackDb.getCollection('categories');
+      const filtered = categories.filter((c: any) => !ids.includes(c.id));
+      fallbackDb.saveCollection('categories', filtered);
+    }
+
+    return NextResponse.json({ success: true, count: ids.length });
+  } catch (err: any) {
+    console.error('Categories bulk DELETE error:', err);
+    return NextResponse.json(
+      { error: 'Failed to delete categories' },
+      { status: 500 }
+    );
+  }
+}
+

@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
-import { Shield, Plus, Power, Check, X, ShieldAlert, Lock, UserPlus } from 'lucide-react';
+import { Shield, Plus, Power, Check, X, ShieldAlert, Lock, UserPlus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function AdminManagement() {
   const [mounted, setMounted] = useState(false);
@@ -11,12 +13,83 @@ export default function AdminManagement() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedAdminIds, setSelectedAdminIds] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // New Admin form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'SUPER_ADMIN' | 'MANAGER'>('MANAGER');
   const [avatar, setAvatar] = useState('');
+
+  const deletableAdmins = admins.filter(a => a.role !== 'SUPER_ADMIN');
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedAdminIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedAdminIds(deletableAdmins.map(a => a.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedAdminIds([]);
+  };
+
+  const handleOpenSingleDelete = (admin: any) => {
+    setDeleteTarget(admin);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteTarget) {
+        const res = await fetch(`/api/admins/${deleteTarget.id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          setAdmins(prev => prev.filter(a => a.id !== deleteTarget.id));
+          setSelectedAdminIds(prev => prev.filter(id => id !== deleteTarget.id));
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+        } else {
+          alert(data.error || 'Failed to delete administrator');
+        }
+      } else if (selectedAdminIds.length > 0) {
+        const res = await fetch('/api/admins', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: selectedAdminIds })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setAdmins(prev => prev.filter(a => !selectedAdminIds.includes(a.id)));
+          setSelectedAdminIds([]);
+          setDeleteModalOpen(false);
+        } else {
+          alert(data.error || 'Failed to delete selected administrators');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting administrator(s)');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -131,10 +204,28 @@ export default function AdminManagement() {
               </h3>
             </div>
 
+            <BulkActionBar
+              selectedCount={selectedAdminIds.length}
+              totalCount={deletableAdmins.length}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
+              onDeleteSelected={handleOpenBulkDelete}
+              itemLabel="administrators"
+            />
+
             <div className="overflow-x-auto">
               <table className="luxury-table">
                 <thead>
                   <tr>
+                    <th className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={deletableAdmins.length > 0 && selectedAdminIds.length === deletableAdmins.length}
+                        onChange={(e) => e.target.checked ? handleSelectAll() : handleDeselectAll()}
+                        className="w-4 h-4 rounded text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 cursor-pointer"
+                        title="Select All Managers"
+                      />
+                    </th>
                     <th>Admin</th>
                     <th>Email ID</th>
                     <th>Role Assigned</th>
@@ -145,7 +236,20 @@ export default function AdminManagement() {
                 </thead>
                 <tbody>
                   {admins.map((adm) => (
-                    <tr key={adm.id}>
+                    <tr key={adm.id} className={selectedAdminIds.includes(adm.id) ? 'bg-orange-50/40' : ''}>
+                      <td>
+                        {adm.role !== 'SUPER_ADMIN' ? (
+                          <input
+                            type="checkbox"
+                            checked={selectedAdminIds.includes(adm.id)}
+                            onChange={() => handleToggleSelect(adm.id)}
+                            className="w-4 h-4 rounded text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 cursor-pointer"
+                            title="Select Admin"
+                          />
+                        ) : (
+                          <span className="w-4 h-4 inline-block text-gray-300 text-center font-bold" title="Super Admin cannot be selected">—</span>
+                        )}
+                      </td>
                       <td>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-[#1A1A1A] text-white flex items-center justify-center font-bold text-[10px] overflow-hidden shadow-sm">
@@ -176,16 +280,25 @@ export default function AdminManagement() {
                       </td>
                       <td>
                         {adm.role !== 'SUPER_ADMIN' && (
-                          <button
-                            onClick={() => handleToggleStatus(adm)}
-                            className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-[9px] font-semibold ${
-                              adm.status === 'ACTIVE'
-                                ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white'
-                                : 'bg-green-50 text-green-600 border-green-100 hover:bg-green-600 hover:text-white'
-                            }`}
-                          >
-                            <Power size={10} /> {adm.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleToggleStatus(adm)}
+                              className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 text-[9px] font-semibold ${
+                                adm.status === 'ACTIVE'
+                                  ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white'
+                                  : 'bg-green-50 text-green-600 border-green-100 hover:bg-green-600 hover:text-white'
+                              }`}
+                            >
+                              <Power size={10} /> {adm.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              onClick={() => handleOpenSingleDelete(adm)}
+                              className="p-1.5 rounded-lg border border-red-100 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                              title="Delete admin account"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -395,6 +508,27 @@ export default function AdminManagement() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteModalOpen(false);
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleExecuteDelete}
+        isLoading={isDeleting}
+        title={deleteTarget ? 'Delete Administrator' : 'Delete Selected Administrators'}
+        itemDescription={
+          deleteTarget
+            ? `administrator account "${deleteTarget.name}" (${deleteTarget.email})`
+            : `${selectedAdminIds.length} administrator(s)`
+        }
+        isBulk={!deleteTarget}
+        bulkCount={selectedAdminIds.length}
+      />
     </AdminLayout>
   );
 }

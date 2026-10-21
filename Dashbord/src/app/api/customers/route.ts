@@ -192,3 +192,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to create old customer' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { response } = await verifyAdminSession();
+    if (response) return response;
+
+    const body = await req.json();
+    const { ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'Array of customer ids is required' }, { status: 400 });
+    }
+
+    try {
+      await (prisma as any).oldCustomer.deleteMany({
+        where: { id: { in: ids } },
+      });
+    } catch (dbErr) {
+      console.warn('Database customer bulk delete error:', dbErr);
+    }
+
+    // Also remove from fallbackDb
+    const customers = fallbackDb.getCollection('customers');
+    const filtered = customers.filter((c: any) => !ids.includes(c.id));
+    fallbackDb.saveCollection('customers', filtered);
+
+    return NextResponse.json({ success: true, count: ids.length });
+  } catch (error) {
+    console.error('Customers bulk DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete customers' }, { status: 500 });
+  }
+}
+

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { Save, Image, Plus, Trash2, Edit2, Upload, Sparkles, Eye, X, Tag } from 'lucide-react';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 const defaultGalleryData = [
   {
@@ -196,10 +198,105 @@ export default function GalleryManager() {
     setIsEditingItem(false);
   };
 
-  const handleDeleteItem = (index: number) => {
-    const item = filteredGallery[index];
-    if (confirm(`Are you sure you want to remove "${item.title}"?`)) {
-      setGallery(prev => prev.filter(g => g.id !== item.id));
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedGalleryIds, setSelectedGalleryIds] = useState<(string | number)[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'item'; item: any } | { type: 'tag'; tagId: string; label: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleToggleSelect = (id: string | number) => {
+    setSelectedGalleryIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedGalleryIds(filteredGallery.map(g => g.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedGalleryIds([]);
+  };
+
+  const handleOpenSingleDelete = (item: any) => {
+    setDeleteTarget({ type: 'item', item });
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenTagDelete = (tagId: string, label: string) => {
+    setDeleteTarget({ type: 'tag', tagId, label });
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteTarget?.type === 'item') {
+        const targetId = deleteTarget.item.id;
+        const nextGallery = gallery.filter(g => g.id !== targetId);
+        setGallery(nextGallery);
+        setSelectedGalleryIds(prev => prev.filter(id => id !== targetId));
+
+        // Auto-save to CMS
+        const getRes = await fetch('/api/cms');
+        const getData = await getRes.json();
+        const currentCms = getData.success ? getData.cms : {};
+        await fetch('/api/cms', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...currentCms,
+            gallery: nextGallery
+          })
+        });
+      } else if (deleteTarget?.type === 'tag') {
+        const { tagId } = deleteTarget;
+        const nextTags = customFilterTags.filter(t => t.id !== tagId);
+        setCustomFilterTags(nextTags);
+        if (activeFilter === tagId) setActiveFilter('all');
+
+        const getRes = await fetch('/api/cms');
+        const getData = await getRes.json();
+        const currentCms = getData.success ? getData.cms : {};
+        await fetch('/api/cms', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...currentCms,
+            gallery,
+            galleryFilterTags: nextTags
+          })
+        });
+      } else if (selectedGalleryIds.length > 0) {
+        // Bulk delete items
+        const nextGallery = gallery.filter(g => !selectedGalleryIds.includes(g.id));
+        setGallery(nextGallery);
+        setSelectedGalleryIds([]);
+
+        const getRes = await fetch('/api/cms');
+        const getData = await getRes.json();
+        const currentCms = getData.success ? getData.cms : {};
+        await fetch('/api/cms', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...currentCms,
+            gallery: nextGallery
+          })
+        });
+      }
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete item(s)');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -280,31 +377,9 @@ export default function GalleryManager() {
     }
   }, [showTagModal]);
 
-  // Delete custom filter tag
-  const handleDeleteFilterTag = async (tagId: string) => {
-    if (!confirm('Remove this filter tag? Gallery items using it will keep their tag but won\'t be filterable until reassigned.')) return;
-    const nextTags = customFilterTags.filter(t => t.id !== tagId);
-    setCustomFilterTags(nextTags);
-    if (activeFilter === tagId) setActiveFilter('all');
-
-    // Auto-save tag removal immediately so it never returns on refresh
-    try {
-      const getRes = await fetch('/api/cms');
-      const getData = await getRes.json();
-      const currentCms = getData.success ? getData.cms : {};
-
-      await fetch('/api/cms', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...currentCms,
-          gallery,
-          galleryFilterTags: nextTags
-        })
-      });
-    } catch (err) {
-      console.error('Failed to auto-save tag deletion:', err);
-    }
+  // Delete custom filter tag via confirmation modal
+  const handleDeleteFilterTag = (tagId: string, label: string) => {
+    handleOpenTagDelete(tagId, label);
   };
 
   useEffect(() => {
@@ -424,7 +499,7 @@ export default function GalleryManager() {
                 {customFilterTags.some(ct => ct.id === tag.id) && (
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteFilterTag(tag.id); }}
+                    onClick={(e) => { e.stopPropagation(); handleDeleteFilterTag(tag.id, tag.label); }}
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-all cursor-pointer"
                     title={`Remove "${tag.label}" tag`}
                   >
@@ -584,6 +659,16 @@ export default function GalleryManager() {
           </div>
         )}
 
+        {/* Bulk Actions */}
+        <BulkActionBar
+          selectedCount={selectedGalleryIds.length}
+          totalCount={filteredGallery.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDeleteSelected={handleOpenBulkDelete}
+          itemLabel="gallery items"
+        />
+
         {/* Gallery Items Grid */}
         {filteredGallery.length === 0 ? (
           <div className="glass-card rounded-[20px] sm:rounded-[28px] p-6 sm:p-12 shadow-luxury text-center">
@@ -600,9 +685,24 @@ export default function GalleryManager() {
             {filteredGallery.map((item, idx) => (
               <div
                 key={item.id || idx}
-                className="relative group border border-gray-150 rounded-2xl overflow-hidden bg-white shadow-sm flex flex-col justify-between hover:border-[#FF6A00] transition-all hover:shadow-md"
+                className={`relative group border rounded-2xl overflow-hidden bg-white shadow-sm flex flex-col justify-between transition-all hover:shadow-md ${
+                  selectedGalleryIds.includes(item.id)
+                    ? 'border-[#FF6A00] ring-2 ring-[#FF6A00]/20'
+                    : 'border-gray-150 hover:border-[#FF6A00]'
+                }`}
               >
                 <div className="relative h-36 bg-gray-50">
+                  {/* Select Checkbox */}
+                  <div className="absolute top-2.5 left-2.5 z-20">
+                    <input
+                      type="checkbox"
+                      checked={selectedGalleryIds.includes(item.id)}
+                      onChange={() => handleToggleSelect(item.id)}
+                      className="w-4 h-4 rounded text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 cursor-pointer shadow bg-white accent-[#FF6A00]"
+                      title="Select Item"
+                    />
+                  </div>
+
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -627,7 +727,7 @@ export default function GalleryManager() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeleteItem(idx)}
+                      onClick={() => handleOpenSingleDelete(item)}
                       className="p-2 bg-white text-red-600 rounded-full shadow hover:bg-red-600 hover:text-white cursor-pointer transition-all"
                       title="Remove Card"
                     >
@@ -791,6 +891,35 @@ export default function GalleryManager() {
             to { opacity: 1; transform: translateY(0) scale(1); }
           }
         `}</style>
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmModal
+          isOpen={deleteModalOpen}
+          onClose={() => {
+            if (!isDeleting) {
+              setDeleteModalOpen(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={handleExecuteDelete}
+          isLoading={isDeleting}
+          title={
+            deleteTarget?.type === 'item'
+              ? 'Delete Gallery Card'
+              : deleteTarget?.type === 'tag'
+              ? 'Delete Filter Tag'
+              : 'Delete Selected Cards'
+          }
+          itemDescription={
+            deleteTarget?.type === 'item'
+              ? `gallery card "${deleteTarget.item.title}"`
+              : deleteTarget?.type === 'tag'
+              ? `filter tag "${deleteTarget.label}"`
+              : `${selectedGalleryIds.length} gallery card(s)`
+          }
+          isBulk={!deleteTarget}
+          bulkCount={selectedGalleryIds.length}
+        />
       </div>
     </AdminLayout>
   );

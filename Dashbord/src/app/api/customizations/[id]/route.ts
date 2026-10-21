@@ -62,3 +62,33 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update customization request' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { response } = await verifyAdminSession();
+    if (response) return response;
+
+    const { id } = await params;
+
+    try {
+      await (prisma as any).customizationRequest.delete({
+        where: { id }
+      });
+    } catch (dbErr) {
+      console.warn('Database customization delete error:', dbErr);
+    }
+
+    const requests = fallbackDb.getCollection('customizationRequests');
+    const filtered = requests.filter((r: any) => r.id !== id);
+    fallbackDb.saveCollection('customizationRequests', filtered);
+
+    return NextResponse.json({ success: true, message: 'Customization request deleted' });
+  } catch (err: any) {
+    console.error('Customization DELETE error:', err);
+    return NextResponse.json({ error: 'Failed to delete customization request' }, { status: 500 });
+  }
+}
+

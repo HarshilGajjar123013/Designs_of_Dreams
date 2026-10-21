@@ -102,3 +102,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to create coupon' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { session, response } = await verifyAdminSession();
+    if (response) return response;
+
+    const body = await req.json();
+    const { ids, codes } = body;
+    const targetCodes: string[] = codes || [];
+    const targetIds: string[] = ids || [];
+
+    if (targetCodes.length === 0 && targetIds.length === 0) {
+      return NextResponse.json({ error: 'Array of coupon codes or ids is required' }, { status: 400 });
+    }
+
+    try {
+      await prisma.coupon.deleteMany({
+        where: {
+          OR: [
+            ...(targetIds.length > 0 ? [{ id: { in: targetIds } }] : []),
+            ...(targetCodes.length > 0 ? [{ code: { in: targetCodes } }] : []),
+          ]
+        }
+      });
+    } catch (dbErr) {
+      console.warn('⚠️ Database bulk coupon delete error:', dbErr);
+    }
+
+    const coupons = fallbackDb.getCollection('coupons');
+    const filtered = coupons.filter((c: any) => 
+      !targetIds.includes(c.id) && !targetCodes.includes(c.code)
+    );
+    fallbackDb.saveCollection('coupons', filtered);
+
+    return NextResponse.json({ success: true, count: targetCodes.length || targetIds.length });
+  } catch (error) {
+    console.error('Coupons bulk DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete coupons' }, { status: 500 });
+  }
+}
+

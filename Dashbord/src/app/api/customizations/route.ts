@@ -56,3 +56,35 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { response } = await verifyAdminSession();
+    if (response) return response;
+
+    const body = await req.json();
+    const { ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'Array of customization request ids is required' }, { status: 400 });
+    }
+
+    try {
+      await (prisma as any).customizationRequest.deleteMany({
+        where: { id: { in: ids } }
+      });
+    } catch (dbErr) {
+      console.warn('Database bulk customization delete error:', dbErr);
+    }
+
+    const requests = fallbackDb.getCollection('customizationRequests');
+    const filtered = requests.filter((r: any) => !ids.includes(r.id));
+    fallbackDb.saveCollection('customizationRequests', filtered);
+
+    return NextResponse.json({ success: true, count: ids.length });
+  } catch (err: any) {
+    console.error('Customizations bulk DELETE error:', err);
+    return NextResponse.json({ error: 'Failed to delete customization requests' }, { status: 500 });
+  }
+}
+

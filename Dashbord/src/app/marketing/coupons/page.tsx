@@ -3,13 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/layout/AdminLayout';
 import { useAdminStore } from '@/store/adminStore';
-import { Percent, Plus, Tag, RefreshCw, BarChart2, Check, X } from 'lucide-react';
+import { Percent, Plus, Tag, RefreshCw, BarChart2, Check, X, Trash2 } from 'lucide-react';
+import DeleteConfirmModal from '@/components/common/DeleteConfirmModal';
+import BulkActionBar from '@/components/common/BulkActionBar';
 
 export default function CouponsDesk() {
   const [mounted, setMounted] = useState(false);
   const [couponList, setCouponList] = useState<any[]>([]);
   const [searchTerms, setSearchTerms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Multi-select & Delete Confirmation Modal states
+  const [selectedCouponCodes, setSelectedCouponCodes] = useState<string[]>([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [newCode, setNewCode] = useState('');
   const [newDiscount, setNewDiscount] = useState(10);
   const [newMinOrder, setNewMinOrder] = useState(50000);
@@ -92,6 +101,69 @@ export default function CouponsDesk() {
     }
   };
 
+  const handleToggleSelect = (code: string) => {
+    setSelectedCouponCodes(prev =>
+      prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedCouponCodes(couponList.map(c => c.code));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedCouponCodes([]);
+  };
+
+  const handleOpenSingleDelete = (coupon: any) => {
+    setDeleteTarget(coupon);
+    setDeleteModalOpen(true);
+  };
+
+  const handleOpenBulkDelete = () => {
+    setDeleteTarget(null);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteTarget) {
+        const res = await fetch(`/api/coupons/${deleteTarget.id || deleteTarget.code}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          setCouponList(prev => prev.filter(c => c.code !== deleteTarget.code));
+          setSelectedCouponCodes(prev => prev.filter(code => code !== deleteTarget.code));
+          setDeleteModalOpen(false);
+          setDeleteTarget(null);
+        } else {
+          alert(data.error || 'Failed to delete coupon');
+        }
+      } else if (selectedCouponCodes.length > 0) {
+        const res = await fetch('/api/coupons', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codes: selectedCouponCodes })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setCouponList(prev => prev.filter(c => !selectedCouponCodes.includes(c.code)));
+          setSelectedCouponCodes([]);
+          setDeleteModalOpen(false);
+        } else {
+          alert(data.error || 'Failed to delete selected coupons');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting coupon(s)');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-8 animate-fade-in">
@@ -114,10 +186,28 @@ export default function CouponsDesk() {
               <Tag size={16} className="text-[#FF6A00]" />
             </div>
 
+            <BulkActionBar
+              selectedCount={selectedCouponCodes.length}
+              totalCount={couponList.length}
+              onSelectAll={handleSelectAll}
+              onDeselectAll={handleDeselectAll}
+              onDeleteSelected={handleOpenBulkDelete}
+              itemLabel="coupons"
+            />
+
             <div className="overflow-x-auto">
               <table className="luxury-table">
                 <thead>
                   <tr>
+                    <th className="w-10">
+                      <input
+                        type="checkbox"
+                        checked={couponList.length > 0 && selectedCouponCodes.length === couponList.length}
+                        onChange={(e) => e.target.checked ? handleSelectAll() : handleDeselectAll()}
+                        className="w-4 h-4 rounded text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 cursor-pointer"
+                        title="Select All"
+                      />
+                    </th>
                     <th>Coupon Code</th>
                     <th>Discount (%)</th>
                     <th>Min. Order</th>
@@ -127,7 +217,15 @@ export default function CouponsDesk() {
                 </thead>
                 <tbody>
                   {couponList.map((c) => (
-                    <tr key={c.code}>
+                    <tr key={c.code} className={selectedCouponCodes.includes(c.code) ? 'bg-orange-50/40' : ''}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedCouponCodes.includes(c.code)}
+                          onChange={() => handleToggleSelect(c.code)}
+                          className="w-4 h-4 rounded text-[#FF6A00] focus:ring-[#FF6A00] border-gray-300 cursor-pointer"
+                        />
+                      </td>
                       <td className="font-semibold text-xs text-gray-800 font-inter">{c.code}</td>
                       <td className="font-semibold text-xs text-gray-900 font-inter">{c.discountPercent}% OFF</td>
                       <td className="text-xs text-gray-600 font-inter">₹{c.minOrder.toLocaleString()}</td>
@@ -139,16 +237,25 @@ export default function CouponsDesk() {
                         </span>
                       </td>
                       <td>
-                        <button
-                          onClick={() => handleToggleCoupon(c.code)}
-                          className={`px-2.5 py-1 rounded-lg border text-[9px] font-semibold transition-all ${
-                            c.active
-                              ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white'
-                              : 'bg-green-50 text-green-600 border-green-100 hover:bg-green-600 hover:text-white'
-                          }`}
-                        >
-                          {c.active ? 'Disable' : 'Enable'}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleToggleCoupon(c.code)}
+                            className={`px-2.5 py-1 rounded-lg border text-[9px] font-semibold transition-all ${
+                              c.active
+                                ? 'bg-red-50 text-red-600 border-red-100 hover:bg-red-600 hover:text-white'
+                                : 'bg-green-50 text-green-600 border-green-100 hover:bg-green-600 hover:text-white'
+                            }`}
+                          >
+                            {c.active ? 'Disable' : 'Enable'}
+                          </button>
+                          <button
+                            onClick={() => handleOpenSingleDelete(c)}
+                            className="p-1.5 rounded-lg border border-red-100 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                            title="Delete coupon"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -269,6 +376,27 @@ export default function CouponsDesk() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteModalOpen(false);
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleExecuteDelete}
+        isLoading={isDeleting}
+        title={deleteTarget ? 'Delete Coupon' : 'Delete Selected Coupons'}
+        itemDescription={
+          deleteTarget
+            ? `coupon code "${deleteTarget.code}"`
+            : `${selectedCouponCodes.length} coupon(s)`
+        }
+        isBulk={!deleteTarget}
+        bulkCount={selectedCouponCodes.length}
+      />
     </AdminLayout>
   );
 }
