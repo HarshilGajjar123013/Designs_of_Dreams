@@ -114,7 +114,11 @@ export default function OrderManagement() {
     }
   };
 
-  const handleRetryWhatsApp = async (orderId: string, recipient: 'admin' | 'customer') => {
+  const handleRetryWhatsApp = async (
+    orderId: string,
+    recipient: 'admin' | 'customer' | 'all' = 'all',
+    type: 'order' | 'cancel' | 'exchange' = 'order'
+  ) => {
     if (recipient === 'admin') setRetryingAdmin(true);
     else setRetryingCustomer(true);
 
@@ -122,7 +126,7 @@ export default function OrderManagement() {
       const res = await fetch(`/api/orders/${orderId}/whatsapp-retry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient })
+        body: JSON.stringify({ recipient, type })
       });
       const data = await res.json();
       if (data.success && data.order) {
@@ -130,7 +134,7 @@ export default function OrderManagement() {
         if (selectedOrder && selectedOrder.id === orderId) {
           setSelectedOrder(data.order);
         }
-        alert(`${recipient === 'admin' ? 'Admin' : 'Customer'} WhatsApp notification triggered successfully.`);
+        alert(`${type.toUpperCase()} WhatsApp notification sent successfully.`);
       } else {
         alert(data.error || 'Failed to retry WhatsApp notification');
       }
@@ -659,6 +663,78 @@ export default function OrderManagement() {
                           {retryingCustomer ? 'Retrying...' : 'Retry Customer WhatsApp'}
                         </button>
                       </div>
+
+                      {/* Cancellation WhatsApp Status */}
+                      {(selectedOrder.status === 'CANCELLED' || selectedOrder.cancelReason) && (
+                        <div className="border-t border-gray-200/60 pt-3 space-y-2">
+                          <span className="text-[10px] uppercase font-bold text-rose-600 tracking-wider flex items-center gap-1">
+                            🚨 Order Cancellation WhatsApp
+                          </span>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-rose-100 gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-semibold text-gray-800">Cancel Alert Status</span>
+                                {selectedOrder.cancelReason && (
+                                  <span className="text-[9px] text-gray-500 italic block">Reason: "{selectedOrder.cancelReason}"</span>
+                                )}
+                              </div>
+                              <div className="mt-0.5 text-[10px]">
+                                {selectedOrder.whatsappDetails?.cancelCustomerStatus === 'SENT' ? (
+                                  <span className="text-emerald-600 font-inter flex items-center gap-1">
+                                    <CheckCircle2 size={11} className="text-emerald-500" />
+                                    Customer Notified ({new Date(selectedOrder.whatsappDetails.cancelCustomerSentAt || selectedOrder.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-600 font-inter">Customer Cancel Notification Pending</span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRetryWhatsApp(selectedOrder.id, 'all', 'cancel')}
+                              className="px-3 py-1.5 border border-rose-200 hover:border-rose-500 hover:text-rose-600 rounded-lg text-[10px] font-semibold text-rose-700 bg-rose-50 transition-all flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                            >
+                              <RefreshCw size={10} /> Send Cancel WhatsApp
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Exchange / Return WhatsApp Status */}
+                      {(selectedOrder.status === 'RETURNED' || selectedOrder.returnReason) && (
+                        <div className="border-t border-gray-200/60 pt-3 space-y-2">
+                          <span className="text-[10px] uppercase font-bold text-[#FF6A00] tracking-wider flex items-center gap-1">
+                            🔄 Exchange / Return WhatsApp
+                          </span>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-orange-100 gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[11px] font-semibold text-gray-800">Exchange Concierge Status</span>
+                                {selectedOrder.returnReason && (
+                                  <span className="text-[9px] text-gray-500 italic block">Reason: "{selectedOrder.returnReason}"</span>
+                                )}
+                              </div>
+                              <div className="mt-0.5 text-[10px]">
+                                {selectedOrder.whatsappDetails?.exchangeCustomerStatus === 'SENT' ? (
+                                  <span className="text-emerald-600 font-inter flex items-center gap-1">
+                                    <CheckCircle2 size={11} className="text-emerald-500" />
+                                    Customer Notified ({new Date(selectedOrder.whatsappDetails.exchangeCustomerSentAt || selectedOrder.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                                  </span>
+                                ) : (
+                                  <span className="text-amber-600 font-inter">Customer Exchange Notification Pending</span>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRetryWhatsApp(selectedOrder.id, 'all', 'exchange')}
+                              className="px-3 py-1.5 border border-orange-200 hover:border-[#FF6A00] hover:text-[#FF6A00] rounded-lg text-[10px] font-semibold text-[#FF6A00] bg-orange-50 transition-all flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                            >
+                              <RefreshCw size={10} /> Send Exchange WhatsApp
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Direct PDF Download Link */}
                       <div className="pt-1 flex justify-end">

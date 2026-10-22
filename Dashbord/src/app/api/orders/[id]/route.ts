@@ -3,6 +3,10 @@ import { prisma } from '@/lib/db';
 import { fallbackDb } from '@/lib/fallbackDb';
 import { randomUUID } from 'crypto';
 import { verifyAdminSession } from '@/lib/auth';
+import {
+  sendOrderCancellationWhatsAppNotifications,
+  sendOrderExchangeWhatsAppNotifications
+} from '@dod/database';
 
 export async function PATCH(
   req: Request,
@@ -138,6 +142,25 @@ export async function PATCH(
       fallbackDb.saveCollection('securityLogs', secLogs);
 
       updatedOrder = order;
+    }
+
+    // Trigger WhatsApp notification for CANCELLED or RETURNED status change
+    if (status === 'CANCELLED' && updatedOrder) {
+      try {
+        sendOrderCancellationWhatsAppNotifications(
+          updatedOrder,
+          updatedOrder.cancelReason || 'Cancelled by Atelier Administrator',
+          'all'
+        ).catch(e => console.warn('Admin WhatsApp cancel error:', e));
+      } catch {}
+    } else if (status === 'RETURNED' && updatedOrder) {
+      try {
+        sendOrderExchangeWhatsAppNotifications(
+          updatedOrder,
+          updatedOrder.returnReason || 'Exchange/Return processed by Atelier Administrator',
+          'all'
+        ).catch(e => console.warn('Admin WhatsApp return/exchange error:', e));
+      } catch {}
     }
 
     return NextResponse.json({

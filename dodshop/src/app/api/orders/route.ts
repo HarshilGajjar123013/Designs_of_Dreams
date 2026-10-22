@@ -108,7 +108,11 @@ export async function GET(req: Request) {
           image: productMap.get(item.productId) || item.image || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?q=80&w=300"
         })),
         address: addressStr,
-        paymentMode
+        paymentMode,
+        customerPhone: (typeof o.shippingAddress === 'object' ? o.shippingAddress?.phone : null) || o.customerPhone || o.phone || null,
+        cancelReason: o.cancelReason || null,
+        returnReason: o.returnReason || null,
+        whatsappDetails: o.whatsappDetails || null
       };
     });
 

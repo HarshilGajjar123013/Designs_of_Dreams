@@ -10,12 +10,11 @@ import { generateInvoicePdfBuffer, generateInvoiceFileName, resolveOrderCustomiz
 
 const FALLBACK_ENV_DEFAULTS: Record<string, string> = {
   ADMIN_WHATSAPP_NUMBER: '919313507346',
-  WHATSAPP_API_TOKEN: 'EAAP8CMCQhEEBS8DWUqehIVuddK9CMHKIPphhr5z8ivWttQZCfHt9D3fPIMAH1rBES8weCrm0NEWdMnKE8ZBZAM5OmwMFBCRSiFagZCrV5YBFccHgSSkTY3IM2zqZAPRZCafixzlUlnxro84ZA1hBdtyXsiTNMGZCVvOuNT0Qk4UDnqGwLZC2v9ZAde0bZBO7aIqraAprfBlkfUSQPViTZCfZCTY9hGEcPh6cj6YeOuiqZAf14ezEMApxErPVkuUkvuZBmZBmWkZBUMnr7Vj00ZCvMjwEd3uKkydAZDZD',
+  WHATSAPP_API_TOKEN: 'EAAP8CMCQhEEBSlf6PiytHTA23hQzONee6Y8d4P3OXfCH7jLfEZBNBBDAb9UXiOjKZAGW4M3G3gz9fAxUXt9ZA46fWZCEFZAnH2OTTXs9VBuVkEQDMYzjVSEtycojtIWCeE78ZA2C4n7moGHPBqwOpHqbtnwZCmmhcIRlLBSEtpPib4NdTsrrOD2te4ZCzl4TTgZDZD',
   WHATSAPP_PHONE_NUMBER_ID: '1337919859404316',
 };
 
 function getEnvVar(key: string, defaultValue: string = ''): string {
-  if (process.env[key]) return process.env[key]!;
   try {
     const cwd = process.cwd();
     const envPaths = [
@@ -37,6 +36,7 @@ function getEnvVar(key: string, defaultValue: string = ''): string {
       }
     }
   } catch {}
+  if (process.env[key]) return process.env[key]!;
   return defaultValue || FALLBACK_ENV_DEFAULTS[key] || '';
 }
 
@@ -49,6 +49,20 @@ export interface WhatsAppNotificationDetails {
   customerSentAt?: string;
   customerError?: string;
   customerInvoicePdfStatus?: 'SENT' | 'FAILED';
+  // Order Cancellation WhatsApp
+  cancelAdminStatus?: 'PENDING' | 'SENT' | 'FAILED';
+  cancelAdminSentAt?: string;
+  cancelAdminError?: string;
+  cancelCustomerStatus?: 'PENDING' | 'SENT' | 'FAILED' | 'SKIPPED';
+  cancelCustomerSentAt?: string;
+  cancelCustomerError?: string;
+  // Order Exchange WhatsApp
+  exchangeAdminStatus?: 'PENDING' | 'SENT' | 'FAILED';
+  exchangeAdminSentAt?: string;
+  exchangeAdminError?: string;
+  exchangeCustomerStatus?: 'PENDING' | 'SENT' | 'FAILED' | 'SKIPPED';
+  exchangeCustomerSentAt?: string;
+  exchangeCustomerError?: string;
 }
 
 /**
@@ -155,14 +169,18 @@ export function extractCustomerPhone(order: any): string {
   if (!order) return '';
   if (order.customerPhone) return String(order.customerPhone);
   if (order.phone) return String(order.phone);
+  if (order.customer && typeof order.customer === 'object') {
+    if (order.customer.phone) return String(order.customer.phone);
+    if (order.customer.alternatePhone) return String(order.customer.alternatePhone);
+  }
   if (order.shippingAddress) {
     if (typeof order.shippingAddress === 'object' && order.shippingAddress !== null) {
-      return String(order.shippingAddress.phone || '');
+      if (order.shippingAddress.phone) return String(order.shippingAddress.phone);
     }
     if (typeof order.shippingAddress === 'string') {
       try {
         const parsed = JSON.parse(order.shippingAddress);
-        return String(parsed.phone || '');
+        if (parsed.phone) return String(parsed.phone);
       } catch {
         return '';
       }
@@ -357,6 +375,8 @@ export async function sendWhatsAppMessage(
       let errorMsg = data?.error?.message || `WhatsApp API error: ${res.statusText}`;
       if (data?.error?.code === 190) {
         errorMsg = `Meta Token Expired (code 190): ${data?.error?.message || 'Access token is invalid or expired. Generate a fresh or permanent token in Meta Developer Console.'}`;
+      } else if (data?.error?.code === 131030) {
+        errorMsg = `Meta Sandbox Restriction (code 131030): Phone +${recipientPhone} is not in the allowed test list in Meta Developer Console. Add it in Meta Portal -> WhatsApp -> API Setup -> "To" list.`;
       }
       console.error(`[WhatsApp Debug] Meta Error: ${errorMsg}`);
       return { success: false, error: errorMsg };
@@ -970,4 +990,426 @@ export async function sendContactReplyWhatsAppNotification(
     return { success: false, error: err?.message || 'Error sending reply WhatsApp' };
   }
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ORDER CANCELLATION NOTIFICATIONS (Admin & Customer WhatsApp)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * Builds the Admin WhatsApp notification message when an order cancellation is submitted.
+ */
+export function buildCancelAdminWhatsAppMessage(order: any, reason: string = ''): string {
+  const orderId = order.id || 'N/A';
+  const customerName = order.customerName || 'Valued Customer';
+  const rawPhone = extractCustomerPhone(order);
+  const phoneRes = normalizePhoneNumber(rawPhone);
+  const displayPhone = phoneRes.isValid ? phoneRes.formattedDisplay : (rawPhone || 'Not provided');
+  const chatLink = phoneRes.isValid ? `• Direct WhatsApp: https://wa.me/${phoneRes.normalized}` : '';
+  const customerEmail = order.customerEmail || 'Not provided';
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemsList = items.length > 0
+    ? items.map((it: any) => `• ${it.name || it.title || 'Heritage Piece'} (Size: ${it.size || 'Standard'}, Qty: ${it.quantity || 1}) — ₹${formatCurrency(it.price)}`).join('\n')
+    : '• Heritage Collection Piece × 1';
+
+  const total = formatCurrency(order.grandTotal || order.total || order.amount || 0);
+  const paymentMode = order.paymentMethod ? String(order.paymentMethod).replace('_', ' ') : 'N/A';
+  const paymentStatus = formatPaymentStatus(order.paymentStatus, order.paymentMethod);
+  const cleanReason = (reason || order.cancelReason || 'Customer requested order cancellation').trim();
+
+  return [
+    '🚨 *ORDER CANCELLATION NOTICE*',
+    '━━━━━━━━━━━━━━━━━━━━',
+    `*Order ID:* #${orderId}`,
+    '',
+    '*Customer Details:*',
+    `• *Name:* ${customerName}`,
+    `• *Phone:* ${displayPhone}`,
+    chatLink,
+    `• *Email:* ${customerEmail}`,
+    '',
+    '*Items in Cancelled Order:*',
+    itemsList,
+    '',
+    `*Total Order Value:* ₹${total}`,
+    `*Payment Mode:* ${paymentMode} (${paymentStatus})`,
+    '',
+    '*Reason for Cancellation:*',
+    `"${cleanReason}"`,
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🏛️ *Designs of Dreams — Admin Desk*',
+    'Please verify stock restock and issue refunds if paid online.'
+  ].filter(line => line !== '').join('\n');
+}
+
+/**
+ * Builds the Customer WhatsApp confirmation message acknowledging their order cancellation.
+ */
+export function buildCancelCustomerWhatsAppMessage(order: any, reason: string = ''): string {
+  const orderId = order.id || 'N/A';
+  const fullName = order.customerName || 'Valued Customer';
+  const firstName = fullName.split(' ')[0] || 'Patron';
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemsList = items.length > 0
+    ? items.map((it: any) => `• ${it.name || it.title || 'Heritage Piece'} × ${it.quantity || 1}`).join('\n')
+    : '• Heritage Collection Piece × 1';
+
+  const total = formatCurrency(order.grandTotal || order.total || order.amount || 0);
+  const isPrepaid = String(order.paymentStatus || '').toUpperCase() === 'PAID' || (order.paymentMethod && order.paymentMethod !== 'COD');
+  const cleanReason = (reason || order.cancelReason || 'Requested by customer').trim();
+
+  const refundSection = isPrepaid
+    ? '💳 *Refund Information:*\nSince this order was prepaid, our finance desk has initiated your refund to your original payment method. It will reflect in your account within 3–5 working days.'
+    : '📦 *Payment Information:*\nSince this was a Cash on Delivery (COD) order, no payment will be collected.';
+
+  return [
+    `✨ *Namaste ${firstName},*`,
+    '',
+    `We have processed the cancellation request for your order with *Designs of Dreams*.`,
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    `*Order ID:* #${orderId}`,
+    '',
+    '*Cancelled Items:*',
+    itemsList,
+    '',
+    `*Total Value:* ₹${total}`,
+    `*Reason:* "${cleanReason}"`,
+    '',
+    refundSection,
+    '',
+    'If this was a mistake or you wish to explore alternative sizing or designs, reply directly to this message to speak with our atelier support.',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🌿 *Designs of Dreams Atelier*',
+    'We hope to dress you in timeless elegance again soon. ❤️'
+  ].join('\n');
+}
+
+/**
+ * Sends Order Cancellation WhatsApp notifications to Admin and/or Customer.
+ * Persists status directly to Prisma order and fallbackDb.
+ */
+export async function sendOrderCancellationWhatsAppNotifications(
+  order: any,
+  reason: string = '',
+  target: 'all' | 'admin' | 'customer' = 'all',
+  options?: { force?: boolean }
+): Promise<WhatsAppNotificationDetails> {
+  if (!order || !order.id) {
+    throw new Error('Order is required for cancellation WhatsApp notification');
+  }
+
+  const existingDetails: WhatsAppNotificationDetails = order.whatsappDetails || {
+    adminStatus: 'PENDING',
+    customerStatus: 'PENDING',
+  };
+
+  const updatedDetails: WhatsAppNotificationDetails = { ...existingDetails };
+
+  console.log(`[WhatsApp Cancel] Triggered for Order ${order.id}. Target: ${target}`);
+
+  // 1. Send to Admin
+  if (target === 'all' || target === 'admin') {
+    const rawAdminPhone = getEnvVar('ADMIN_WHATSAPP_NUMBER', '919313507346');
+    const adminPhoneRes = normalizePhoneNumber(rawAdminPhone);
+
+    if (!adminPhoneRes.isValid) {
+      updatedDetails.cancelAdminStatus = 'FAILED';
+      updatedDetails.cancelAdminError = `Invalid Admin phone: ${rawAdminPhone}`;
+    } else {
+      try {
+        const msg = buildCancelAdminWhatsAppMessage(order, reason);
+        const result = await sendWhatsAppMessage(adminPhoneRes.normalized, msg);
+        if (result.success) {
+          updatedDetails.cancelAdminStatus = 'SENT';
+          updatedDetails.cancelAdminSentAt = new Date().toISOString();
+          delete updatedDetails.cancelAdminError;
+          console.log(`[WhatsApp Cancel] Admin alert sent successfully.`);
+        } else {
+          updatedDetails.cancelAdminStatus = 'FAILED';
+          updatedDetails.cancelAdminError = result.error || 'WhatsApp API request failed';
+        }
+      } catch (err: any) {
+        updatedDetails.cancelAdminStatus = 'FAILED';
+        updatedDetails.cancelAdminError = err?.message || 'Error sending cancel admin WhatsApp';
+      }
+    }
+  }
+
+  // 2. Send to Customer
+  if (target === 'all' || target === 'customer') {
+    const rawCustomerPhone = extractCustomerPhone(order);
+    const customerPhoneRes = normalizePhoneNumber(rawCustomerPhone);
+
+    if (!customerPhoneRes.isValid) {
+      updatedDetails.cancelCustomerStatus = 'SKIPPED';
+      updatedDetails.cancelCustomerError = customerPhoneRes.error || 'Invalid or missing customer phone';
+    } else {
+      try {
+        const msg = buildCancelCustomerWhatsAppMessage(order, reason);
+        const result = await sendWhatsAppMessage(customerPhoneRes.normalized, msg);
+        if (result.success) {
+          updatedDetails.cancelCustomerStatus = 'SENT';
+          updatedDetails.cancelCustomerSentAt = new Date().toISOString();
+          delete updatedDetails.cancelCustomerError;
+          console.log(`[WhatsApp Cancel] Customer confirmation sent successfully.`);
+        } else {
+          updatedDetails.cancelCustomerStatus = 'FAILED';
+          updatedDetails.cancelCustomerError = result.error || 'WhatsApp API request failed';
+        }
+      } catch (err: any) {
+        updatedDetails.cancelCustomerStatus = 'FAILED';
+        updatedDetails.cancelCustomerError = err?.message || 'Error sending cancel customer WhatsApp';
+      }
+    }
+  }
+
+  // 3. Persist whatsappDetails on the order
+  try {
+    try {
+      const exists = await prisma.order.findUnique({
+        where: { id: order.id },
+        select: { id: true }
+      });
+      if (exists) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            whatsappDetails: updatedDetails as any,
+            ...(reason ? { cancelReason: reason } : {})
+          },
+        });
+      }
+    } catch {}
+
+    try {
+      const orders = fallbackDb.getCollection('orders');
+      const orderIdx = orders.findIndex((o: any) => o.id === order.id);
+      if (orderIdx !== -1) {
+        orders[orderIdx].whatsappDetails = updatedDetails;
+        if (reason) orders[orderIdx].cancelReason = reason;
+        fallbackDb.saveCollection('orders', orders);
+      }
+    } catch {}
+
+    order.whatsappDetails = updatedDetails;
+  } catch (persistErr) {
+    console.error(`[WhatsApp Cancel] Failed to persist whatsappDetails:`, persistErr);
+  }
+
+  return updatedDetails;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ORDER EXCHANGE NOTIFICATIONS (Admin & Customer WhatsApp)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * Builds the Admin WhatsApp notification message when an order exchange request is submitted.
+ */
+export function buildExchangeAdminWhatsAppMessage(order: any, reason: string = ''): string {
+  const orderId = order.id || 'N/A';
+  const customerName = order.customerName || 'Valued Customer';
+  const rawPhone = extractCustomerPhone(order);
+  const phoneRes = normalizePhoneNumber(rawPhone);
+  const displayPhone = phoneRes.isValid ? phoneRes.formattedDisplay : (rawPhone || 'Not provided');
+  const chatLink = phoneRes.isValid ? `• Direct WhatsApp: https://wa.me/${phoneRes.normalized}` : '';
+  const customerEmail = order.customerEmail || 'Not provided';
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemsList = items.length > 0
+    ? items.map((it: any) => `• ${it.name || it.title || 'Heritage Piece'} (Size: ${it.size || 'Standard'}, Qty: ${it.quantity || 1}) — ₹${formatCurrency(it.price)}`).join('\n')
+    : '• Heritage Collection Piece × 1';
+
+  const total = formatCurrency(order.grandTotal || order.total || order.amount || 0);
+  const address = formatDeliveryAddress(order.shippingAddress);
+  const cleanReason = (reason || order.returnReason || 'Customer requested exchange').trim();
+
+  return [
+    '🔄 *NEW EXCHANGE REQUEST RECEIVED*',
+    '━━━━━━━━━━━━━━━━━━━━',
+    `*Order ID:* #${orderId}`,
+    '',
+    '*Customer Details:*',
+    `• *Name:* ${customerName}`,
+    `• *Phone:* ${displayPhone}`,
+    chatLink,
+    `• *Email:* ${customerEmail}`,
+    '',
+    '*Eligible Items for Exchange:*',
+    itemsList,
+    '',
+    `*Total Order Value:* ₹${total}`,
+    '',
+    '*Customer Exchange Reason / Requirement:*',
+    `"${cleanReason}"`,
+    '',
+    '*Reverse Pickup Address:*',
+    address,
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🏛️ *Designs of Dreams — Atelier Concierge*',
+    'Please contact the customer directly on WhatsApp to coordinate replacement piece and reverse courier pickup.'
+  ].filter(line => line !== '').join('\n');
+}
+
+/**
+ * Builds the Customer WhatsApp confirmation message acknowledging their exchange request.
+ */
+export function buildExchangeCustomerWhatsAppMessage(order: any, reason: string = ''): string {
+  const orderId = order.id || 'N/A';
+  const fullName = order.customerName || 'Valued Customer';
+  const firstName = fullName.split(' ')[0] || 'Patron';
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemsList = items.length > 0
+    ? items.map((it: any) => `• ${it.name || it.title || 'Heritage Piece'} (Size: ${it.size || 'Standard'})`).join('\n')
+    : '• Heritage Collection Piece × 1';
+
+  const cleanReason = (reason || order.returnReason || 'Exchange requested').trim();
+
+  return [
+    `✨ *Namaste ${firstName},*`,
+    '',
+    'Thank you for reaching out to *Designs of Dreams*. We have successfully received your exchange request for your recent order.',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    `*Order ID:* #${orderId}`,
+    '',
+    '*Exchange Item(s):*',
+    itemsList,
+    '',
+    `*Your Note / Reason:* "${cleanReason}"`,
+    '',
+    '📋 *What happens next?*',
+    '1. Our master stylists and QC team are reviewing your exchange request.',
+    '2. We will message you directly on this WhatsApp chat within 24–48 hours to confirm your preferred replacement size, shade, or alternate design.',
+    '3. Our logistics courier partner will schedule reverse pickup from your doorstep.',
+    '',
+    'If you have pictures of fitting or fabric to share, please feel free to send them directly in this chat.',
+    '',
+    '━━━━━━━━━━━━━━━━━━━━',
+    '🌿 *Designs of Dreams Heritage Atelier*',
+    'Dedicated to artisanal perfection ❤️'
+  ].join('\n');
+}
+
+/**
+ * Sends Order Exchange WhatsApp notifications to Admin and/or Customer.
+ * Persists status directly to Prisma order and fallbackDb.
+ */
+export async function sendOrderExchangeWhatsAppNotifications(
+  order: any,
+  reason: string = '',
+  target: 'all' | 'admin' | 'customer' = 'all',
+  options?: { force?: boolean }
+): Promise<WhatsAppNotificationDetails> {
+  if (!order || !order.id) {
+    throw new Error('Order is required for exchange WhatsApp notification');
+  }
+
+  const existingDetails: WhatsAppNotificationDetails = order.whatsappDetails || {
+    adminStatus: 'PENDING',
+    customerStatus: 'PENDING',
+  };
+
+  const updatedDetails: WhatsAppNotificationDetails = { ...existingDetails };
+
+  console.log(`[WhatsApp Exchange] Triggered for Order ${order.id}. Target: ${target}`);
+
+  // 1. Send to Admin
+  if (target === 'all' || target === 'admin') {
+    const rawAdminPhone = getEnvVar('ADMIN_WHATSAPP_NUMBER', '919313507346');
+    const adminPhoneRes = normalizePhoneNumber(rawAdminPhone);
+
+    if (!adminPhoneRes.isValid) {
+      updatedDetails.exchangeAdminStatus = 'FAILED';
+      updatedDetails.exchangeAdminError = `Invalid Admin phone: ${rawAdminPhone}`;
+    } else {
+      try {
+        const msg = buildExchangeAdminWhatsAppMessage(order, reason);
+        const result = await sendWhatsAppMessage(adminPhoneRes.normalized, msg);
+        if (result.success) {
+          updatedDetails.exchangeAdminStatus = 'SENT';
+          updatedDetails.exchangeAdminSentAt = new Date().toISOString();
+          delete updatedDetails.exchangeAdminError;
+          console.log(`[WhatsApp Exchange] Admin alert sent successfully.`);
+        } else {
+          updatedDetails.exchangeAdminStatus = 'FAILED';
+          updatedDetails.exchangeAdminError = result.error || 'WhatsApp API request failed';
+        }
+      } catch (err: any) {
+        updatedDetails.exchangeAdminStatus = 'FAILED';
+        updatedDetails.exchangeAdminError = err?.message || 'Error sending exchange admin WhatsApp';
+      }
+    }
+  }
+
+  // 2. Send to Customer
+  if (target === 'all' || target === 'customer') {
+    const rawCustomerPhone = extractCustomerPhone(order);
+    const customerPhoneRes = normalizePhoneNumber(rawCustomerPhone);
+
+    if (!customerPhoneRes.isValid) {
+      updatedDetails.exchangeCustomerStatus = 'SKIPPED';
+      updatedDetails.exchangeCustomerError = customerPhoneRes.error || 'Invalid or missing customer phone';
+    } else {
+      try {
+        const msg = buildExchangeCustomerWhatsAppMessage(order, reason);
+        const result = await sendWhatsAppMessage(customerPhoneRes.normalized, msg);
+        if (result.success) {
+          updatedDetails.exchangeCustomerStatus = 'SENT';
+          updatedDetails.exchangeCustomerSentAt = new Date().toISOString();
+          delete updatedDetails.exchangeCustomerError;
+          console.log(`[WhatsApp Exchange] Customer confirmation sent successfully.`);
+        } else {
+          updatedDetails.exchangeCustomerStatus = 'FAILED';
+          updatedDetails.exchangeCustomerError = result.error || 'WhatsApp API request failed';
+        }
+      } catch (err: any) {
+        updatedDetails.exchangeCustomerStatus = 'FAILED';
+        updatedDetails.exchangeCustomerError = err?.message || 'Error sending exchange customer WhatsApp';
+      }
+    }
+  }
+
+  // 3. Persist whatsappDetails on the order
+  try {
+    try {
+      const exists = await prisma.order.findUnique({
+        where: { id: order.id },
+        select: { id: true }
+      });
+      if (exists) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            whatsappDetails: updatedDetails as any,
+            ...(reason ? { returnReason: reason } : {})
+          },
+        });
+      }
+    } catch {}
+
+    try {
+      const orders = fallbackDb.getCollection('orders');
+      const orderIdx = orders.findIndex((o: any) => o.id === order.id);
+      if (orderIdx !== -1) {
+        orders[orderIdx].whatsappDetails = updatedDetails;
+        if (reason) orders[orderIdx].returnReason = reason;
+        fallbackDb.saveCollection('orders', orders);
+      }
+    } catch {}
+
+    order.whatsappDetails = updatedDetails;
+  } catch (persistErr) {
+    console.error(`[WhatsApp Exchange] Failed to persist whatsappDetails:`, persistErr);
+  }
+
+  return updatedDetails;
+}
+
 

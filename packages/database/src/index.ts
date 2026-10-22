@@ -97,6 +97,12 @@ export {
   sendContactWhatsAppNotifications,
   buildContactReplyWhatsAppMessage,
   sendContactReplyWhatsAppNotification,
+  buildCancelAdminWhatsAppMessage,
+  buildCancelCustomerWhatsAppMessage,
+  sendOrderCancellationWhatsAppNotifications,
+  buildExchangeAdminWhatsAppMessage,
+  buildExchangeCustomerWhatsAppMessage,
+  sendOrderExchangeWhatsAppNotifications,
 } from './whatsapp';
 export type {
   WhatsAppNotificationDetails,

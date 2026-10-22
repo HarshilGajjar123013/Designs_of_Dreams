@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,8 @@ import {
   Truck,
   ArrowLeft,
   Eye,
-  Sparkles
+  Sparkles,
+  MessageCircle
 } from "lucide-react";
 import InvoiceGenerator from "@/components/common/InvoiceGenerator/InvoiceGenerator";
 import "./Order.scss";
@@ -52,6 +53,11 @@ export default function OrderPage() {
   const [returnOrderId, setReturnOrderId] = useState("");
   const [returnReason, setReturnReason] = useState("");
 
+  // Submission & error states
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+  const [actionError, setActionError] = useState("");
+
   const isPresentOrder = (status: string) => {
     const s = (status || "").toLowerCase();
     return s === "pending" || s === "processing" || s === "dispatched" || s === "shipped" || s === "out_for_delivery" || s === "woven" || s === "unpaid" || s === "packed";
@@ -70,40 +76,42 @@ export default function OrderPage() {
     }
   }, [mounted, user, router]);
 
+  const fetchOrderData = useCallback(async () => {
+    if (!user?.isLoggedIn || !user?.id) return;
+    try {
+      setIsLoading(true);
+      const [ordersRes, customizationsRes] = await Promise.all([
+        fetch(`/api/orders?userId=${user.id}`),
+        fetch(`/api/customizations?userId=${user.id}`),
+      ]);
+      if (ordersRes.ok) {
+        const data = await ordersRes.json();
+        if (data.success) {
+          setOrders(data.orders || []);
+          if (data.orders?.length > 0) {
+            setSelectedOrderId((prev) => prev || data.orders[0].id);
+            setReturnOrderId((prev) => prev || data.orders[0].id);
+          }
+        }
+      }
+      if (customizationsRes.ok) {
+        const data = await customizationsRes.json();
+        if (data.success) setCustomizations(data.requests || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch order data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (mounted && user?.isLoggedIn && user?.id) {
-      const fetchOrderData = async () => {
-        try {
-          setIsLoading(true);
-          const [ordersRes, customizationsRes] = await Promise.all([
-            fetch(`/api/orders?userId=${user.id}`),
-            fetch(`/api/customizations?userId=${user.id}`),
-          ]);
-          if (ordersRes.ok) {
-            const data = await ordersRes.json();
-            if (data.success) {
-              setOrders(data.orders || []);
-              if (data.orders?.length > 0) {
-                setSelectedOrderId(data.orders[0].id);
-                setReturnOrderId(data.orders[0].id);
-              }
-            }
-          }
-          if (customizationsRes.ok) {
-            const data = await customizationsRes.json();
-            if (data.success) setCustomizations(data.requests || []);
-          }
-        } catch (err) {
-          console.error("Failed to fetch order data:", err);
-        } finally {
-          setIsLoading(false);
-        }
-      };
       fetchOrderData();
     } else if (mounted) {
       setIsLoading(false);
     }
-  }, [mounted, user]);
+  }, [mounted, user, fetchOrderData]);
 
   // Handle URL Hash change
   useEffect(() => {
@@ -135,24 +143,70 @@ export default function OrderPage() {
     }
   };
 
-  const handleCancelSubmit = (e: React.FormEvent) => {
+  const handleCancelSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg(`Cancellation request for ${selectedOrderId} has been submitted!`);
-    setCancelReason("");
-    setTimeout(() => {
-      setSuccessMsg("");
-      handleTabChange("list");
-    }, 2000);
+    if (!selectedOrderId) {
+      setActionError("Please select an order to cancel.");
+      return;
+    }
+    setIsSubmittingCancel(true);
+    setActionError("");
+    try {
+      const res = await fetch(`/api/orders/${selectedOrderId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMsg(`Order #${selectedOrderId} cancellation processed! WhatsApp notifications sent to your registered mobile and our atelier desk.`);
+        setCancelReason("");
+        await fetchOrderData();
+        setTimeout(() => {
+          setSuccessMsg("");
+          handleTabChange("list");
+        }, 3500);
+      } else {
+        setActionError(data.error || "Failed to cancel order. Please contact atelier concierge.");
+      }
+    } catch (err: any) {
+      setActionError("Network error while submitting cancellation request.");
+    } finally {
+      setIsSubmittingCancel(false);
+    }
   };
 
-  const handleReturnSubmit = (e: React.FormEvent) => {
+  const handleReturnSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSuccessMsg(`Exchange request for ${returnOrderId} has been submitted successfully.`);
-    setReturnReason("");
-    setTimeout(() => {
-      setSuccessMsg("");
-      handleTabChange("list");
-    }, 2000);
+    if (!returnOrderId) {
+      setActionError("Please select an eligible order for exchange.");
+      return;
+    }
+    setIsSubmittingReturn(true);
+    setActionError("");
+    try {
+      const res = await fetch(`/api/orders/${returnOrderId}/exchange`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: returnReason }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessMsg(`Exchange request for #${returnOrderId} received! WhatsApp confirmation sent. Our master stylists will connect on WhatsApp shortly.`);
+        setReturnReason("");
+        await fetchOrderData();
+        setTimeout(() => {
+          setSuccessMsg("");
+          handleTabChange("list");
+        }, 3500);
+      } else {
+        setActionError(data.error || "Failed to submit exchange request.");
+      }
+    } catch (err: any) {
+      setActionError("Network error while submitting exchange request.");
+    } finally {
+      setIsSubmittingReturn(false);
+    }
   };
 
   const customizationSummary = (order: any) => customizations
@@ -396,6 +450,18 @@ export default function OrderPage() {
                                         compact
                                         buttonClassName="px-4 py-2 bg-[#FF6A00] hover:bg-[#e05d00] text-white rounded-full text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 uppercase tracking-wider cursor-pointer border-0"
                                       />
+
+                                      {ord.status !== "cancelled" && (
+                                        <button
+                                          className="px-4 py-2 border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 uppercase tracking-wider cursor-pointer"
+                                          onClick={() => {
+                                            setSelectedOrderId(ord.id);
+                                            handleTabChange("cancel");
+                                          }}
+                                        >
+                                          <Trash2 size={13} /> Cancel Order
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -710,8 +776,40 @@ export default function OrderPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Request Cancellation</h3>
-                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Only pending orders that have not been dispatched can be cancelled.</p>
+                      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                        <div>
+                          <h3 style={{ border: "none", margin: 0, padding: 0 }}>Request Order Cancellation</h3>
+                          <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", margin: "4px 0 0 0" }}>
+                            Orders can be cancelled before courier dispatch. Online refunds will be initiated automatically.
+                          </p>
+                        </div>
+                        <span className="text-xs bg-red-50 text-red-600 font-bold px-3 py-1 rounded-full border border-red-100 flex items-center gap-1.5">
+                          <Trash2 size={13} /> Cancellation Policy
+                        </span>
+                      </div>
+
+                      {/* WhatsApp Service Info Box */}
+                      <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl flex items-start gap-3.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg flex-shrink-0 shadow-xs">
+                          💬
+                        </div>
+                        <div className="text-xs leading-relaxed text-emerald-950">
+                          <span className="font-bold block text-emerald-900 mb-0.5 flex items-center gap-1.5">
+                            Automated WhatsApp Cancellation Updates
+                            <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Active</span>
+                          </span>
+                          <span>
+                            Upon submission, instant cancellation confirmations and refund status updates are automatically sent via WhatsApp to your phone and directly to the atelier support desk (+91 9313507346).
+                          </span>
+                        </div>
+                      </div>
+
+                      {actionError && (
+                        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+                          <ShieldAlert size={16} />
+                          <span>{actionError}</span>
+                        </div>
+                      )}
 
                       {orders.length > 0 ? (
                         <form onSubmit={handleCancelSubmit} className="order-cancel-form space-y-5">
@@ -719,30 +817,64 @@ export default function OrderPage() {
                             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Select Order ID</label>
                             <select
                               value={selectedOrderId}
-                              onChange={(e) => setSelectedOrderId(e.target.value)}
+                              onChange={(e) => {
+                                setSelectedOrderId(e.target.value);
+                                setActionError("");
+                              }}
                               className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 bg-white font-semibold text-sm outline-none transition-all"
                             >
                               {orders.map(o => (
-                                <option key={o.id} value={o.id}>{o.id} — Placed {o.date} (₹{o.amount.toLocaleString('en-IN')})</option>
+                                <option key={o.id} value={o.id}>
+                                  {o.id} — Placed {o.date} (₹{o.amount.toLocaleString('en-IN')}) {o.status === 'cancelled' ? '— [CANCELLED]' : ''}
+                                </option>
                               ))}
                             </select>
                           </div>
-                          <div className="profile-form-group">
-                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Reason for Cancellation</label>
-                            <textarea
-                              required
-                              placeholder="Please tell us why you wish to cancel this order..."
-                              value={cancelReason}
-                              onChange={(e) => setCancelReason(e.target.value)}
-                              className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
-                            />
-                          </div>
-                          <button
-                            type="submit"
-                            className="w-full py-3.5 px-8 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
-                          >
-                            Submit Cancellation Request
-                          </button>
+
+                          {/* Show warning if order is already cancelled */}
+                          {orders.find(o => o.id === selectedOrderId)?.status === 'cancelled' ? (
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+                              <span className="font-bold block mb-1">⚠️ Order Already Cancelled</span>
+                              <p className="m-0 text-amber-800">
+                                This order was cancelled previously. Reason: "{orders.find(o => o.id === selectedOrderId)?.cancelReason || 'Customer requested'}"
+                              </p>
+                              {orders.find(o => o.id === selectedOrderId)?.whatsappDetails?.cancelCustomerStatus === 'SENT' && (
+                                <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-700">
+                                  ✓ WhatsApp cancellation confirmation sent
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <div className="profile-form-group">
+                                <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Reason for Cancellation</label>
+                                <textarea
+                                  required
+                                  placeholder="Please share the reason for cancellation (e.g., duplicate order, change in occasion date, ordered wrong size/color)..."
+                                  value={cancelReason}
+                                  onChange={(e) => setCancelReason(e.target.value)}
+                                  className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={isSubmittingCancel}
+                                className="w-full py-3.5 px-8 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                              >
+                                {isSubmittingCancel ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    <span>Processing Cancellation & WhatsApp...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 size={15} />
+                                    <span>Submit Cancellation Request</span>
+                                  </>
+                                )}
+                              </button>
+                            </>
+                          )}
                         </form>
                       ) : (
                         <p style={{ textAlign: "center", color: "rgba(0,0,0,0.4)", margin: "40px 0" }}>No active orders available to cancel.</p>
@@ -759,8 +891,40 @@ export default function OrderPage() {
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.25 }}
                     >
-                      <h3>Exchange Request</h3>
-                      <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", marginBottom: "24px" }}>Exchanges are accepted within 7 days of delivery. Motif tags must remain attached.</p>
+                      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                        <div>
+                          <h3 style={{ border: "none", margin: 0, padding: 0 }}>Atelier Exchange Request</h3>
+                          <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)", margin: "4px 0 0 0" }}>
+                            Exchanges are accepted within 7 days of delivery. Security motif tags must remain intact.
+                          </p>
+                        </div>
+                        <span className="text-xs bg-orange-50 text-[#FF6A00] font-bold px-3 py-1 rounded-full border border-orange-200 flex items-center gap-1.5">
+                          <RotateCcw size={13} /> 7-Day Window
+                        </span>
+                      </div>
+
+                      {/* WhatsApp Concierge Info Box */}
+                      <div className="mb-6 p-4 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl flex items-start gap-3.5">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg flex-shrink-0 shadow-xs">
+                          💬
+                        </div>
+                        <div className="text-xs leading-relaxed text-emerald-950">
+                          <span className="font-bold block text-emerald-900 mb-0.5 flex items-center gap-1.5">
+                            Atelier WhatsApp Concierge Support
+                            <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Active</span>
+                          </span>
+                          <span>
+                            Upon submitting, you will receive an automated WhatsApp confirmation. Our master stylists will connect directly with you on WhatsApp within 24–48 hours to finalize your replacement piece and arrange reverse courier pickup.
+                          </span>
+                        </div>
+                      </div>
+
+                      {actionError && (
+                        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+                          <ShieldAlert size={16} />
+                          <span>{actionError}</span>
+                        </div>
+                      )}
 
                       {orders.length > 0 ? (
                         <form onSubmit={handleReturnSubmit} className="order-cancel-form space-y-5">
@@ -768,19 +932,42 @@ export default function OrderPage() {
                             <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Select Eligible Order</label>
                             <select
                               value={returnOrderId}
-                              onChange={(e) => setReturnOrderId(e.target.value)}
+                              onChange={(e) => {
+                                setReturnOrderId(e.target.value);
+                                setActionError("");
+                              }}
                               className="w-full px-4 py-3 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 bg-white font-semibold text-sm outline-none transition-all"
                             >
                               {orders.map(o => (
-                                <option key={o.id} value={o.id}>{o.id} — Placed {o.date} (₹{o.amount.toLocaleString('en-IN')})</option>
+                                <option key={o.id} value={o.id}>
+                                  {o.id} — Placed {o.date} (₹{o.amount.toLocaleString('en-IN')}) {o.returnReason ? '— [EXCHANGE REQUESTED]' : ''}
+                                </option>
                               ))}
                             </select>
                           </div>
+
+                          {/* Notice if exchange already requested */}
+                          {orders.find(o => o.id === returnOrderId)?.returnReason && (
+                            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900">
+                              <span className="font-bold block mb-1">✓ Exchange Request Already In Progress</span>
+                              <p className="m-0 text-emerald-800">
+                                Current reason: "{orders.find(o => o.id === returnOrderId)?.returnReason}". Our atelier concierge is coordinating your replacement.
+                              </p>
+                              {orders.find(o => o.id === returnOrderId)?.whatsappDetails?.exchangeCustomerStatus === 'SENT' && (
+                                <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-700">
+                                  ✓ WhatsApp exchange confirmation sent to your number
+                                </span>
+                              )}
+                            </div>
+                          )}
+
                           <div className="profile-form-group">
-                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">Briefly Describe Reason for Exchange</label>
+                            <label className="text-xs font-bold text-zinc-700 uppercase tracking-wider block mb-2">
+                              {orders.find(o => o.id === returnOrderId)?.returnReason ? 'Update / Additional Notes for Exchange' : 'Briefly Describe Reason for Exchange'}
+                            </label>
                             <textarea
                               required
-                              placeholder="Please explain the issue (sizing, pattern discrepancy, defect, preferred replacement)..."
+                              placeholder="Please explain the reason (sizing adjustment, fabric preference, shade replacement, or motif inspection)..."
                               value={returnReason}
                               onChange={(e) => setReturnReason(e.target.value)}
                               className="w-full min-h-[120px] p-4 rounded-xl border border-zinc-200 focus:border-[#FF6A00] focus:ring-2 focus:ring-[#FF6A00]/20 font-medium text-sm outline-none transition-all resize-y"
@@ -788,9 +975,20 @@ export default function OrderPage() {
                           </div>
                           <button
                             type="submit"
-                            className="w-full py-3.5 px-8 bg-[#FF6A00] hover:bg-[#e05d00] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer"
+                            disabled={isSubmittingReturn}
+                            className="w-full py-3.5 px-8 bg-[#FF6A00] hover:bg-[#e05d00] text-white font-bold text-xs uppercase tracking-wider rounded-full shadow-md hover:shadow-lg transition-all border-0 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                           >
-                            Submit Exchange Request
+                            {isSubmittingReturn ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Submitting Exchange Request & WhatsApp...</span>
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw size={15} />
+                                <span>Submit Exchange Request</span>
+                              </>
+                            )}
                           </button>
                         </form>
                       ) : (

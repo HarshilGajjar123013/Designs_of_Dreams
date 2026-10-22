@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma, fallbackDb, sendOrderWhatsAppNotifications } from '@dod/database';
+import {
+  prisma,
+  fallbackDb,
+  sendOrderWhatsAppNotifications,
+  sendOrderCancellationWhatsAppNotifications,
+  sendOrderExchangeWhatsAppNotifications
+} from '@dod/database';
 import { verifyAdminSession } from '@/lib/auth';
 
 export async function POST(
@@ -14,6 +20,7 @@ export async function POST(
     const { id } = resolvedParams;
     const body = await req.json().catch(() => ({}));
     const recipient: 'admin' | 'customer' | 'all' = body.recipient || 'all';
+    const type: 'order' | 'cancel' | 'exchange' = body.type || 'order';
 
     let order: any = null;
     let databaseConnected = true;
@@ -37,8 +44,25 @@ export async function POST(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    // Force retry the requested recipient (admin, customer, or all)
-    const updatedDetails = await sendOrderWhatsAppNotifications(order, recipient, { force: true });
+    // Force retry the requested notification type
+    let updatedDetails: any = null;
+    if (type === 'cancel') {
+      updatedDetails = await sendOrderCancellationWhatsAppNotifications(
+        order,
+        order.cancelReason || 'Admin manual trigger',
+        recipient,
+        { force: true }
+      );
+    } else if (type === 'exchange') {
+      updatedDetails = await sendOrderExchangeWhatsAppNotifications(
+        order,
+        order.returnReason || 'Admin manual trigger',
+        recipient,
+        { force: true }
+      );
+    } else {
+      updatedDetails = await sendOrderWhatsAppNotifications(order, recipient, { force: true });
+    }
 
     // Reload the updated order
     let updatedOrder: any = null;
