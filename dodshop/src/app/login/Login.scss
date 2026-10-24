@@ -322,13 +322,36 @@ $brand-black: #1a1a1a;
     background-color: $brand-orange;
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: $brand-orange;
     box-shadow: 0 10px 20px rgba($brand-orange, 0.2);
 
     @media (max-width: 768px) {
       background-color: #e65c00;
     }
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+.auth-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: authSpin 0.7s linear infinite;
+}
+
+@keyframes authSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

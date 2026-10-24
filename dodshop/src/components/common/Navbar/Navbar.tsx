@@ -30,14 +30,7 @@ import { useStore } from "@/store/useStore";
 
 // ── DATA STRUCTURE ───────────────────────────────────────────────────────────
 
-const DEFAULT_INITIAL_CATEGORIES = [
-  { id: 'cat-sarees', name: 'Sarees', slug: 'sarees', description: "Timeless drapes from India's finest looms." },
-  { id: 'cat-kurtis', name: 'Kurtis', slug: 'kurtis', description: "Elegant ethnic tops." },
-  { id: 'cat-blouses', name: 'Blouses', slug: 'blouses', description: "Designer blouses." },
-  { id: 'cat-dupattas', name: 'Dupattas', slug: 'dupattas', description: "Handwoven accessories." },
-  { id: 'cat-heritage', name: 'Heritage Weaves', slug: 'heritage-weaves', description: "Rare handloom treasures." },
-  { id: 'cat-bridal', name: 'Bridal', slug: 'bridal', description: "Curated bridal couture." },
-];
+const DEFAULT_INITIAL_CATEGORIES: any[] = [];
 
 const legacyCategoryPresets: Record<string, { fabrics?: string[]; subcategories?: string[] }> = {
   Kurti: {
@@ -133,8 +126,8 @@ const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [isMegaOpen, setIsMegaOpen] = useState(false);
-  const [categories, setCategories] = useState<any[]>(DEFAULT_INITIAL_CATEGORIES);
-  const [activeTab, setActiveTab] = useState<string>("Sarees");
+  const [categories, setCategories] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("");
   const [mounted, setMounted] = useState(false);
 
   const [announcements, setAnnouncements] = useState<string[]>([
@@ -147,12 +140,16 @@ const Navbar: React.FC = () => {
     try {
       const res = await fetch("/api/categories", { cache: "no-store" });
       const data = await res.json();
-      if (data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+      if (data.success && Array.isArray(data.categories)) {
         setCategories(data.categories);
-        setActiveTab((prev) => {
-          if (prev && data.categories.some((c: any) => c.name === prev)) return prev;
-          return data.categories[0].name;
-        });
+        if (data.categories.length > 0) {
+          setActiveTab((prev) => {
+            if (prev && data.categories.some((c: any) => c.name === prev)) return prev;
+            return data.categories[0].name;
+          });
+        } else {
+          setActiveTab("");
+        }
       }
     } catch (e) {
       console.warn("Failed to fetch categories in Navbar", e);
@@ -502,57 +499,83 @@ const Navbar: React.FC = () => {
                         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                       >
                         <div className="mega-menu__container" onClick={(e) => e.stopPropagation()}>
-                          {/* Sidebar Tabs */}
-                          <div className="mega-menu__sidebar">
-                            {categories.map((cat) => (
-                              <button
-                                key={cat.id || cat.name}
-                                className={`mega-menu__tab ${activeTab === cat.name ? "is-active" : ""}`}
-                                onMouseEnter={() => setActiveTab(cat.name)}
-                                onClick={() => {
-                                  setIsMegaOpen(false);
-                                  router.push(`/collection?category=${encodeURIComponent(cat.name)}`);
+                          {categories.length > 0 ? (
+                            <>
+                              {/* Sidebar Tabs */}
+                              <div className="mega-menu__sidebar">
+                                {categories.map((cat) => (
+                                  <button
+                                    key={cat.id || cat.name}
+                                    className={`mega-menu__tab ${activeTab === cat.name ? "is-active" : ""}`}
+                                    onMouseEnter={() => setActiveTab(cat.name)}
+                                    onClick={() => {
+                                      setIsMegaOpen(false);
+                                      router.push(`/collection?category=${encodeURIComponent(cat.name)}`);
+                                    }}
+                                  >
+                                    {cat.name}
+                                    <ChevronRight size={16} />
+                                  </button>
+                                ))}
+                              </div>
+
+                              {/* Content Grid */}
+                              <div className="mega-menu__content">
+                                <div className="mega-menu__grid">
+                                  {activeMenuData?.sections.map((section: any) => (
+                                    <div key={section.id} className="mega-menu__column">
+                                      <div className="mega-menu__icon-circle">
+                                        <Layers size={24} />
+                                      </div>
+                                      <h4 className="mega-menu__column-title">{section.title}</h4>
+                                      <ul className="mega-menu__links">
+                                        {section.links.map((link: string) => (
+                                          <li key={link}>
+                                            <Link
+                                              href={`/collection?category=${encodeURIComponent(activeTab)}&sub=${encodeURIComponent(link)}`}
+                                              className="mega-menu__link"
+                                              onClick={() => setIsMegaOpen(false)}
+                                            >
+                                              {link}
+                                            </Link>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                      <Link
+                                        href={`/collection?category=${encodeURIComponent(activeTab)}`}
+                                        className="mega-menu__view-all"
+                                        onClick={() => setIsMegaOpen(false)}
+                                      >
+                                        {section.viewAll} <ChevronRight size={14} />
+                                      </Link>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ padding: "40px 24px", textAlign: "center", width: "100%" }}>
+                              <p style={{ color: "#8E887E", fontSize: "14px", marginBottom: "12px" }}>
+                                No categories added to the catalog yet.
+                              </p>
+                              <Link
+                                href="/collection"
+                                onClick={() => setIsMegaOpen(false)}
+                                style={{
+                                  display: "inline-block",
+                                  padding: "8px 20px",
+                                  border: "1px solid #C5A059",
+                                  color: "#C5A059",
+                                  fontSize: "12px",
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  borderRadius: "4px"
                                 }}
                               >
-                                {cat.name}
-                                <ChevronRight size={16} />
-                              </button>
-                            ))}
-                          </div>
-
-                          {/* Content Grid */}
-                          <div className="mega-menu__content">
-                            <div className="mega-menu__grid">
-                              {activeMenuData?.sections.map((section: any) => (
-                                <div key={section.id} className="mega-menu__column">
-                                  <div className="mega-menu__icon-circle">
-                                    <Layers size={24} />
-                                  </div>
-                                  <h4 className="mega-menu__column-title">{section.title}</h4>
-                                  <ul className="mega-menu__links">
-                                    {section.links.map((link: string) => (
-                                      <li key={link}>
-                                        <Link
-                                          href={`/collection?category=${encodeURIComponent(activeTab)}&sub=${encodeURIComponent(link)}`}
-                                          className="mega-menu__link"
-                                          onClick={() => setIsMegaOpen(false)}
-                                        >
-                                          {link}
-                                        </Link>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                  <Link
-                                    href={`/collection?category=${encodeURIComponent(activeTab)}`}
-                                    className="mega-menu__view-all"
-                                    onClick={() => setIsMegaOpen(false)}
-                                  >
-                                    {section.viewAll} <ChevronRight size={14} />
-                                  </Link>
-                                </div>
-                              ))}
+                                View Collection Catalog
+                              </Link>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </motion.div>
                     );

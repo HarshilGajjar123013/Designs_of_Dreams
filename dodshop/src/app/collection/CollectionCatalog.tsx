@@ -18,14 +18,13 @@ export default function CollectionCatalog({
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Zustand Store
-  const storeProducts = useStore((state) => state.products);
+  // Live products synced from server / database
   const [liveProducts, setLiveProducts] = useState<any[]>(
-    Array.isArray(initialProducts) && initialProducts.length > 0 ? initialProducts : storeProducts
+    Array.isArray(initialProducts) ? initialProducts : []
   );
 
   useEffect(() => {
-    if (Array.isArray(initialProducts) && initialProducts.length > 0) {
+    if (Array.isArray(initialProducts)) {
       setLiveProducts(initialProducts);
     }
   }, [initialProducts]);
@@ -36,7 +35,7 @@ export default function CollectionCatalog({
       fetch("/api/products?limit=100")
         .then((res) => res.json())
         .then((data) => {
-          if (data.success && Array.isArray(data.products) && data.products.length > 0) {
+          if (data.success && Array.isArray(data.products)) {
             const mapped = data.products.map((p: any) => ({
               id: p.id,
               title: p.name,
@@ -69,7 +68,7 @@ export default function CollectionCatalog({
     return () => window.removeEventListener("focus", fetchLiveProducts);
   }, []);
 
-  const products = liveProducts.length > 0 ? liveProducts : storeProducts;
+  const products = liveProducts;
   const cart = useStore((state) => state.cart);
   const wishlist = useStore((state) => state.wishlist);
   const addToCart = useStore((state) => state.addToCart);
@@ -497,7 +496,14 @@ export default function CollectionCatalog({
         )}
 
         {/* Products Grid */}
-        {sortedProducts.length === 0 ? (
+        {products.length === 0 ? (
+          <div className="catalog-empty text-center py-20 px-4">
+            <h3 className="text-xl font-serif text-[#2D2A26] mb-2">No Products Available</h3>
+            <p className="text-sm text-[#2D2A26]/70 max-w-md mx-auto">
+              Our atelier catalog currently has 0 products listed. Handcrafted pieces added via your Admin Dashboard will appear here.
+            </p>
+          </div>
+        ) : sortedProducts.length === 0 ? (
           <div className="catalog-empty text-center">
             <h3>No items found</h3>
             <p>We couldn't find any products matching your active filters. Try adjusting your price range or category tabs.</p>

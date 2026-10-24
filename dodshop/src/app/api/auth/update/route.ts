@@ -60,7 +60,17 @@ export async function POST(req: Request) {
       if (name && typeof name === 'string') updateData.name = name.trim().slice(0, 100);
       if (newEmail) updateData.email = newEmail.toLowerCase().trim();
       if (phone !== undefined) updateData.phone = typeof phone === 'string' ? phone.trim().slice(0, 20) : null;
-      if (avatar !== undefined) updateData.avatar = typeof avatar === 'string' ? avatar.trim().slice(0, 500) : null;
+      if (avatar !== undefined) {
+        if (!avatar || (typeof avatar === 'string' && avatar.trim() === '')) {
+          updateData.avatar = null;
+        } else if (typeof avatar === 'string') {
+          const trimmed = avatar.trim();
+          if (trimmed.length > 7 * 1024 * 1024) {
+            return NextResponse.json({ error: 'Avatar image exceeds 5MB size limit' }, { status: 400 });
+          }
+          updateData.avatar = trimmed;
+        }
+      }
 
       updatedCustomer = await prisma.customer.update({
         where: { id: userId },
@@ -82,7 +92,7 @@ export async function POST(req: Request) {
           name: name || current.name,
           email: newEmail || current.email,
           phone: phone !== undefined ? phone : current.phone,
-          avatar: avatar !== undefined ? avatar : current.avatar,
+          avatar: avatar !== undefined ? (avatar && typeof avatar === 'string' && avatar.trim() !== '' ? avatar.trim() : null) : current.avatar,
           updatedAt: new Date().toISOString()
         };
         customers[index] = updated;

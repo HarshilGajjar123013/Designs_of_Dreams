@@ -14,6 +14,7 @@ export async function getDbProducts() {
     });
     return products;
   } catch (err) {
+    if (process.env.ALLOW_FALLBACK_DB === 'false') return [];
     console.warn('⚠️ Website: Database query failed, using fallback JSON DB.');
     const products = fallbackDb.getCollection('products');
     const categories = fallbackDb.getCollection('categories');
@@ -49,6 +50,7 @@ export async function getDbProductById(idOrSlug: string) {
     });
     return product;
   } catch (err) {
+    if (process.env.ALLOW_FALLBACK_DB === 'false') return null;
     console.warn(`⚠️ Website: Database query failed for ${idOrSlug}, using fallback JSON DB.`);
     const products = fallbackDb.getCollection('products');
     const categories = fallbackDb.getCollection('categories');
@@ -118,6 +120,7 @@ export async function getDbCategories() {
       };
     });
   } catch (err) {
+    if (process.env.ALLOW_FALLBACK_DB === 'false') return [];
     console.warn('⚠️ Website: Database category query failed, using fallback JSON DB.');
     const categories = fallbackDb.getCollection('categories');
     const products = fallbackDb.getCollection('products');
@@ -159,8 +162,10 @@ export async function getDbCmsConfig() {
       where: { id: 'singleton' }
     });
     if (config) return config;
+    if (process.env.ALLOW_FALLBACK_DB === 'false') return null;
     return fallbackDb.getCmsConfig();
   } catch (err) {
+    if (process.env.ALLOW_FALLBACK_DB === 'false') return null;
     console.warn('⚠️ Website: Database CMS query failed, using fallback JSON DB.');
     return fallbackDb.getCmsConfig();
   }

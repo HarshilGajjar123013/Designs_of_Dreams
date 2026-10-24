@@ -216,7 +216,6 @@ ${activeProduct.desc || ""}
 💰 *Price:* ₹${priceFormatted} (MRP ₹${mrpFormatted} — *40% OFF*)
 🏷️ *Category:* ${activeProduct.category || "Saree"} — ${activeProduct.subcategory || ""}
 🧵 *Fabric:* ${fabricsText}
-⭐ *Rating:* ${activeProduct.rating || 5}/5 (142 reviews)
 ✅ *Features:* ${featuresText}
 
 👉 *View Product:* ${href}
@@ -704,11 +703,6 @@ Designs of Dreams is a premium Indian ethnic wear brand specializing in authenti
               </span>
             </div>
             <p className="tax-info">Inclusive of all local goods and services taxes (GST @ 5%).</p>
-          </div>
-
-          <div className="stock-alert">
-            <Sparkles size={16} />
-            <span>Exclusive Heritage Loom: Only 2 pieces currently left in Varanasi showroom.</span>
           </div>
 
           {/* 3. Variant Selection */}

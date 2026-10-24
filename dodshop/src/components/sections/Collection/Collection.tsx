@@ -182,7 +182,7 @@ const Collection: React.FC<CollectionProps> = ({ initialCategories }) => {
     try {
       const res = await fetch("/api/categories", { cache: "no-store" });
       const data = await res.json();
-      if (data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+      if (data.success && Array.isArray(data.categories)) {
         setCategories(data.categories);
       }
     } catch (err) {
@@ -242,7 +242,15 @@ const Collection: React.FC<CollectionProps> = ({ initialCategories }) => {
           </motion.p>
         </div>
 
-        {/* Collection Cards Grid (Strictly 4 Cards) */}
+        {/* Collection Cards Grid or Empty State */}
+        {collectionsData.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-[#8E887E] text-base mb-3">No collections published in the catalog yet.</p>
+            <Link href="/collection" className="inline-block text-[#C5A059] text-sm font-medium underline">
+              Browse Collection Catalog
+            </Link>
+          </div>
+        ) : (
         <motion.div 
           className="collection-grid"
           variants={containerVariants}
@@ -298,6 +306,7 @@ const Collection: React.FC<CollectionProps> = ({ initialCategories }) => {
             </motion.div>
           ))}
         </motion.div>
+        )}
       </div>
 
       {/* QUICK VIEW POPUP MODAL */}

@@ -6,7 +6,7 @@ import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-function getJwtSecret(): Uint8Array {
+export function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     if (process.env.NODE_ENV === 'production') {

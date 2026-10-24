@@ -4,6 +4,7 @@ import { prisma, fallbackDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { signToken, setAuthCookie } from '@/lib/auth';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
+import { generateRecoveryCode, hashRecoveryCode } from '@/lib/recoveryCode';
 
 export async function POST(req: Request) {
   // Rate limit: max 5 signup attempts per 15 minutes per IP
@@ -12,28 +13,48 @@ export async function POST(req: Request) {
 
   try {
     const { firstName, lastName, email, mobileNumber, password } = await req.json();
+    const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const cleanFirstName = typeof firstName === 'string' ? firstName.trim() : '';
+    const cleanLastName = typeof lastName === 'string' ? lastName.trim() : '';
+    const cleanPhone = typeof mobileNumber === 'string' ? mobileNumber.trim() : '';
+    const fullName = `${cleanFirstName} ${cleanLastName}`.trim();
 
-    if (!email || !password || !firstName || !lastName) {
+    if (!cleanEmail || !password || !cleanFirstName || !cleanLastName) {
       return NextResponse.json(
         { error: 'Required fields are missing' },
         { status: 400 }
       );
     }
 
-    const fullName = `${firstName} ${lastName}`;
     const passwordHash = await bcrypt.hash(password, 10);
-    const avatar = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'P';
+    const avatar = fullName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'P';
+
+    // Generate high-entropy single-use backup recovery code
+    const { rawCode, normalized } = generateRecoveryCode();
+    const recoveryCodeHash = await hashRecoveryCode(normalized);
 
     let databaseConnected = true;
     let newCustomer: any = null;
 
     try {
       // 1. Try DB read to check if user already exists
-      const existing = await prisma.customer.findUnique({
-        where: { email },
+      const existing = await prisma.customer.findFirst({
+        where: {
+          email: { equals: cleanEmail, mode: 'insensitive' }
+        },
       });
 
       if (existing) {
+        return NextResponse.json(
+          { error: 'An account with this email already exists' },
+          { status: 400 }
+        );
+      }
+
+      // Check fallback collection to prevent duplicate accounts
+      const customers = fallbackDb.getCollection('customers');
+      const fallbackExisting = customers.find((c: any) => c.email?.toLowerCase() === cleanEmail);
+      if (fallbackExisting) {
         return NextResponse.json(
           { error: 'An account with this email already exists' },
           { status: 400 }
@@ -44,12 +65,16 @@ export async function POST(req: Request) {
       newCustomer = await prisma.customer.create({
         data: {
           name: fullName,
-          email,
+          email: cleanEmail,
           passwordHash,
-          phone: mobileNumber || null,
+          phone: cleanPhone || null,
           avatar: avatar,
-          isVerified: true, // Default to true as per UI mockup
+          isVerified: true,
           customerType: 'NEW',
+          recoveryCodeHash,
+          recoveryCodeUsed: false,
+          recoveryCodeCreatedAt: new Date(),
+          recoveryAttempts: 0,
         }
       });
     } catch (dbError) {
@@ -57,12 +82,11 @@ export async function POST(req: Request) {
       databaseConnected = false;
     }
 
-    if (!databaseConnected) {
+    if (!databaseConnected || !newCustomer) {
       // 2. Local Fallback DB Write
       const customers = fallbackDb.getCollection('customers');
 
-      // Check if email already exists in fallback
-      const existing = customers.find(c => c.email.toLowerCase() === email.toLowerCase());
+      const existing = customers.find((c: any) => c.email?.toLowerCase() === cleanEmail);
       if (existing) {
         return NextResponse.json(
           { error: 'An account with this email already exists' },
@@ -74,14 +98,18 @@ export async function POST(req: Request) {
       newCustomer = {
         id: custId,
         name: fullName,
-        email,
-        passwordHash, // Store hash in fallback too for verification on login
-        phone: mobileNumber || null,
+        email: cleanEmail,
+        passwordHash,
+        phone: cleanPhone || null,
         avatar: avatar,
         notes: '',
         customerType: 'NEW',
         isVerified: true,
         joinedDate: new Date().toISOString().split('T')[0],
+        recoveryCodeHash,
+        recoveryCodeUsed: false,
+        recoveryCodeCreatedAt: new Date().toISOString(),
+        recoveryAttempts: 0,
         wishlist: [],
         cart: [],
         addresses: [],
@@ -89,6 +117,39 @@ export async function POST(req: Request) {
 
       customers.push(newCustomer);
       fallbackDb.saveCollection('customers', customers);
+    } else {
+      // Keep local fallbackDb synced with newly registered customer
+      try {
+        const customers = fallbackDb.getCollection('customers');
+        const idx = customers.findIndex((c: any) => c.id === newCustomer.id || c.email?.toLowerCase() === cleanEmail);
+        const fallbackRecord = {
+          id: newCustomer.id,
+          name: fullName,
+          email: cleanEmail,
+          passwordHash,
+          phone: cleanPhone || null,
+          avatar: avatar,
+          notes: '',
+          customerType: 'NEW',
+          isVerified: true,
+          joinedDate: new Date().toISOString().split('T')[0],
+          recoveryCodeHash,
+          recoveryCodeUsed: false,
+          recoveryCodeCreatedAt: new Date().toISOString(),
+          recoveryAttempts: 0,
+          wishlist: [],
+          cart: [],
+          addresses: [],
+        };
+        if (idx !== -1) {
+          customers[idx] = { ...customers[idx], ...fallbackRecord };
+        } else {
+          customers.push(fallbackRecord);
+        }
+        fallbackDb.saveCollection('customers', customers);
+      } catch (mirrorErr) {
+        console.warn('Non-fatal: could not mirror to fallback DB:', mirrorErr);
+      }
     }
 
     // Sign and set auth cookie
@@ -99,8 +160,10 @@ export async function POST(req: Request) {
     });
     await setAuthCookie(token);
 
+    // Return raw recovery code ONLY ONCE during initial registration response
     return NextResponse.json({
       success: true,
+      recoveryCode: rawCode,
       user: {
         id: newCustomer.id,
         email: newCustomer.email,

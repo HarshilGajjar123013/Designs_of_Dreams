@@ -68,6 +68,19 @@ export interface CostCalculation {
   updatedAt: Date | string;
 }
 
+export interface GalleryItem {
+  id: string | number;
+  title: string;
+  category: string;
+  filterTag: string;
+  image: string;
+  desc?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
 // Re-export all enums
 export {
   AdminRole,
@@ -110,6 +123,7 @@ export type {
   ContactNotificationResult
 } from './whatsapp';
 
-// Invoice PDF Generator
+// Invoice & Quotation PDF Generator
 export { generateInvoicePdfBuffer, generateInvoiceFileName, resolveOrderCustomizations } from './invoicePdf';
+export { generateEcommerceCostQuotationPdf } from './generateQuotationPdf';
 

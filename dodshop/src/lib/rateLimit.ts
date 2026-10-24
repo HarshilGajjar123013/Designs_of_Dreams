@@ -34,6 +34,8 @@ export function checkRateLimit(
   maxRequests: number = 10,
   windowMs: number = 15 * 60 * 1000
 ): NextResponse | null {
+  const isDev = process.env.NODE_ENV !== 'production';
+  const effectiveLimit = isDev ? Math.max(maxRequests * 5, 60) : maxRequests;
   const now = Date.now();
   cleanup(windowMs);
 
@@ -45,7 +47,7 @@ export function checkRateLimit(
 
   entry.timestamps = entry.timestamps.filter(t => now - t < windowMs);
 
-  if (entry.timestamps.length >= maxRequests) {
+  if (entry.timestamps.length >= effectiveLimit) {
     const retryAfterMs = entry.timestamps[0] + windowMs - now;
     const retryAfterSec = Math.ceil(retryAfterMs / 1000);
 
@@ -55,7 +57,7 @@ export function checkRateLimit(
         status: 429,
         headers: {
           'Retry-After': String(retryAfterSec),
-          'X-RateLimit-Limit': String(maxRequests),
+          'X-RateLimit-Limit': String(effectiveLimit),
           'X-RateLimit-Remaining': '0',
         }
       }

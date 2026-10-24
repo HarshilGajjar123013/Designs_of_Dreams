@@ -22,8 +22,8 @@ import {
   LogOut,
   ChevronRight
 } from "lucide-react";
-import { FaGoogle, FaApple } from "react-icons/fa";
 import "./Login.scss";
+import SaveRecoveryCodeModal from "@/components/auth/SaveRecoveryCodeModal";
 
 // Validation schemas using Zod
 const loginSchema = z.object({
@@ -81,11 +81,14 @@ const DEFAULT_SIGNUP_IMAGES = [
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  const rawRedirect = searchParams.get("redirect");
+  const redirectTo = (rawRedirect && rawRedirect !== "/login" && rawRedirect !== "/signup") ? rawRedirect : "/";
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [mounted, setMounted] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const [dynamicLoginImages, setDynamicLoginImages] = useState<string[]>(DEFAULT_LOGIN_IMAGES);
   const [dynamicSignupImages, setDynamicSignupImages] = useState<string[]>(DEFAULT_SIGNUP_IMAGES);
@@ -95,6 +98,19 @@ function LoginForm() {
 
   // Profile Section state
   const [activeProfileSection, setActiveProfileSection] = useState<string | null>(null);
+
+  // Recovery Code Modal state shown right after signup
+  const [recoveryModalData, setRecoveryModalData] = useState<{
+    isOpen: boolean;
+    code: string;
+    name: string;
+    email: string;
+  }>({
+    isOpen: false,
+    code: "",
+    name: "",
+    email: "",
+  });
 
   const user = useStore((state) => state.user);
   const loginAction = useStore((state) => state.login);
@@ -137,10 +153,10 @@ function LoginForm() {
   }, []);
 
   useEffect(() => {
-    if (mounted && user?.isLoggedIn) {
+    if (mounted && user?.isLoggedIn && !recoveryModalData.isOpen && !recoveryModalData.code) {
       router.push(redirectTo);
     }
-  }, [mounted, user, router, redirectTo]);
+  }, [mounted, user, router, redirectTo, recoveryModalData.isOpen, recoveryModalData.code]);
 
   // React Hook Form for Login
   const {
@@ -186,8 +202,10 @@ function LoginForm() {
   };
 
   const onLogin = async (data: any) => {
+    if (isSubmitting) return;
     setErrorMsg("");
     setSuccessMsg("");
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -208,12 +226,16 @@ function LoginForm() {
     } catch (err) {
       console.error(err);
       setErrorMsg("An error occurred during login. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const onSignup = async (data: any) => {
+    if (isSubmitting) return;
     setErrorMsg("");
     setSuccessMsg("");
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/auth/signup", {
@@ -234,26 +256,25 @@ function LoginForm() {
       }
       const { id, email, name, avatar, phone } = resData.user;
       signupAction(id, email, name, avatar, phone);
-      setSuccessMsg(`Welcome to Designs of Dreams, ${name}!`);
       resetSignupForm();
-      router.push(redirectTo);
+
+      if (resData.recoveryCode) {
+        setRecoveryModalData({
+          isOpen: true,
+          code: resData.recoveryCode,
+          name: name,
+          email: email,
+        });
+      } else {
+        setSuccessMsg(`Welcome to Designs of Dreams, ${name}!`);
+        router.push(redirectTo);
+      }
     } catch (err) {
       console.error(err);
       setErrorMsg("An error occurred during registration. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const handleSocialLogin = (provider: string) => {
-    setErrorMsg("");
-    setSuccessMsg("");
-    setTimeout(() => {
-      const email = `user@${provider.toLowerCase()}.com`;
-      const name = `${provider} Guest`;
-      const mockId = `social-${provider.toLowerCase()}-${Date.now()}`;
-      loginAction(mockId, email, name);
-      setSuccessMsg(`Welcome back, connected with ${provider}!`);
-      router.push(redirectTo);
-    }, 800);
   };
 
   const handleLogout = () => {
@@ -452,40 +473,24 @@ function LoginForm() {
                             />
                             <span>Remember Me</span>
                           </label>
-                          <a
-                            href="#"
+                          <Link
+                            href="/forgot-password"
                             className="forgot-link"
-                            onClick={(e) => { e.preventDefault(); alert("Password reset instructions have been sent to your email!"); }}
                           >
                             Forgot Password?
-                          </a>
+                          </Link>
                         </div>
 
-                        <button type="submit" className="submit-auth-btn">
-                          Sign In
+                        <button type="submit" className="submit-auth-btn" disabled={isSubmitting}>
+                          {isSubmitting ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                              <span className="auth-spinner" />
+                              Signing In...
+                            </span>
+                          ) : (
+                            "Sign In"
+                          )}
                         </button>
-
-                        <div className="divider-row">
-                          <span>Or continue with</span>
-                        </div>
-
-                        <div className="social-login-group">
-                          <button type="button" className="social-btn" onClick={() => handleSocialLogin("Google")} aria-label="Continue with Google">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" style={{ flexShrink: 0 }}>
-                              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                              <path fill="#4285F4" d="M46.5 24c0-1.63-.15-3.2-.43-4.75H24v9h12.75c-.55 2.92-2.2 5.4-4.69 7.07l7.29 5.65C43.64 36.63 46.5 30.93 46.5 24z" />
-                              <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z" />
-                              <path fill="#34A853" d="M24 38.5c-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48c6.48 0 11.93-2.13 15.89-5.81l-7.29-5.65c-2.29 1.57-5.23 2.46-8.6 2.46z" />
-                            </svg>
-                            <span>Continue with Google</span>
-                          </button>
-                          <button type="button" className="social-btn" onClick={() => handleSocialLogin("Apple")} aria-label="Continue with Apple">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 170" width="18" height="18" fill="currentColor" style={{ flexShrink: 0 }}>
-                              <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.92-14.37-6.15-2.82-2.32-6.57-6.8-11.25-13.43-5.07-7.25-9.41-15.62-13.01-25.13-3.6-9.51-5.42-18.78-5.42-27.82 0-13.16 3.13-24.25 9.38-33.26 6.25-9.01 14.4-13.56 24.46-13.68 4.7 0 9.77 1.25 15.22 3.76 5.45 2.5 8.94 3.76 10.47 3.76 1.28 0 4.67-1.18 10.19-3.53 5.51-2.35 10.15-3.46 13.93-3.35 10.93.23 19.59 4.19 25.96 11.89-9.07 5.51-13.52 13.25-13.35 23.23.17 7.9 3.03 14.54 8.59 19.94 5.56 5.39 12.22 8.36 20 8.91-1.94 5.57-4.5 11.24-7.66 17.02zM119.5 28.56c0-6.73 2.37-12.92 7.12-18.57 5.67-6.86 12.8-10.4 21.41-10.63.12 7.21-2.27 13.65-7.18 19.34-4.8 5.61-11.75 9.5-20.85 9.86-.34-2.12-.5-4.47-.5-7z" />
-                            </svg>
-                            <span>Continue with Apple</span>
-                          </button>
-                        </div>
                       </motion.form>
                     ) : (
                       // SIGNUP FORM
@@ -615,42 +620,27 @@ function LoginForm() {
                               type="checkbox"
                               {...registerSignup("agreeTerms")}
                             />
-                            <span>I agree to <Link href="#" onClick={(e) => { e.preventDefault(); alert("Terms & Conditions Modal"); }}>Terms & Conditions</Link></span>
+                            <span>I agree to <Link href="#" onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }}>Terms & Conditions</Link></span>
                           </label>
                         </div>
                         {signupErrors.agreeTerms && <span className="error-text" style={{ marginTop: '-8px' }}>{(signupErrors.agreeTerms.message as string)}</span>}
 
-                        <button type="submit" className="submit-auth-btn">
-                          Create Account
+                        <button type="submit" className="submit-auth-btn" disabled={isSubmitting}>
+                          {isSubmitting ? (
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                              <span className="auth-spinner" />
+                              Creating Account...
+                            </span>
+                          ) : (
+                            "Create Account"
+                          )}
                         </button>
-
-                        <div className="divider-row">
-                          <span>Or continue with</span>
-                        </div>
-
-                        <div className="social-login-group">
-                          <button type="button" className="social-btn" onClick={() => handleSocialLogin("Google")} aria-label="Continue with Google">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" style={{ flexShrink: 0 }}>
-                              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                              <path fill="#4285F4" d="M46.5 24c0-1.63-.15-3.2-.43-4.75H24v9h12.75c-.55 2.92-2.2 5.4-4.69 7.07l7.29 5.65C43.64 36.63 46.5 30.93 46.5 24z" />
-                              <path fill="#FBBC05" d="M10.54 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.98-6.19z" />
-                              <path fill="#34A853" d="M24 38.5c-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48c6.48 0 11.93-2.13 15.89-5.81l-7.29-5.65c-2.29 1.57-5.23 2.46-8.6 2.46z" />
-                            </svg>
-                            <span>Continue with Google</span>
-                          </button>
-                          <button type="button" className="social-btn" onClick={() => handleSocialLogin("Apple")} aria-label="Continue with Apple">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 170" width="18" height="18" fill="currentColor" style={{ flexShrink: 0 }}>
-                              <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.34.13-9.13-1.92-14.37-6.15-2.82-2.32-6.57-6.8-11.25-13.43-5.07-7.25-9.41-15.62-13.01-25.13-3.6-9.51-5.42-18.78-5.42-27.82 0-13.16 3.13-24.25 9.38-33.26 6.25-9.01 14.4-13.56 24.46-13.68 4.7 0 9.77 1.25 15.22 3.76 5.45 2.5 8.94 3.76 10.47 3.76 1.28 0 4.67-1.18 10.19-3.53 5.51-2.35 10.15-3.46 13.93-3.35 10.93.23 19.59 4.19 25.96 11.89-9.07 5.51-13.52 13.25-13.35 23.23.17 7.9 3.03 14.54 8.59 19.94 5.56 5.39 12.22 8.36 20 8.91-1.94 5.57-4.5 11.24-7.66 17.02zM119.5 28.56c0-6.73 2.37-12.92 7.12-18.57 5.67-6.86 12.8-10.4 21.41-10.63.12 7.21-2.27 13.65-7.18 19.34-4.8 5.61-11.75 9.5-20.85 9.86-.34-2.12-.5-4.47-.5-7z" />
-                            </svg>
-                            <span>Continue with Apple</span>
-                          </button>
-                        </div>
                       </motion.form>
                     )}
                   </AnimatePresence>
 
                   <div className="auth-footer-terms">
-                    <span>By clicking Sign Up, you agree to accept Designs of Dreams's <Link href="#" onClick={(e) => e.preventDefault()}>Terms of Service</Link></span>
+                    <span>By clicking Sign Up, you agree to accept Designs of Dreams's <Link href="#" onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }}>Terms of Service</Link></span>
                   </div>
                 </motion.div>
               )}
@@ -690,6 +680,40 @@ function LoginForm() {
           ))}
         </div>
       </div>
+
+      {/* Backup Recovery Code Modal after successful registration */}
+      <SaveRecoveryCodeModal
+        isOpen={recoveryModalData.isOpen}
+        recoveryCode={recoveryModalData.code}
+        userName={recoveryModalData.name}
+        userEmail={recoveryModalData.email}
+        onComplete={() => {
+          setRecoveryModalData({ isOpen: false, code: "", name: "", email: "" });
+          setSuccessMsg(`Welcome to Designs of Dreams!`);
+          router.push(redirectTo);
+        }}
+      />
+
+      {/* Terms & Conditions Modal */}
+      {showTermsModal && (
+        <div className="recovery-modal-overlay" onClick={() => setShowTermsModal(false)}>
+          <div className="recovery-modal-card" style={{ maxWidth: "560px", textAlign: "left" }} onClick={(e) => e.stopPropagation()}>
+            <h2 className="recovery-modal-title" style={{ marginBottom: "12px", textAlign: "left" }}>Atelier Terms & Privacy</h2>
+            <div style={{ maxHeight: "300px", overflowY: "auto", fontSize: "0.85rem", color: "#4A4A4A", lineHeight: "1.6", marginBottom: "20px" }}>
+              <p style={{ marginBottom: "10px" }}><strong>1. Account Security:</strong> Designs of Dreams maintains cryptographic security for your account. You are provided a single-use backup recovery code upon registration to ensure zero unauthorized takeovers.</p>
+              <p style={{ marginBottom: "10px" }}><strong>2. Privacy Guarantee:</strong> Your confidential contact information and order history are securely safeguarded and never shared with third-party advertisers.</p>
+              <p style={{ marginBottom: "10px" }}><strong>3. Artisanal Authenticity:</strong> Each garment from Designs of Dreams is handcrafted using heritage weaving methods and tested materials.</p>
+            </div>
+            <button
+              type="button"
+              className="recovery-continue-btn"
+              onClick={() => setShowTermsModal(false)}
+            >
+              <span>I Understand & Agree</span>
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

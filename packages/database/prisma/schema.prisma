@@ -225,6 +225,12 @@ model Customer {
   customerType CustomerType @default(NEW)
   isVerified   Boolean  @default(false)
   joinedDate   DateTime @default(now())
+  recoveryCodeHash      String?
+  recoveryCodeUsed      Boolean   @default(false)
+  recoveryCodeCreatedAt DateTime?
+  recoveryCodeUsedAt    DateTime?
+  recoveryAttempts      Int       @default(0)
+  recoveryLockoutUntil  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -563,5 +569,24 @@ model CostCalculation {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   @@map("cost_calculations")
+}
+
+// ────────────────────────────────────────────────────────────
+// 20. GALLERY ITEM — Atelier Craft & Heritage Gallery
+// ────────────────────────────────────────────────────────────
+
+model GalleryItem {
+  id          String   @id @default(uuid()) @map("_id")
+  title       String
+  category    String
+  filterTag   String   @default("weaving")
+  image       String
+  desc        String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("gallery_items")
 }
 

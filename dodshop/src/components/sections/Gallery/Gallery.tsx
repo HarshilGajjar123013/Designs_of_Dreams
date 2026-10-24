@@ -94,6 +94,13 @@ const Gallery: React.FC = () => {
   React.useEffect(() => {
     const loadCmsGallery = async () => {
       try {
+        const galRes = await fetch("/api/gallery");
+        const galData = await galRes.json();
+        if (galData.success && Array.isArray(galData.gallery) && galData.gallery.length > 0) {
+          setCmsGallery(galData.gallery);
+          return;
+        }
+
         const res = await fetch("/api/cms");
         const data = await res.json();
         if (data.success && data.cms) {
@@ -103,8 +110,6 @@ const Gallery: React.FC = () => {
             : (rawGallery && Array.isArray(rawGallery.items) ? rawGallery.items : []);
           if (cmsItems.length > 0) {
             setCmsGallery(cmsItems);
-          } else {
-            setCmsGallery(galleryData);
           }
         }
       } catch (err) {

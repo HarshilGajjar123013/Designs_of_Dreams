@@ -63,18 +63,38 @@ export default function OrderPage() {
     return s === "pending" || s === "processing" || s === "dispatched" || s === "shipped" || s === "out_for_delivery" || s === "woven" || s === "unpaid" || s === "packed";
   };
 
+  const [isVerifying, setIsVerifying] = useState(true);
+
   // Zustand Store
   const user = useStore((state) => state.user);
+  const loginAction = useStore((state) => state.login);
+  const logoutAction = useStore((state) => state.logout);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (user?.isLoggedIn) {
+      setIsVerifying(false);
+    } else {
+      fetch("/api/auth/me")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user) {
+            const u = data.user;
+            loginAction(u.id, u.email, u.name, u.avatar, u.phone);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setIsVerifying(false);
+        });
+    }
+  }, [user?.isLoggedIn, loginAction]);
 
   useEffect(() => {
-    if (mounted && !user?.isLoggedIn) {
+    if (mounted && !isVerifying && !user?.isLoggedIn) {
       router.push("/login");
     }
-  }, [mounted, user, router]);
+  }, [mounted, isVerifying, user?.isLoggedIn, router]);
 
   const fetchOrderData = useCallback(async () => {
     if (!user?.isLoggedIn || !user?.id) return;
@@ -222,7 +242,12 @@ export default function OrderPage() {
       />
 
       <div className="order-page-container">
-        {!user?.isLoggedIn ? (
+        {(!mounted || isVerifying) ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-zinc-500 text-sm font-medium">Loading your orders...</p>
+          </div>
+        ) : !user?.isLoggedIn ? (
           // ACCESS WARNING
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 mb-6">
@@ -230,10 +255,17 @@ export default function OrderPage() {
             </div>
             <h2 className="text-2xl font-bold text-zinc-900 mb-2">Access Denied</h2>
             <p className="text-zinc-500 max-w-sm mb-8">You must be signed in to view your orders and purchase history.</p>
-            <Link href="/login" className="btn-profile-submit flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                logoutAction();
+                router.push("/login");
+              }}
+              className="btn-profile-submit flex items-center gap-2"
+            >
               <LogIn size={16} />
               Sign In to Account
-            </Link>
+            </button>
           </div>
         ) : (
           <>

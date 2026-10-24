@@ -7,6 +7,7 @@ import Navbar from "@/components/common/Navbar/Navbar";
 import Footer from "@/components/common/Footer";
 import MobileBottomNav from "@/components/common/MobileBottomNav";
 import PwaInstallPrompt from "@/components/common/PwaInstallPrompt";
+import AuthSync from "@/components/common/AuthSync";
 
 const marcellus = Marcellus({
   weight: "400",
@@ -69,6 +70,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col relative" suppressHydrationWarning>
+        <AuthSync />
         <Preloader />
         <Navbar />
         {children}

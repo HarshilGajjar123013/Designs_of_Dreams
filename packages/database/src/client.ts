@@ -12,11 +12,11 @@ const rawPrisma =
   (globalForPrisma.prisma && (globalForPrisma.prisma as any).costCalculation)
     ? globalForPrisma.prisma
     : new PrismaClient({
-        log:
-          process.env.NODE_ENV === 'development'
-            ? ['query', 'error', 'warn']
-            : ['error'],
-      });
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['query', 'error', 'warn']
+          : ['error'],
+    });
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = rawPrisma;
@@ -87,7 +87,7 @@ export const prisma = new Proxy(rawPrisma, {
       return new Proxy(value, {
         get(modelTarget, modelProp, modelReceiver) {
           const modelValue = Reflect.get(modelTarget, modelProp, modelReceiver);
-          
+
           if (typeof modelValue === 'function') {
             return async function (...args: any[]) {
               const reachable = await isDbReachable();

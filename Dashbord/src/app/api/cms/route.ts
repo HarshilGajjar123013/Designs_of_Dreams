@@ -6,7 +6,23 @@ import { randomUUID } from 'crypto';
 import { verifyAdminSession } from '@/lib/auth';
 
 function formatCmsResponse(config: any) {
-  if (!config) return config;
+  if (!config) {
+    return {
+      heroTitle: 'Designs of Dreams — Heritage & Couture Atelier',
+      heroSubtitle: 'Hand-woven luxury ethnic wear preserving the royal weaves of India.',
+      heroImage: '/assets/hero/hero_1.png',
+      announcementText: '',
+      announcementLink: '',
+      announcementActive: false,
+      featuredCollections: [],
+      gallery: [],
+      bannerMiddle: '',
+      footerBio: 'Designs of Dreams is a curated marketplace celebrating premium Indian heritage textiles.',
+      seoTitle: 'Designs of Dreams — Luxury Indian Ethnic Wear',
+      seoDescription: 'Discover hand-woven luxury Indian ethnic wear.',
+      galleryFilterTags: []
+    };
+  }
   const galleryRaw = config.gallery;
   let galleryItems: any[] = [];
   let galleryFilterTags: any[] = config.galleryFilterTags || [];
@@ -22,6 +38,7 @@ function formatCmsResponse(config: any) {
 
   return {
     ...config,
+    featuredCollections: Array.isArray(config.featuredCollections) ? config.featuredCollections : [],
     gallery: galleryItems,
     galleryFilterTags: galleryFilterTags
   };
@@ -42,7 +59,11 @@ export async function GET() {
     }
 
     if (!databaseConnected || !cmsConfig) {
-      cmsConfig = fallbackDb.getCmsConfig();
+      if (process.env.ALLOW_FALLBACK_DB === 'false') {
+        cmsConfig = null;
+      } else {
+        cmsConfig = fallbackDb.getCmsConfig();
+      }
     }
 
     return NextResponse.json({

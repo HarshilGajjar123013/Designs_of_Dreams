@@ -10,9 +10,10 @@ export async function POST(req: Request) {
   if (rateLimitRes) return rateLimitRes;
 
   try {
-    const { email, password } = await req.json();
+    const { email: rawEmail, password } = await req.json();
+    const cleanEmail = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
 
-    if (!email || !password) {
+    if (!cleanEmail || !password || typeof password !== 'string') {
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -23,29 +24,31 @@ export async function POST(req: Request) {
     let databaseConnected = true;
 
     try {
-      // 1. Try querying the database
-      customer = await prisma.customer.findUnique({
-        where: { email },
+      // 1. Try querying MongoDB database case-insensitively
+      customer = await prisma.customer.findFirst({
+        where: {
+          email: { equals: cleanEmail, mode: 'insensitive' }
+        },
       });
     } catch (dbError) {
       console.warn('⚠️ Login DB query failed, falling back to JSON DB:', dbError);
       databaseConnected = false;
     }
 
-    if (!databaseConnected) {
-      // 2. Query fallback database
+    // 2. If not found in primary DB or DB disconnected, check fallback database
+    if (!customer) {
       const customers = fallbackDb.getCollection('customers');
-      customer = customers.find(c => c.email.toLowerCase() === email.toLowerCase());
+      customer = customers.find((c: any) => c.email?.toLowerCase() === cleanEmail);
     }
 
-    if (!customer) {
+    if (!customer || !customer.passwordHash) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
-    // Verify password
+    // Verify password securely
     const isMatch = await bcrypt.compare(password, customer.passwordHash);
     if (!isMatch) {
       return NextResponse.json(

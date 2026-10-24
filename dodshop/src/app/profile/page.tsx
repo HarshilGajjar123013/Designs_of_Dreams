@@ -30,6 +30,7 @@ type TabType = "info" | "edit" | "password" | "photo" | "addresses";
 export default function ProfilePage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("info");
   const [saveSuccess, setSaveSuccess] = useState("");
 
@@ -50,38 +51,82 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size exceeds 5MB limit!");
-        return;
-      }
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        if (user?.id && user?.email) {
-          try {
-            const res = await fetch("/api/auth/update", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId: user.id, email: user.email, avatar: base64String })
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-              updateAvatarAction(base64String);
-              setSaveSuccess("Avatar photo updated!");
-            } else {
-              alert(data.error || "Failed to update avatar photo");
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          const maxDim = 512;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
             }
-          } catch (err) {
-            console.error(err);
-            alert("Failed to update avatar photo");
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
           }
-        }
-        setTimeout(() => setSaveSuccess(""), 2500);
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(e.target?.result as string);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.88));
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => {
+        const fallbackReader = new FileReader();
+        fallbackReader.onloadend = () => resolve(fallbackReader.result as string);
+        fallbackReader.readAsDataURL(file);
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File size exceeds 10MB limit!");
+        return;
+      }
+      try {
+        const base64String = await compressImage(file);
+        if (user?.id && user?.email) {
+          const res = await fetch("/api/auth/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id, email: user.email, avatar: base64String })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            const savedAvatar = data.user?.avatar || base64String;
+            updateAvatarAction(savedAvatar);
+            setSaveSuccess("Avatar photo updated!");
+          } else {
+            alert(data.error || "Failed to update avatar photo");
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to update avatar photo");
+      } finally {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+      setTimeout(() => setSaveSuccess(""), 2500);
     }
   };
 
@@ -249,7 +294,23 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    if (user?.isLoggedIn) {
+      setIsVerifying(false);
+    } else {
+      fetch("/api/auth/me")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user) {
+            const u = data.user;
+            loginAction(u.id, u.email, u.name, u.avatar, u.phone);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setIsVerifying(false);
+        });
+    }
+  }, [user?.isLoggedIn, loginAction]);
 
   useEffect(() => {
     if (user?.isLoggedIn && user?.name) {
@@ -262,10 +323,10 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    if (mounted && !user?.isLoggedIn) {
+    if (mounted && !isVerifying && !user?.isLoggedIn) {
       router.push("/login");
     }
-  }, [mounted, user, router]);
+  }, [mounted, isVerifying, user?.isLoggedIn, router]);
 
   // Handle URL Hash change to pre-select section
   useEffect(() => {
@@ -345,7 +406,12 @@ export default function ProfilePage() {
       />
 
       <div className="profile-page-container">
-        {!user?.isLoggedIn ? (
+        {(!mounted || isVerifying) ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+            <p className="text-zinc-500 text-sm font-medium">Loading your profile...</p>
+          </div>
+        ) : !user?.isLoggedIn ? (
           // NOT LOGGED IN WARNING
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 mb-6">
@@ -353,10 +419,14 @@ export default function ProfilePage() {
             </div>
             <h2 className="text-2xl font-bold text-zinc-900 mb-2">Access Denied</h2>
             <p className="text-zinc-500 max-w-sm mb-8">You must be signed in to view your profile and account information.</p>
-            <Link href="/login" className="btn-profile-submit flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="btn-profile-submit flex items-center gap-2"
+            >
               <LogIn size={16} />
               Sign In to Account
-            </Link>
+            </button>
           </div>
         ) : (
           <>
